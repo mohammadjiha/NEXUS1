@@ -211,7 +211,7 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
     <div class="field-wrap"><div class="field-label">كلمة المرور</div>
       <input class="field-input" id="login-pass" type="password" placeholder="••••••••••" dir="ltr"/>
     </div>
-    <button class="btn-primary" id="login-btn" onclick="doLogin()">تسجيل الدخول</button>
+    <button class="btn-primary" id="login-btn">تسجيل الدخول</button>
     <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
@@ -457,6 +457,7 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn-add-blue" onclick="editCurrentGym()">✏️ تعديل النادي</button>
         <button class="btn-add-blue" onclick="openAddUser('',currentGymId)">+ إضافة مستخدم</button>
+        <button class="btn-add-blue" onclick="exportGymPlayersExcel(currentGymId)" style="background:var(--green)">📊 تصدير Excel</button>
         <button class="btn-delete" onclick="deleteCurrentGym()">🗑️ حذف النادي</button>
       </div>
       <div id="gm-content"></div>
@@ -662,7 +663,12 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
         <div class="cred-row"><div class="cred-label">اسم النادي</div><div class="cred-value" id="s-gym-name">—</div></div>
         <div class="cred-row"><div class="cred-label">ID</div><div class="cred-value" id="s-gym-id">—</div></div>
         <div class="cred-row"><div class="cred-label">إيميل الأدمن</div><div class="cred-value" id="s-email">—</div></div>
-        <div class="cred-row" style="margin-bottom:0"><div class="cred-label">كلمة المرور</div><div class="cred-value password" id="s-pass">—</div></div>
+        <div class="cred-row" style="margin-bottom:0"><div class="cred-label">كلمة المرور</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="cred-value password" id="s-pass">—</div>
+            <button onclick="togglePassVisibility()" style="background:rgba(255,255,255,.08);border:none;border-radius:6px;padding:3px 8px;color:var(--text2);cursor:pointer;font-size:13px" id="s-pass-toggle">👁 إظهار</button>
+          </div>
+        </div>
       </div>
       <div class="warn-box">⚠️ احفظ كلمة المرور — لن تظهر مجدداً</div>
       <button class="btn-copy" onclick="copyCredentials()">📋 نسخ كل البيانات</button>
@@ -752,6 +758,9 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
 
 <div class="toast" id="toast"></div>
 
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <!-- ══════════ Firebase ══════════ -->
 <script type="module">
 import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -805,8 +814,7 @@ Object.assign(window, {
   renderCoaches, renderPaymentsPage, loadPaymentsPage, filterPaymentsRender,
   loadMessagesPage, filterMessagesRender, toggleUser, toggleGym,
   confirmDelete, renderGyms, updateStats,
-  exportUsersCSV, exportPlayersCSV, exportGymsCSV,
-});
+}); // exportUsersCSV/exportPlayersCSV/exportGymsCSV assigned directly to window below
 
 // expose module-scoped state as live getters so onclick=""  can read them
 Object.defineProperty(window,'currentDetailUid',{get:()=>currentDetailUid,configurable:true});
@@ -822,7 +830,15 @@ window.deleteCurrentGym   = () => confirmDelete('gym', currentGymId,
     document.getElementById('gm-title')?.textContent||'');
 
 // ── Auth ──
+let _loginAttempts=0;
+let _loginBlockedUntil=0;
+
 async function doLogin() {
+  const now=Date.now();
+  if(now<_loginBlockedUntil){
+    const secs=Math.ceil((_loginBlockedUntil-now)/1000);
+    showAuthError(`محاولات كثيرة — انتظر ${secs} ثانية`);return;
+  }
   const email=document.getElementById('login-email').value.trim();
   const pass =document.getElementById('login-pass').value;
   const btn  =document.getElementById('login-btn');
@@ -833,17 +849,25 @@ async function doLogin() {
     const cred=await signInWithEmailAndPassword(auth,email,pass);
     currentUser=cred.user;
     await currentUser.getIdToken(true); // refresh token → gets custom claims
+    let roleVerified = false;
     try {
       const snap=await getDoc(doc(db,'users',currentUser.uid));
       const role=snap.data()?.role;
-      if (snap.exists()&&role&&role!=='super_admin'){
+      if (!snap.exists()||!role||(role!=='super_admin'&&role!=='SuperAdmin')){
         await signOut(auth);currentUser=null;
         showAuthError('هذا الحساب ليس super_admin');
         btn.disabled=false;btn.innerHTML='تسجيل الدخول';return;
       }
-    } catch(_){}
-    showApp();
+      roleVerified = true;
+    } catch(e){
+      await signOut(auth);currentUser=null;
+      showAuthError('تعذّر التحقق من الصلاحيات، حاول مجدداً');
+      btn.disabled=false;btn.innerHTML='تسجيل الدخول';return;
+    }
+    if(roleVerified){_loginAttempts=0;showApp();}
   } catch(e){
+    _loginAttempts++;
+    if(_loginAttempts>=5) _loginBlockedUntil=Date.now()+60000;
     showAuthError(mapAuthError(e.code));
     btn.disabled=false;btn.innerHTML='تسجيل الدخول';
   }
@@ -1326,8 +1350,11 @@ async function addUser() {
     const password=genPassword();
     const cred=await createUserWithEmailAndPassword(authSec,email,password);
     const uid=cred.user.uid;
-    await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
-    await signOut(authSec);
+    try{
+      await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
+    }finally{
+      await signOut(authSec).catch(()=>{});
+    }
     await setDoc(doc(db,'users',uid),{
       uid,email,firstName,lastName,phone:phone||null,
       gymId,gymCode:gymId,role,
@@ -1407,22 +1434,7 @@ window.deletePaymentRecord = (uid, payId) => {
 };
 
 // ── Confirm + Delete ──
-function confirmDelete(type,id,name) {
-  const labels={gym:'النادي',user:'المستخدم'};
-  confirmAction(`هل تريد حذف ${labels[type]||type}: "${name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`,async()=>{
-    try{
-      if(type==='gym'){
-        await deleteDoc(doc(db,'gyms',id));
-        closeModal('gym-members-modal');
-        showToast('✅ تم حذف النادي من Firestore','success');
-      } else if(type==='user'){
-        await deleteDoc(doc(db,'users',id));
-        closeModal('user-detail-modal');
-        showToast('✅ تم حذف المستخدم من Firestore','success');
-      }
-    }catch(e){showToast('❌ '+e.message,'error');}
-  });
-}
+// confirmDelete defined below (soft-delete version)
 
 // ── Send Message / Broadcast ──
 let _sendMsgGymId = null; // null = broadcast
@@ -1589,8 +1601,7 @@ function filterPaymentsRender() {
   }).join('');
 }
 
-// legacy alias (players table still calls this)
-function renderPaymentsPage(){loadPaymentsPage();}
+// (duplicate renderPaymentsPage removed)
 
 // ── Messages Page ──
 async function loadMessagesPage() {
@@ -1608,7 +1619,7 @@ async function loadMessagesPage() {
     if(msgGymFilter){
       const cur=msgGymFilter.value;
       msgGymFilter.innerHTML='<option value="all">كل الأندية</option>'+
-        allGyms.map(g=>`<option value="${g.id}"${g.id===cur?' selected':''}>${esc(g.name||g.id)}</option>`).join('');
+        allGyms.map(g=>`<option value="${esc(g.id)}"${g.id===cur?' selected':''}>${esc(g.name||g.id)}</option>`).join('');
     }
     info.textContent=`${_allMessages.length} رسالة محمّلة`;
     filterMessagesRender();
@@ -1751,13 +1762,14 @@ function renderGyms() {
       return ms>now&&ms-now<week;
     }).length;
 
+    const gid=esc(g.id);
     return `
     <div class="gym-card">
-      <div class="gym-card-main" onclick="openGymMembers('${g.id}')">
+      <div class="gym-card-main" onclick="openGymMembers('${gid}')">
         <div class="gym-emoji">🏋️</div>
         <div class="gym-info">
           <div class="gym-name">${esc(g.name||g.id)}</div>
-          <div class="gym-meta">ID: ${esc(g.id)} &nbsp;•&nbsp; ${esc(g.city||'—')} &nbsp;•&nbsp; ${esc(g.ownerEmail||'—')}</div>
+          <div class="gym-meta">ID: ${gid} &nbsp;•&nbsp; ${esc(g.city||'—')} &nbsp;•&nbsp; ${esc(g.ownerEmail||'—')}</div>
           <div class="gym-stats-row">
             <span>👥 ${gymPlayers.length} لاعب</span>
             <span style="color:var(--green)">💰 ${gymRevenue.toLocaleString()} ₪</span>
@@ -1765,14 +1777,14 @@ function renderGyms() {
             ${gymExpiring>0?`<span style="color:var(--orange)">⚠️ ${gymExpiring} تنتهي قريباً</span>`:''}
           </div>
         </div>
-        <button onclick="event.stopPropagation();toggleGym('${g.id}',${g.isActive!==false})"
+        <button onclick="event.stopPropagation();toggleGym('${gid}',${g.isActive!==false})"
           style="padding:4px 12px;border-radius:20px;border:none;font-size:13px;font-weight:800;cursor:pointer;margin-left:8px;background:${g.isActive!==false?'rgba(52,199,89,.15)':'rgba(255,59,48,.15)'};color:${g.isActive!==false?'var(--green)':'var(--red)'}">
           ${g.isActive!==false?'نشط ✓':'موقوف ✗'}
         </button>
       </div>
       <div class="gym-actions">
-        <button class="icon-btn" onclick="event.stopPropagation();openSendMsg('${g.id}')" title="إرسال رسالة" style="color:var(--orange)">🔔</button>
-        <button class="icon-btn edit" onclick="event.stopPropagation();openEditGym('${g.id}')" title="تعديل">✏️</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openSendMsg('${gid}')" title="إرسال رسالة" style="color:var(--orange)">🔔</button>
+        <button class="icon-btn edit" onclick="event.stopPropagation();openEditGym('${gid}')" title="تعديل">✏️</button>
         <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('gym','${g.id}','${esc(g.name||g.id)}')" title="حذف">🗑️</button>
       </div>
     </div>`;
@@ -1816,6 +1828,92 @@ window.exportGymsCSV = function() {
   showToast('✅ تم تصدير الأندية','success');
 };
 
+// ── Excel export: players of a specific gym ──────────────────────────────────
+window.exportGymPlayersExcel = function(gymId) {
+  if(!gymId){ showToast('لم يتم تحديد النادي','error'); return; }
+  if(typeof XLSX === 'undefined'){ showToast('مكتبة Excel لم تُحمَّل بعد، انتظر وأعد المحاولة','error'); return; }
+
+  const gym   = allGyms.find(g => g.id === gymId);
+  const gymName = gym?.name || gymId;
+  const players = allUsers.filter(u => u.gymId === gymId && (u.role||'').toLowerCase() === 'player');
+
+  if(!players.length){ showToast('لا يوجد لاعبون في هذا النادي','error'); return; }
+
+  // ── Header row ──
+  const headers = [
+    'الاسم الكامل','البريد الإلكتروني','رقم الهاتف',
+    'الجنس','تاريخ الميلاد',
+    'الوزن (كغ)','الطول (سم)','نسبة الدهون (%)','الكتلة العضلية (كغ)',
+    'الهدف','المستوى','نمط التدريب',
+    'خطة الاشتراك','مبلغ الاشتراك الكلي (₪)','المدفوع (₪)','المتبقي (₪)','طريقة الدفع',
+    'تاريخ التسجيل','بداية الاشتراك','انتهاء الاشتراك','الحالة',
+    'الكوتش المخصص'
+  ];
+
+  // ── Data rows ──
+  const rows = players.map(u => {
+    const rem    = Number(u.amountRemaining || 0);
+    const paid   = Number(u.amountPaid      || 0);
+    const total  = Number(u.totalAmount     || 0);
+    const subEnd = u.subscriptionEnd?.toDate?.() || (u.subscriptionEnd?.seconds ? new Date(u.subscriptionEnd.seconds*1000) : null);
+    const isActive = subEnd ? subEnd > new Date() : false;
+    return [
+      fullName(u),
+      u.email        || '—',
+      u.phone        || '—',
+      u.gender       || '—',
+      u.dateOfBirth  ? fmtDate(u.dateOfBirth) : '—',
+      u.weight       || '—',
+      u.height       || '—',
+      u.bodyFat      || '—',
+      u.muscleMass   || '—',
+      u.goal         || '—',
+      u.fitnessLevel || '—',
+      u.trainingMode || '—',
+      u.subscriptionPlan || '—',
+      total, paid, rem,
+      u.paymentMethod || '—',
+      fmtDate(u.createdAt),
+      fmtDate(u.subscriptionStart),
+      subEnd ? subEnd.toLocaleDateString('ar-EG') : '—',
+      isActive ? 'نشط' : 'منتهي',
+      u.assignedCoachName || '—',
+    ];
+  });
+
+  // ── Build workbook ──
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // Column widths
+  ws['!cols'] = headers.map((h,i) => ({ wch: [22,28,16,8,14,10,10,12,14,18,14,16,18,16,14,12,16,16,16,16,8,20][i] || 14 }));
+
+  // Style header row (bold + background) — SheetJS CE supports basic cell props
+  headers.forEach((_,c) => {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c})];
+    if(cell){ cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'1E6B3C'}}, alignment:{horizontal:'center'} }; }
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'اللاعبون');
+
+  // Summary sheet
+  const summary = [
+    ['النادي', gymName],
+    ['تاريخ التصدير', new Date().toLocaleDateString('ar-EG')],
+    ['إجمالي اللاعبين', players.length],
+    ['إجمالي الاشتراكات (₪)', players.reduce((s,u)=>s+Number(u.totalAmount||0),0)],
+    ['إجمالي المدفوع (₪)',    players.reduce((s,u)=>s+Number(u.amountPaid||0),0)],
+    ['إجمالي المتبقي (₪)',   players.reduce((s,u)=>s+Number(u.amountRemaining||0),0)],
+    ['لاعبون نشطون',          players.filter(u=>{ const e=u.subscriptionEnd?.toDate?.() || (u.subscriptionEnd?.seconds?new Date(u.subscriptionEnd.seconds*1000):null); return e&&e>new Date(); }).length],
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(summary);
+  ws2['!cols'] = [{wch:22},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'ملخص');
+
+  XLSX.writeFile(wb, `${gymName}_لاعبون_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`✅ تم تصدير ${players.length} لاعب كملف Excel`, 'success');
+};
+
 function confirmAction(msg,onConfirm) {
   document.getElementById('confirm-message').textContent=msg;
   document.getElementById('confirm-modal').classList.add('open');
@@ -1849,8 +1947,11 @@ async function createGym() {
     const password=genPassword();
     const cred=await createUserWithEmailAndPassword(authSec,email,password);
     const uid=cred.user.uid;
-    await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
-    await signOut(authSec);
+    try{
+      await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
+    }finally{
+      await signOut(authSec).catch(()=>{});
+    }
     await setDoc(doc(db,'gyms',gymId),{
       id:gymId,gymCode:gymId,name:gymName,city:gymCity,
       ownerId:uid,ownerEmail:email,createdBy:currentUser.uid,
@@ -1869,7 +1970,8 @@ async function createGym() {
     document.getElementById('s-gym-name').textContent=gymName;
     document.getElementById('s-gym-id').textContent  =gymId;
     document.getElementById('s-email').textContent   =email;
-    document.getElementById('s-pass').textContent    =password;
+    document.getElementById('s-pass').dataset.pass   =password;
+    document.getElementById('s-pass').textContent    ='••••••••••••';
     closeModal('create-modal');
     document.getElementById('success-modal').classList.add('open');
     showToast('✅ تم إنشاء النادي','success');
@@ -1880,14 +1982,27 @@ async function createGym() {
 }
 
 function copyCredentials() {
+  const passEl=document.getElementById('s-pass');
   const text=[
     `اسم النادي: ${document.getElementById('s-gym-name').textContent}`,
     `ID: ${document.getElementById('s-gym-id').textContent}`,
     `إيميل: ${document.getElementById('s-email').textContent}`,
-    `كلمة المرور: ${document.getElementById('s-pass').textContent}`,
+    `كلمة المرور: ${passEl.dataset.pass||passEl.textContent}`,
   ].join('\n');
   navigator.clipboard.writeText(text).then(()=>showToast('✅ تم النسخ','success'));
 }
+window.togglePassVisibility = function() {
+  const el=document.getElementById('s-pass');
+  const btn=document.getElementById('s-pass-toggle');
+  if(el.textContent==='••••••••••••'){
+    el.textContent=el.dataset.pass||'';
+    btn.textContent='🙈 إخفاء';
+    setTimeout(()=>{el.textContent='••••••••••••';btn.textContent='👁 إظهار';},15000);
+  } else {
+    el.textContent='••••••••••••';
+    btn.textContent='👁 إظهار';
+  }
+};
 
 // ── Helpers ──
 function updateGymFilters() {
@@ -1931,7 +2046,9 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function permRow(cols){return `<tr><td colspan="${cols}" class="no-data">🔒 قم بتحديث Firestore Rules</td></tr>`;}
 function genPassword(){
   const c='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
-  return Array.from({length:12},()=>c[Math.floor(Math.random()*c.length)]).join('');
+  const arr=new Uint32Array(12);
+  crypto.getRandomValues(arr);
+  return Array.from(arr,n=>c[n%c.length]).join('');
 }
 function genId(){document.getElementById('f-gym-id').value=String(Date.now()).slice(-6);}
 function clearForm(){
@@ -1950,12 +2067,24 @@ function mapAuthError(c){
     'auth/invalid-credential':'إيميل أو كلمة مرور خاطئة'}[c]||`خطأ: ${c}`;
 }
 
+document.getElementById('login-btn').addEventListener('click', doLogin);
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
 document.querySelectorAll('.modal-overlay').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
 });
 genId();
+document.getElementById('auth-screen').dataset.ready='1';
+</script>
+
+<script>
+// Fallback: if module failed to load, show error
+setTimeout(()=>{
+  if(!document.getElementById('auth-screen').dataset.ready){
+    document.getElementById('auth-error').textContent='خطأ في تحميل التطبيق — تأكد من الاتصال بالإنترنت وأعد تحميل الصفحة';
+    document.getElementById('auth-error').style.display='block';
+  }
+},3000);
 </script>
 </body>
 </html>

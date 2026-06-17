@@ -141,7 +141,8 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return signedIn() && currentUserRole() == 'SuperAdmin';
+      return request.auth != null &&
+             request.auth.token.superAdmin == true;
     }
 
     function userGymId(userId) {
@@ -235,138 +236,173 @@ service cloud.firestore {
       }
     }
 
-    // Users can manage their own profile. Coaches/admins can read users in
-    // their own gym only.
+    // ═══════════════════════════════════════════════════════════════════════════
+    // /users/{userId}
+    //
+    // Role matrix:
+    //   Super Admin  → full read/write/delete on ALL users globally
+    //   Owner/Admin  → full read/write/delete on coaches + players in their gym
+    //   Coach        → full read/write on players in their gym only
+    //                  (cannot touch other coaches or admin/owner docs)
+    //   Player       → own profile only + assigned coach's profile (read) + chat
+    // ═══════════════════════════════════════════════════════════════════════════
     match /users/{userId} {
-      allow read, update, delete: if isSuperAdmin();
-      allow create: if signedIn() &&
-        request.auth.uid == userId &&
-        request.resource.data.email == request.auth.token.email &&
-        request.resource.data.email == 'admin@nexus90.com' &&
-        request.resource.data.role == 'SuperAdmin';
-      // Each user can read their own doc.
+
+      // ── 1. Super Admin ──────────────────────────────────────────────────────
+      allow read, write, delete: if isSuperAdmin();
+
+      // ── 2. Own profile ──────────────────────────────────────────────────────
       allow read: if signedIn() && request.auth.uid == userId;
-      // Only coaches, admins, and owners can read other users in their gym.
-      allow read: if canManageGym() && isSameGym(resource.data.gymId);
+
+      // Self-registration on sign-up (email verified + gym invite check).
       allow create: if signedIn() &&
         request.auth.uid == userId &&
         hasVerifiedEmail() &&
         request.resource.data.email.lower() == authEmailKey() &&
         (!('gymId' in request.resource.data) ||
-          roleMatchesInvite(
-            request.resource.data.gymId,
-            request.resource.data.role
-          ));
-      // Only admins/owners can register new players — coach cannot create accounts.
-      allow create: if canAdminGym() &&
-        request.resource.data.role == 'player' &&
-        request.resource.data.gymId == currentUserGymId();
+          roleMatchesInvite(request.resource.data.gymId, request.resource.data.role));
+
+      // Super Admin bootstrap account (one-time).
+      allow create: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.email == 'admin@nexus90.com' &&
+        request.resource.data.role == 'SuperAdmin';
+
+      // User edits their own profile — cannot change role, gym, or email.
       allow update: if signedIn() &&
         request.auth.uid == userId &&
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['gymId', 'role', 'emailVerified', 'email']);
+
+      // User updates gym/role when joining a new gym via invite.
       allow update: if signedIn() &&
         request.auth.uid == userId &&
         request.resource.data.email == resource.data.email &&
         request.resource.data.emailVerified == resource.data.emailVerified &&
-        roleMatchesInvite(
-          request.resource.data.gymId,
-          request.resource.data.role
-        );
-      // Coaches can update player profiles (metrics, coach notes, etc.) but
-      // only admins/owners can change subscription, role, or status fields.
-      allow update: if canManageGym() &&
-        isSameGym(resource.data.gymId) &&
-        request.resource.data.gymId == resource.data.gymId &&
-        !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['role', 'isActive', 'subscriptionPlan', 'subscriptionEnd',
-                   'totalAmount', 'amountPaid', 'amountRemaining']);
+        roleMatchesInvite(request.resource.data.gymId, request.resource.data.role);
+
+      // ── 3. Owner / Admin — full control over their gym ──────────────────────
+      // Read coaches, players, admins in their gym.
+      allow read: if canAdminGym() && isSameGym(resource.data.gymId);
+
+      // Create player or coach accounts.
+      allow create: if canAdminGym() &&
+        request.resource.data.role in ['player', 'coach'] &&
+        request.resource.data.gymId == currentUserGymId();
+
+      // Full update (subscription, role, status, everything).
       allow update: if canAdminGym() &&
         isSameGym(resource.data.gymId) &&
         request.resource.data.gymId == resource.data.gymId;
 
+      // Delete any member of their gym.
+      allow delete: if canAdminGym() && isSameGym(resource.data.gymId);
+
+      // ── 4. Coach — full access to players in their gym ──────────────────────
+      // Coach can read all users in their gym (players + other coaches visible).
+      allow read: if canManageGym() && isSameGym(resource.data.gymId);
+
+      // Coach has full write access on player documents only.
+      allow create: if canManageGym() &&
+        request.resource.data.role == 'player' &&
+        request.resource.data.gymId == currentUserGymId();
+
+      allow update: if canManageGym() &&
+        isSameGym(resource.data.gymId) &&
+        resource.data.role == 'player' &&
+        request.resource.data.gymId == resource.data.gymId;
+
+      allow delete: if canManageGym() &&
+        isSameGym(resource.data.gymId) &&
+        resource.data.role == 'player';
+
+      // ── 5. Player reads their assigned coach's profile ──────────────────────
+      allow read: if signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedCoachUid == userId;
+
+      // ── Sub-collections ─────────────────────────────────────────────────────
+
       match /metrics/{metricId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
-        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
-        allow create, update: if canManageGym() &&
-          userGymIdAfter(userId) == currentUserGymId();
+        // Coach & admin: full access to player metrics.
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /daily_nutrition/{dateStr} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
-        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /progressPhotos/{photoId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
+        // Coach can view and manage player progress photos.
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /workoutHistory/{sessionId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
-        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /routines/{routineId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
-        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /exerciseHistory/{historyId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /appData/{documentId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
-        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
       match /notifications/{notificationId} {
         allow read, write: if isSuperAdmin();
         allow read, update, delete: if signedIn() && request.auth.uid == userId;
-        // Rate-limited: coaches can send max 1 notification per 5 seconds to
-        // any single player (prevents notification spam / flooding).
-        // Client updates users/{userId}.lastNotifAt = serverTimestamp() atomically.
+        // Coach/admin sends notifications — rate-limited to 1 per 5 s per player.
         allow create: if canManageGym() &&
           userGymId(userId) == currentUserGymId() &&
           request.resource.data.senderId == request.auth.uid &&
-          notifCooldownPassed(userId, 5) &&     // 1 notif per 5 s per recipient
-          withinSizeLimit(2000);                // max ~2 KB per notification
-        allow create: if chatNotificationAllowed(userId) &&
+          notifCooldownPassed(userId, 5) &&
           withinSizeLimit(2000);
+        allow create: if chatNotificationAllowed(userId) && withinSizeLimit(2000);
       }
 
       match /trophyAwards/{awardId} {
         allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
-        allow write: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow read, write: if canManageGym() && userGymId(userId) == currentUserGymId();
       }
 
-      // Payment history — written by coaches/admins, readable by the player.
+      // Payments — player can read their own; coach/admin can read + write.
       match /payments/{paymentId} {
         allow read, write: if isSuperAdmin();
         allow read: if signedIn() && request.auth.uid == userId;
-        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
-        allow write: if canManageGym() &&
-          (
-            userGymId(userId) == currentUserGymId() ||
-            userGymIdAfter(userId) == currentUserGymId()
-          );
+        allow read, write: if canManageGym() &&
+          (userGymId(userId) == currentUserGymId() ||
+           userGymIdAfter(userId) == currentUserGymId());
       }
 
-      // Saved workout templates — private to the user.
+      // Workout templates — private to the user only.
       match /templates/{templateId} {
+        allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
       }
 
-      // AI pose / form feedback stored per exercise session — private.
+      // AI pose / form feedback — private to the user only.
       match /exercise_feedback/{feedbackId} {
+        allow read, write: if isSuperAdmin();
         allow read, write: if signedIn() && request.auth.uid == userId;
       }
     }
