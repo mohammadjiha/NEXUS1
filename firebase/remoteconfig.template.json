@@ -1,0 +1,294 @@
+{
+  "conditions": [],
+  "parameters": {
+    "app_title": {
+      "defaultValue": {
+        "value": "NEXUS"
+      },
+      "description": "Application title."
+    },
+    "onboarding_brand_title": {
+      "defaultValue": {
+        "value": "NEXUS"
+      },
+      "description": "Brand title on the onboarding splash screen."
+    },
+    "onboarding_brand_subtitle": {
+      "defaultValue": {
+        "value": "Your intelligent gym & fitness platform"
+      },
+      "description": "Brand subtitle on the onboarding splash screen."
+    },
+    "onboarding_pill_ai_coach": {
+      "defaultValue": {
+        "value": "AI Coach"
+      },
+      "description": "Onboarding feature pill."
+    },
+    "onboarding_pill_gym_mgmt": {
+      "defaultValue": {
+        "value": "Gym Mgmt"
+      },
+      "description": "Onboarding feature pill."
+    },
+    "onboarding_pill_analytics": {
+      "defaultValue": {
+        "value": "Analytics"
+      },
+      "description": "Onboarding feature pill."
+    },
+    "button_get_started": {
+      "defaultValue": {
+        "value": "Get Started"
+      },
+      "description": "Primary onboarding CTA."
+    },
+    "auth_already_have_account": {
+      "defaultValue": {
+        "value": "Already have an account?"
+      },
+      "description": "Existing account prompt."
+    },
+    "button_sign_in": {
+      "defaultValue": {
+        "value": "Sign In"
+      },
+      "description": "Sign-in button label."
+    },
+    "onboarding_step_1": {
+      "defaultValue": {
+        "value": "STEP 1 OF 3"
+      },
+      "description": "Gym ID step label."
+    },
+    "onboarding_title_1": {
+      "defaultValue": {
+        "value": "Enter your Gym ID"
+      },
+      "description": "Gym ID screen title."
+    },
+    "onboarding_subtitle_1": {
+      "defaultValue": {
+        "value": "If your gym uses NEXUS, enter the ID provided by your gym manager."
+      },
+      "description": "Gym ID screen subtitle."
+    },
+    "gym_id_label": {
+      "defaultValue": {
+        "value": "GYM ID"
+      },
+      "description": "Gym ID input label."
+    },
+    "gym_id_hint": {
+      "defaultValue": {
+        "value": "e.g. GYM-2847"
+      },
+      "description": "Gym ID input hint."
+    },
+    "separator_or": {
+      "defaultValue": {
+        "value": "or"
+      },
+      "description": "Separator text."
+    },
+    "button_scan_qr": {
+      "defaultValue": {
+        "value": "Scan QR Code"
+      },
+      "description": "QR scanner button label."
+    },
+    "guest_training_title": {
+      "defaultValue": {
+        "value": "Train without a gym"
+      },
+      "description": "Guest training card title."
+    },
+    "guest_training_subtitle": {
+      "defaultValue": {
+        "value": "Use AI Coach independently"
+      },
+      "description": "Guest training card subtitle."
+    },
+    "button_continue": {
+      "defaultValue": {
+        "value": "Continue ->"
+      },
+      "description": "Continue button label."
+    },
+    "onboarding_step_2": {
+      "defaultValue": {
+        "value": "STEP 2 OF 3"
+      },
+      "description": "Role selection step label."
+    },
+    "onboarding_title_2": {
+      "defaultValue": {
+        "value": "What's your role?"
+      },
+      "description": "Role selection title."
+    },
+    "onboarding_subtitle_2": {
+      "defaultValue": {
+        "value": "This helps us personalize your NEXUS experience from day one."
+      },
+      "description": "Role selection subtitle."
+    },
+    "role_player_title": {
+      "defaultValue": {
+        "value": "Player / Athlete"
+      },
+      "description": "Player role title."
+    },
+    "role_player_subtitle": {
+      "defaultValue": {
+        "value": "Train, track progress, follow plans"
+      },
+      "description": "Player role subtitle."
+    },
+    "role_coach_title": {
+      "defaultValue": {
+        "value": "Coach / Trainer"
+      },
+      "description": "Coach role title."
+    },
+    "role_coach_subtitle": {
+      "defaultValue": {
+        "value": "Manage athletes, create programs"
+      },
+      "description": "Coach role subtitle."
+    },
+    "role_admin_title": {
+      "defaultValue": {
+        "value": "Gym Owner / Manager"
+      },
+      "description": "Gym owner role title."
+    },
+    "role_admin_subtitle": {
+      "defaultValue": {
+        "value": "Admin dashboard, full control"
+      },
+      "description": "Gym owner role subtitle."
+    },
+    "login_create_account_title": {
+      "defaultValue": {
+        "value": "Create your account"
+      },
+      "description": "Sign-up title."
+    },
+    "login_sign_in_title": {
+      "defaultValue": {
+        "value": "Sign in to your account"
+      },
+      "description": "Sign-in title."
+    },
+    "email_label": {
+      "defaultValue": {
+        "value": "EMAIL"
+      },
+      "description": "Email field label."
+    },
+    "email_hint": {
+      "defaultValue": {
+        "value": "you@example.com"
+      },
+      "description": "Email field hint."
+    },
+    "password_label": {
+      "defaultValue": {
+        "value": "PASSWORD"
+      },
+      "description": "Password field label."
+    },
+    "password_hint": {
+      "defaultValue": {
+        "value": "********"
+      },
+      "description": "Password field hint."
+    },
+    "validation_email_required": {
+      "defaultValue": {
+        "value": "Enter your email"
+      },
+      "description": "Required email validation text."
+    },
+    "validation_email_invalid": {
+      "defaultValue": {
+        "value": "Enter a valid email"
+      },
+      "description": "Invalid email validation text."
+    },
+    "validation_password_required": {
+      "defaultValue": {
+        "value": "Enter your password"
+      },
+      "description": "Required password validation text."
+    },
+    "validation_password_min": {
+      "defaultValue": {
+        "value": "Minimum 6 characters"
+      },
+      "description": "Password length validation text."
+    },
+    "button_create_account": {
+      "defaultValue": {
+        "value": "Create Account"
+      },
+      "description": "Create account button label."
+    },
+    "auth_toggle_to_sign_in": {
+      "defaultValue": {
+        "value": "Already have an account? Sign In"
+      },
+      "description": "Switch from sign-up to sign-in."
+    },
+    "auth_toggle_to_sign_up": {
+      "defaultValue": {
+        "value": "Don't have an account? Sign Up"
+      },
+      "description": "Switch from sign-in to sign-up."
+    },
+    "back_to_onboarding": {
+      "defaultValue": {
+        "value": "Back to onboarding"
+      },
+      "description": "Back link label."
+    },
+    "dashboard_title": {
+      "defaultValue": {
+        "value": "Dashboard"
+      },
+      "description": "Dashboard app bar title."
+    },
+    "dashboard_greeting_player": {
+      "defaultValue": {
+        "value": "Hello, Player!"
+      },
+      "description": "Dashboard greeting."
+    },
+    "dashboard_workout_title": {
+      "defaultValue": {
+        "value": "Today's Workout"
+      },
+      "description": "Workout card title."
+    },
+    "dashboard_workout_subtitle": {
+      "defaultValue": {
+        "value": "Chest & Triceps - 45 mins"
+      },
+      "description": "Workout card subtitle."
+    },
+    "dashboard_nutrition_title": {
+      "defaultValue": {
+        "value": "Nutrition Plan"
+      },
+      "description": "Nutrition card title."
+    },
+    "dashboard_nutrition_subtitle": {
+      "defaultValue": {
+        "value": "2500 kcal - 180g Protein"
+      },
+      "description": "Nutrition card subtitle."
+    }
+  },
+  "parameterGroups": {}
+}

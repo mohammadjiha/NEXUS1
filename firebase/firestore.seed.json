@@ -1,0 +1,192 @@
+{
+  "appSettings": {
+    "global": {
+      "appName": "NEXUS",
+      "defaultLanguage": "en",
+      "supportedLanguages": ["en", "ar"],
+      "minimumSupportedVersion": "1.0.0",
+      "maintenanceMode": false,
+      "features": {
+        "gymIdOnboarding": true,
+        "qrGymJoin": true,
+        "independentTraining": true,
+        "aiCoach": true,
+        "nutritionPlans": true,
+        "analytics": true
+      },
+      "authProviders": {
+        "emailPassword": true,
+        "google": true,
+        "apple": true
+      }
+    },
+    "onboarding": {
+      "steps": [
+        {
+          "id": "brand",
+          "order": 0,
+          "type": "brandSplash",
+          "enabled": true
+        },
+        {
+          "id": "gymId",
+          "order": 1,
+          "type": "gymLookup",
+          "enabled": true,
+          "allowSkip": true,
+          "allowQrScan": true,
+          "sampleGymId": "GYM-2847"
+        },
+        {
+          "id": "role",
+          "order": 2,
+          "type": "accountTypeSelection",
+          "enabled": true,
+          "allowedAccountTypes": ["player", "coach", "owner", "independent"]
+        }
+      ]
+    },
+    "dashboard": {
+      "cards": [
+        {
+          "id": "todayWorkout",
+          "order": 0,
+          "icon": "directions_run",
+          "accentColor": "#E53935",
+          "enabledForRoles": ["player"]
+        },
+        {
+          "id": "nutritionPlan",
+          "order": 1,
+          "icon": "restaurant_menu",
+          "accentColor": "#69F0AE",
+          "enabledForRoles": ["player"]
+        }
+      ]
+    }
+  },
+  "accountTypes": {
+    "player": {
+      "key": "player",
+      "title": "Player / Athlete",
+      "description": "Train, track progress, follow plans",
+      "dashboardRoute": "/dashboard",
+      "canOwnGym": false,
+      "permissions": [
+        "workouts.read",
+        "nutrition.read",
+        "progress.write",
+        "aiCoach.use"
+      ],
+      "onboardingOrder": 0,
+      "enabled": true
+    },
+    "coach": {
+      "key": "coach",
+      "title": "Coach / Trainer",
+      "description": "Manage athletes, create programs",
+      "dashboardRoute": "/dashboard",
+      "canOwnGym": false,
+      "permissions": [
+        "clients.read",
+        "clients.write",
+        "programs.read",
+        "programs.write",
+        "analytics.read"
+      ],
+      "onboardingOrder": 1,
+      "enabled": true
+    },
+    "owner": {
+      "key": "owner",
+      "title": "Gym Owner / Manager",
+      "description": "Admin dashboard, full control",
+      "dashboardRoute": "/dashboard",
+      "canOwnGym": true,
+      "permissions": [
+        "gym.read",
+        "gym.write",
+        "members.read",
+        "members.write",
+        "staff.manage",
+        "billing.read",
+        "analytics.read"
+      ],
+      "onboardingOrder": 2,
+      "enabled": true
+    },
+    "independent": {
+      "key": "independent",
+      "title": "Independent / AI Only",
+      "description": "Train solo, no gym needed",
+      "dashboardRoute": "/dashboard",
+      "canOwnGym": false,
+      "permissions": [
+        "workouts.read",
+        "nutrition.read",
+        "progress.write",
+        "aiCoach.use"
+      ],
+      "onboardingOrder": 3,
+      "enabled": true
+    }
+  },
+  "gyms": {
+    "GYM-2847": {
+      "gymId": "GYM-2847",
+      "name": "NEXUS Performance Club",
+      "status": "active",
+      "city": "Amman",
+      "country": "Jordan",
+      "timezone": "Asia/Amman",
+      "contact": {
+        "phone": "+962000000000",
+        "email": "hello@nexus-gym.example"
+      },
+      "subscription": {
+        "plan": "pro",
+        "memberLimit": 500,
+        "coachLimit": 25,
+        "billingStatus": "trial"
+      },
+      "features": {
+        "qrCheckIn": true,
+        "aiCoach": true,
+        "nutritionPlans": true,
+        "classScheduling": true,
+        "memberAnalytics": true
+      },
+      "allowedAccountTypes": ["player", "coach", "owner"],
+      "createdBy": "seed",
+      "updatedBy": "seed"
+    },
+    "GYM-DEMO": {
+      "gymId": "GYM-DEMO",
+      "name": "Demo Training Studio",
+      "status": "active",
+      "city": "Amman",
+      "country": "Jordan",
+      "timezone": "Asia/Amman",
+      "contact": {
+        "phone": "+962000000001",
+        "email": "demo@nexus-gym.example"
+      },
+      "subscription": {
+        "plan": "starter",
+        "memberLimit": 100,
+        "coachLimit": 5,
+        "billingStatus": "active"
+      },
+      "features": {
+        "qrCheckIn": true,
+        "aiCoach": true,
+        "nutritionPlans": false,
+        "classScheduling": false,
+        "memberAnalytics": true
+      },
+      "allowedAccountTypes": ["player", "coach"],
+      "createdBy": "seed",
+      "updatedBy": "seed"
+    }
+  }
+}

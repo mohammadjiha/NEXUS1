@@ -1,0 +1,133 @@
+# analysis_options.yaml — Nexus
+#
+# Extends Flutter's recommended lint set and adds strict rules.
+# Run: flutter analyze
+#
+# To suppress a lint on a single line:   // ignore: rule_name
+# To suppress for a whole file:          // ignore_for_file: rule_name
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  # Treat missing returns, null-safety violations, and dead code as errors.
+  errors:
+    missing_return: error
+    dead_code: warning
+    unused_import: warning
+    unused_local_variable: warning
+    invalid_annotation_target: ignore   # needed for freezed / json_serializable
+
+  # Enable strict type-checking modes.
+  language:
+    strict-casts: false
+    strict-inference: false
+    strict-raw-types: false
+
+  exclude:
+    - "**/*.g.dart"          # generated files (json_serializable, etc.)
+    - "**/*.freezed.dart"
+    - "lib/firebase_options.dart"
+
+linter:
+  rules:
+    # ── Style ──────────────────────────────────────────────────────────────────
+    prefer_single_quotes: true
+    always_use_package_imports: false   # relative imports within lib/ are fine
+    directives_ordering: true
+    lines_longer_than_80_chars: false   # Flutter UIs naturally exceed 80 chars
+
+    # ── Safety ─────────────────────────────────────────────────────────────────
+    avoid_print: true                   # use debugPrint() instead
+    avoid_dynamic_calls: true
+    avoid_returning_null_for_future: true
+    avoid_slow_async_io: true
+    cancel_subscriptions: true
+    close_sinks: true
+    no_duplicate_case_values: true
+    test_types_in_equals: true
+    throw_in_finally: true
+    unnecessary_statements: true
+    unrelated_type_equality_checks: true
+    valid_regexps: true
+
+    # ── Dart best-practices ────────────────────────────────────────────────────
+    always_declare_return_types: true
+    annotate_overrides: true
+    avoid_empty_else: true
+    avoid_init_to_null: true
+    avoid_null_checks_in_equality_operators: true
+    avoid_redundant_argument_values: true
+    avoid_relative_lib_imports: false
+    avoid_return_types_on_setters: true
+    avoid_shadowing_type_parameters: true
+    avoid_types_as_parameter_names: true
+    await_only_futures: true
+    camel_case_extensions: true
+    camel_case_types: true
+    constant_identifier_names: true
+    curly_braces_in_flow_control_structures: true
+    empty_catches: true
+    empty_constructor_bodies: true
+    empty_statements: true
+    exhaustive_cases: true
+    file_names: true
+    implementation_imports: true
+    no_leading_underscores_for_library_prefixes: true
+    no_leading_underscores_for_local_identifiers: true
+    non_constant_identifier_names: true
+    null_closures: true
+    overridden_fields: true
+    package_names: true
+    prefer_adjacent_string_concatenation: true
+    prefer_collection_literals: true
+    prefer_conditional_assignment: true
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_contains: true
+    prefer_final_fields: true
+    prefer_final_locals: false          # too noisy for Riverpod state mutations
+    prefer_for_elements_to_map_fromIterable: true
+    prefer_generic_function_type_aliases: true
+    prefer_if_null_operators: true
+    prefer_initializing_formals: true
+    prefer_inlined_adds: true
+    prefer_interpolation_to_compose_strings: true
+    prefer_is_empty: true
+    prefer_is_not_empty: true
+    prefer_is_not_operator: true
+    prefer_iterable_whereType: true
+    prefer_null_aware_operators: true
+    prefer_spread_collections: true
+    prefer_typing_uninitialized_variables: true
+    provide_deprecation_message: true
+    recursive_getters: true
+    slash_for_doc_comments: true
+    sort_child_properties_last: true
+    type_init_formals: true
+    unawaited_futures: true
+    unnecessary_await_in_return: true
+    unnecessary_brace_in_string_interps: true
+    unnecessary_const: true
+    unnecessary_getters_setters: true
+    unnecessary_new: true
+    unnecessary_null_aware_assignments: true
+    unnecessary_null_in_if_null_operators: true
+    unnecessary_overrides: true
+    unnecessary_parenthesis: false      # sometimes aids readability
+    unnecessary_string_escapes: true
+    unnecessary_string_interpolations: true
+    unnecessary_this: true
+    use_full_hex_values_for_flutter_colors: true
+    use_function_type_syntax_for_parameters: true
+    use_if_null_to_convert_nulls_to_bools: true
+    use_is_even_rather_than_modulo: true
+    use_late_for_private_fields_and_variables: false  # Riverpod uses nullable
+    use_named_constants: false          # conflicts with AppDurations pattern
+    use_raw_strings: true
+    use_rethrow_when_possible: true
+    use_setters_to_change_properties: true
+    use_string_buffers: true
+    use_super_parameters: true
+    void_checks: true

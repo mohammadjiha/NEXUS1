@@ -1,0 +1,68 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: read the caller's Firestore user document to check their role.
+    // request.auth.token.role does NOT work unless you set Firebase Custom Claims
+    // via the Admin SDK. Using firestore.get() is the correct approach.
+    function callerRole() {
+      return firestore.get(
+        /databases/(default)/documents/users/$(request.auth.uid)
+      ).data.get('role', '');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && callerRole() == 'SuperAdmin';
+    }
+
+    function isGymManager() {
+      return isSignedIn() && callerRole() in ['owner', 'admin', 'coach', 'SuperAdmin'];
+    }
+
+    function callerGymId() {
+      return firestore.get(
+        /databases/(default)/documents/users/$(request.auth.uid)
+      ).data.get('gymId', '');
+    }
+
+    function isSameGym(gymId) {
+      return isSignedIn() && callerGymId() == gymId;
+    }
+
+    // Public assets (exercise images, videos, etc.): anyone can read.
+    // Only SuperAdmin can write — checked via Firestore role, not Auth token.
+    match /assets/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Gym-scoped assets (e.g. gym logos): gym managers of that gym can write.
+    match /gyms/{gymId}/community_posts/{allPaths=**} {
+      allow read: if isSameGym(gymId);
+      allow write: if isSameGym(gymId)
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    match /gyms/{gymId}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isGymManager() &&
+        firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.get('gymId', '') == gymId;
+    }
+
+    // User uploads (profile pictures): owner only, max 5 MB, images only.
+    match /users/{userId}/{allPaths=**} {
+      allow read:  if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn()
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

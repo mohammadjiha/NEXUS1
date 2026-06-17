@@ -1,0 +1,8 @@
+void _showRenewSheet(UserModel player) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => _RenewSheet(player: player),
+      );
+    }

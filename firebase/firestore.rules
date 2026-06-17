@@ -1,0 +1,490 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // ── Rate-limiting helpers ────────────────────────────────────────────────
+    //
+    // Strategy: compare request.time (server-side, tamper-proof) against a
+    // `lastWriteAt` / `lastMessageAt` / `lastPostAt` timestamp stored in a
+    // parent or sibling document that is updated atomically with every write.
+    //
+    // Client code must include FieldValue.serverTimestamp() in every write for
+    // the guarded fields; the rules then enforce the minimum gap.
+
+    /// True if the chat room's last message was written more than [secs] seconds
+    /// ago (or if no previous message exists). Guards /chats/{id}/messages.
+    function chatMessageAllowed(chatId, secs) {
+      let chatDoc = get(/databases/$(database)/documents/chats/$(chatId)).data;
+      return !exists(/databases/$(database)/documents/chats/$(chatId)) ||
+             !('lastMessageAt' in chatDoc) ||
+             chatDoc.lastMessageAt == null ||
+             request.time > chatDoc.lastMessageAt + duration.value(secs, 's');
+    }
+
+    function chatParticipant(chatId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/chats/$(chatId)) &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+
+    function chatParticipantAfter(chatId) {
+      return signedIn() &&
+        request.auth.uid in
+          getAfter(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+
+    function chatNotificationAllowed(userId) {
+      return signedIn() &&
+        request.resource.data.type == 'chat' &&
+        request.resource.data.chatId is string &&
+        request.resource.data.senderId == request.auth.uid &&
+        request.auth.uid in
+          getAfter(/databases/$(database)/documents/chats/$(request.resource.data.chatId)).data.participants &&
+        userId in
+          getAfter(/databases/$(database)/documents/chats/$(request.resource.data.chatId)).data.participants;
+    }
+
+    /// True if the user's last community post was more than [secs] seconds ago.
+    /// Requires users/{uid}.lastPostAt to be updated on every post create.
+    function postCooldownPassed(uid, secs) {
+      let userData = get(/databases/$(database)/documents/users/$(uid)).data;
+      return !('lastPostAt' in userData) ||
+             userData.lastPostAt == null ||
+             request.time > userData.lastPostAt + duration.value(secs, 's');
+    }
+
+    /// True if the user's last notification write was more than [secs] ago.
+    /// Guards coach → player notification spam.
+    function notifCooldownPassed(targetUid, secs) {
+      let userData = get(/databases/$(database)/documents/users/$(targetUid)).data;
+      return !('lastNotifAt' in userData) ||
+             userData.lastNotifAt == null ||
+             request.time > userData.lastNotifAt + duration.value(secs, 's');
+    }
+
+    /// True if the authenticated user is not creating more than [maxSize] bytes
+    /// of data (rough guard against document-size abuse).
+    function withinSizeLimit(maxSize) {
+      return request.resource.data.size() <= maxSize;
+    }
+
+    function currentUserGymId() {
+      return currentUser().gymId;
+    }
+
+    function currentUserRole() {
+      return currentUser().role;
+    }
+
+    function hasVerifiedEmail() {
+      return signedIn() &&
+        request.auth.token.email is string &&
+        request.auth.token.email_verified == true;
+    }
+
+    function authEmailKey() {
+      return request.auth.token.email.lower();
+    }
+
+    function isInvitedToGym(gymId) {
+      return hasVerifiedEmail() &&
+        gymId is string &&
+        exists(/databases/$(database)/documents/gyms/$(gymId)/memberEmails/$(authEmailKey())) &&
+        (!('status' in get(/databases/$(database)/documents/gyms/$(gymId)/memberEmails/$(authEmailKey())).data) ||
+          get(/databases/$(database)/documents/gyms/$(gymId)/memberEmails/$(authEmailKey())).data.status == 'active');
+    }
+
+    function inviteRole(gymId) {
+      return get(/databases/$(database)/documents/gyms/$(gymId)/memberEmails/$(authEmailKey())).data.role;
+    }
+
+    function roleMatchesInvite(gymId, role) {
+      return isInvitedToGym(gymId) &&
+        (!('role' in get(/databases/$(database)/documents/gyms/$(gymId)/memberEmails/$(authEmailKey())).data) ||
+          inviteRole(gymId) == role);
+    }
+
+    function isSameGym(gymId) {
+      return signedIn() && gymId is string && gymId == currentUserGymId();
+    }
+
+    function canCreateInOwnGym(gymId) {
+      return signedIn() &&
+        gymId is string &&
+        gymId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.gymId;
+    }
+
+    // Read + lightweight write (notifications, metrics, payments) — includes coach.
+    function canManageGym() {
+      return signedIn() &&
+        (currentUserRole() == 'owner' ||
+         currentUserRole() == 'admin' ||
+         currentUserRole() == 'coach' ||
+         currentUserRole() == 'SuperAdmin');
+    }
+
+    // Sensitive write operations (gym settings, plans, expenses, invite list,
+    // member management) — coach excluded intentionally.
+    function canAdminGym() {
+      return signedIn() &&
+        (currentUserRole() == 'owner' ||
+         currentUserRole() == 'admin' ||
+         currentUserRole() == 'SuperAdmin');
+    }
+
+    function isSuperAdmin() {
+      return signedIn() && currentUserRole() == 'SuperAdmin';
+    }
+
+    function userGymId(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.gymId;
+    }
+
+    function userGymIdAfter(userId) {
+      return getAfter(/databases/$(database)/documents/users/$(userId)).data.gymId;
+    }
+
+    match /foods/{foodId} {
+      allow read: if true;
+      allow write: if canManageGym();
+    }
+
+    match /exercises/{exerciseId} {
+      allow read: if true;
+      allow write: if canManageGym();
+    }
+
+    match /diet_templates/{templateId} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+
+    match /accountRecovery/{phoneKey} {
+      allow read: if signedIn() &&
+        request.auth.token.phone_number is string &&
+        resource.data.phone == request.auth.token.phone_number;
+      allow write: if canManageGym();
+    }
+
+    // Gyms: the onboarding flow looks up a gym by gymCode — the user must be
+    // signed in (even anonymously) before the app reaches that screen, so
+    // requiring signedIn() here is safe and doesn't break registration.
+    // Sensitive sub-collections (memberEmails, members) have their own rules.
+    match /gyms/{gymId} {
+      allow get:  if signedIn();
+      allow list: if signedIn();
+      allow read, write: if isSuperAdmin();
+      // Only owner / admin can edit gym settings — coach excluded.
+      allow write: if canAdminGym() && gymId == currentUserGymId();
+
+      // Private allow-list: an email must exist here before it can join this gym.
+      // Doc id is the normalized email, for example player@example.com.
+      match /memberEmails/{email} {
+        allow read: if hasVerifiedEmail() && email == authEmailKey();
+        // Coaches can read the invite list but cannot add/remove invites.
+        allow read: if canManageGym() && gymId == currentUserGymId();
+        allow write: if canAdminGym() && gymId == currentUserGymId();
+      }
+
+      // Broadcast notifications sent by the gym admin — history log.
+      match /admin_notifications/{notifId} {
+        allow read, write: if isSuperAdmin();
+        allow read: if canManageGym() && gymId == currentUserGymId();
+        // Only admins/owners broadcast to all members — coach excluded.
+        allow write: if canAdminGym() && gymId == currentUserGymId();
+      }
+
+      // Messages sent from Super Admin to this gym owner.
+      match /super_admin_messages/{msgId} {
+        allow read, write: if isSuperAdmin();
+        allow read, update: if canAdminGym() && gymId == currentUserGymId();
+      }
+
+      // Check-in records — coaches can check members in/out.
+      match /checkins/{checkinId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if canManageGym() && gymId == currentUserGymId();
+      }
+
+      // Subscription plans — only admin/owner can create or modify plans.
+      match /subscriptionPlans/{planId} {
+        allow read, write: if isSuperAdmin();
+        allow read: if signedIn() && gymId == currentUserGymId();
+        allow write: if canAdminGym() && gymId == currentUserGymId();
+      }
+
+      // Actual linked gym members. A user can create their own member link only
+      // after email verification and only if their email is invited to this gym.
+      match /members/{userId} {
+        allow read: if isSameGym(gymId);
+        allow create, update: if signedIn() &&
+          request.auth.uid == userId &&
+          request.resource.data.gymId == gymId &&
+          request.resource.data.email == authEmailKey() &&
+          roleMatchesInvite(gymId, request.resource.data.role);
+        // Only admin/owner can manage member records (suspend, role change, etc.)
+        allow write: if canAdminGym() && gymId == currentUserGymId();
+      }
+    }
+
+    // Users can manage their own profile. Coaches/admins can read users in
+    // their own gym only.
+    match /users/{userId} {
+      allow read, update, delete: if isSuperAdmin();
+      allow create: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.email == 'admin@nexus90.com' &&
+        request.resource.data.role == 'SuperAdmin';
+      // Each user can read their own doc.
+      allow read: if signedIn() && request.auth.uid == userId;
+      // Only coaches, admins, and owners can read other users in their gym.
+      allow read: if canManageGym() && isSameGym(resource.data.gymId);
+      allow create: if signedIn() &&
+        request.auth.uid == userId &&
+        hasVerifiedEmail() &&
+        request.resource.data.email.lower() == authEmailKey() &&
+        (!('gymId' in request.resource.data) ||
+          roleMatchesInvite(
+            request.resource.data.gymId,
+            request.resource.data.role
+          ));
+      // Only admins/owners can register new players — coach cannot create accounts.
+      allow create: if canAdminGym() &&
+        request.resource.data.role == 'player' &&
+        request.resource.data.gymId == currentUserGymId();
+      allow update: if signedIn() &&
+        request.auth.uid == userId &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['gymId', 'role', 'emailVerified', 'email']);
+      allow update: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.emailVerified == resource.data.emailVerified &&
+        roleMatchesInvite(
+          request.resource.data.gymId,
+          request.resource.data.role
+        );
+      // Coaches can update player profiles (metrics, coach notes, etc.) but
+      // only admins/owners can change subscription, role, or status fields.
+      allow update: if canManageGym() &&
+        isSameGym(resource.data.gymId) &&
+        request.resource.data.gymId == resource.data.gymId &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'isActive', 'subscriptionPlan', 'subscriptionEnd',
+                   'totalAmount', 'amountPaid', 'amountRemaining']);
+      allow update: if canAdminGym() &&
+        isSameGym(resource.data.gymId) &&
+        request.resource.data.gymId == resource.data.gymId;
+
+      match /metrics/{metricId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow create, update: if canManageGym() &&
+          userGymIdAfter(userId) == currentUserGymId();
+      }
+
+      match /daily_nutrition/{dateStr} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+      }
+
+      match /progressPhotos/{photoId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /workoutHistory/{sessionId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+      }
+
+      match /routines/{routineId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+      }
+
+      match /exerciseHistory/{historyId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /appData/{documentId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+      }
+
+      match /notifications/{notificationId} {
+        allow read, write: if isSuperAdmin();
+        allow read, update, delete: if signedIn() && request.auth.uid == userId;
+        // Rate-limited: coaches can send max 1 notification per 5 seconds to
+        // any single player (prevents notification spam / flooding).
+        // Client updates users/{userId}.lastNotifAt = serverTimestamp() atomically.
+        allow create: if canManageGym() &&
+          userGymId(userId) == currentUserGymId() &&
+          request.resource.data.senderId == request.auth.uid &&
+          notifCooldownPassed(userId, 5) &&     // 1 notif per 5 s per recipient
+          withinSizeLimit(2000);                // max ~2 KB per notification
+        allow create: if chatNotificationAllowed(userId) &&
+          withinSizeLimit(2000);
+      }
+
+      match /trophyAwards/{awardId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow write: if canManageGym() && userGymId(userId) == currentUserGymId();
+      }
+
+      // Payment history — written by coaches/admins, readable by the player.
+      match /payments/{paymentId} {
+        allow read, write: if isSuperAdmin();
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow read: if canManageGym() && userGymId(userId) == currentUserGymId();
+        allow write: if canManageGym() &&
+          (
+            userGymId(userId) == currentUserGymId() ||
+            userGymIdAfter(userId) == currentUserGymId()
+          );
+      }
+
+      // Saved workout templates — private to the user.
+      match /templates/{templateId} {
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
+
+      // AI pose / form feedback stored per exercise session — private.
+      match /exercise_feedback/{feedbackId} {
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /communityPosts/{postId} {
+      allow read, write: if isSuperAdmin();
+      allow read: if isSameGym(resource.data.gymId);
+      // Rate-limited: max 1 post per 60 seconds per user.
+      // Client must update users/{uid}.lastPostAt = serverTimestamp() atomically.
+      allow create: if canCreateInOwnGym(request.resource.data.gymId) &&
+        request.resource.data.userId == request.auth.uid &&
+        postCooldownPassed(request.auth.uid, 60) &&   // 1 post / 60 s
+        withinSizeLimit(10000);                        // max ~10 KB per post
+      allow update: if isSameGym(resource.data.gymId) &&
+        request.resource.data.gymId == resource.data.gymId &&
+        (
+          (
+            resource.data.userId == request.auth.uid &&
+            !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['gymId', 'userId', 'createdAt'])
+          ) ||
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['likedBy', 'likesCount', 'commentsCount'])
+        );
+      allow delete: if isSameGym(resource.data.gymId) &&
+        (resource.data.userId == request.auth.uid || canManageGym());
+
+      match /comments/{commentId} {
+        allow read, write: if isSuperAdmin();
+        allow read: if isSameGym(resource.data.gymId);
+        allow create: if canCreateInOwnGym(request.resource.data.gymId) &&
+          request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isSameGym(resource.data.gymId) &&
+          (resource.data.userId == request.auth.uid || canManageGym());
+      }
+    }
+
+    match /challenges/{challengeId} {
+      allow read, write: if isSuperAdmin();
+      allow read: if isSameGym(resource.data.gymId);
+      allow create: if canManageGym() &&
+        canCreateInOwnGym(request.resource.data.gymId) &&
+        request.resource.data.createdByUid == request.auth.uid;
+      allow update, delete: if canManageGym() && isSameGym(resource.data.gymId);
+    }
+
+    match /{path=**}/payments/{paymentId} {
+      allow read, write: if isSuperAdmin();
+      // Allow gym admins/owners to read their own gym's payments via
+      // collectionGroup query — the payment doc must carry gymId for this rule
+      // to fire. Payments without gymId (legacy) are invisible to this rule
+      // and still accessible via the /users/{uid}/payments/{id} path above.
+      allow read: if canManageGym() &&
+        resource.data.gymId is string &&
+        resource.data.gymId == currentUserGymId();
+    }
+
+    match /chats/{chatId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
+      allow update: if signedIn() &&
+        (
+          request.auth.uid in resource.data.participants ||
+          request.auth.uid in request.resource.data.participants
+        );
+
+      match /messages/{messageId} {
+        // Only participants of the parent chat room can read messages.
+        allow read: if chatParticipant(chatId);
+
+        // Sender must be a participant, must be the author, AND must not exceed
+        // 1 message per second (rate-limited via chatDoc.lastMessageAt).
+        // Client updates chats/{chatId}.lastMessageAt = serverTimestamp() in the
+        // same batch write as the new message document.
+        allow create: if signedIn() &&
+          request.auth.uid == request.resource.data.senderId &&
+          chatParticipantAfter(chatId) &&
+          chatMessageAllowed(chatId, 1) &&          // max 1 msg/second per room
+          withinSizeLimit(5000);                    // max ~5 KB per message
+
+        // Messages are immutable once sent.
+        allow update, delete: if false;
+      }
+    }
+
+    // Gym-scoped collections — any document that carries a gymId field is
+    // restricted to members of that gym only. Explicit collection rules above
+    // take precedence over this wildcard; this acts as a safe default for any
+    // future collections (workouts, sessions, plans, etc.) that store gymId.
+    // If a collection should NOT be gym-scoped, add an explicit rule above.
+    match /coachNotifications/{notificationId} {
+      allow read, write: if isSuperAdmin();
+      allow read: if canManageGym() &&
+        resource.data.senderId == request.auth.uid;
+      allow create: if canManageGym() &&
+        canCreateInOwnGym(request.resource.data.gymId) &&
+        request.resource.data.senderId == request.auth.uid;
+    }
+
+    match /{collection}/{document} {
+      allow read, write: if isSuperAdmin();
+      allow read, update, delete: if
+        !(collection in ['communityPosts', 'challenges', 'coachNotifications']) &&
+        isSameGym(resource.data.gymId);
+      allow create: if
+        !(collection in ['communityPosts', 'challenges', 'coachNotifications']) &&
+        isSameGym(request.resource.data.gymId);
+    }
+
+    // Nested gym-scoped documents (e.g. workouts/{id}/sets/{setId}).
+    match /{collection}/{document}/{rest=**} {
+      allow read, write: if isSuperAdmin();
+      allow read, update, delete: if
+        !(collection in ['communityPosts', 'challenges', 'coachNotifications']) &&
+        isSameGym(resource.data.gymId);
+      allow create: if
+        !(collection in ['communityPosts', 'challenges', 'coachNotifications']) &&
+        isSameGym(request.resource.data.gymId);
+    }
+  }
+}

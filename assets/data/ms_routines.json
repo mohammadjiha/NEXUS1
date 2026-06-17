@@ -1,0 +1,6926 @@
+{
+  "routines": [
+    {
+      "id": "chest_0",
+      "category": "Chest",
+      "routineName": "Strength Chest Pump 1",
+      "exercises": [
+        {
+          "name": "Straight Bar Dip",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Ring Fly",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Exercise Ball Dumbbell Bench Press",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Alternate Dumbbell Bench Press (high start)",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Reverse Grip Dumbbell Squeeze Press",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "chest_1",
+      "category": "Chest",
+      "routineName": "Quick Chest Protocol 2",
+      "exercises": [
+        {
+          "name": "Valslide Push Up",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Reach Push Up",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Smith Machine Wide Grip Bench Press",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Decline Bench Press",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Incline Dumbbell Bench Press",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Push Up Jacks",
+          "sets": 4,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "chest_2",
+      "category": "Chest",
+      "routineName": "Core Chest Routine 3",
+      "exercises": [
+        {
+          "name": "Standing High to Low Cable Fly",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Eccentric Only Incline Push Up",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Lying Cable Pullover (Rope Extension)",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "One Arm Dumbbell Fly",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Barbell Pullover",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Feet on Wall Push Up",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "chest_3",
+      "category": "Chest",
+      "routineName": "Advanced Chest Session 4",
+      "exercises": [
+        {
+          "name": "Exercise Ball Push Up",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Guillotine Press",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Smith Machine Bench Press",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Bird Dog Push Up",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "2 Board Bench Press",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Floor Press",
+          "sets": 3,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "chest_4",
+      "category": "Chest",
+      "routineName": "Strength Chest Blast 5",
+      "exercises": [
+        {
+          "name": "Half Kneeling PVC Pec Mobilization",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Bosu Ball Push Up",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Paused Push Up",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Alternate Dumbbell Bench Press (high start)",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Reverse Grip Dumbbell Squeeze Press",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "chest_5",
+      "category": "Chest",
+      "routineName": "Essential Chest Circuit 6",
+      "exercises": [
+        {
+          "name": "Incline Cable Chest Press",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Pec Foam Rolling",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Knee Push-Up",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Lying Cable Pullover (Rope Extension)",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Exercise Ball Dumbbell Fly",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "chest_6",
+      "category": "Chest",
+      "routineName": "Mass Building Chest Workout 7",
+      "exercises": [
+        {
+          "name": "Incline Dumbbell Twist Fly",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Decline Dumbbell Bench Press",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Hammer Strength Bench Press",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Lying Medicine Ball Power Drop",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Alternating Decline Dumbbell Fly",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Wide Reverse Grip Bench Press",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "chest_7",
+      "category": "Chest",
+      "routineName": "Intense Chest Challenge 8",
+      "exercises": [
+        {
+          "name": "Push Up",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Reverse Grip Dumbbell Squeeze Press",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "T-Push Up",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Barbell Bench Press",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Reverse Grip Incline Bench Press",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "chest_8",
+      "category": "Chest",
+      "routineName": "Mass Building Chest Destroyer 9",
+      "exercises": [
+        {
+          "name": "Neutral Grip Dumbbell Bench Press",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Incline Dumbbell Bench Press",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Sled Press",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Stretch Push Up (On Risers)",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Pec Lacrosse Ball",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Band Suspended Kettlebell Bench Press",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "chest_9",
+      "category": "Chest",
+      "routineName": "Advanced Chest Blast 10",
+      "exercises": [
+        {
+          "name": "Decline Cable Flys",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Pec Deck",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Medicine Ball Power Drop",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Barbell Pullover",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Alternating Dumbbell Bench Press (Low Start)",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "chest_10",
+      "category": "Chest",
+      "routineName": "Dynamic Chest Session 11",
+      "exercises": [
+        {
+          "name": "2 Board Bench Press",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Wall Push Up",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Standing PVC Pec Mobilization",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Wide Grip Incline Bench Press",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Standing High to Low Cable Fly",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Dumbbell Fly",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "chest_11",
+      "category": "Chest",
+      "routineName": "Essential Chest Routine 12",
+      "exercises": [
+        {
+          "name": "Half Kneeling PVC Pec Mobilization",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Medicine Ball Push Up",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Rack Pec Stretch",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Pec Foam Rolling",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Alternating Decline Dumbbell Fly",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "chest_12",
+      "category": "Chest",
+      "routineName": "Elite Chest Routine 13",
+      "exercises": [
+        {
+          "name": "Exercise Ball Dumbbell Bench Press",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Reverse Grip Bench Press",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Chain Fly",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Dumbbell Flys",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Hammer Strength Bench Press",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "chest_13",
+      "category": "Chest",
+      "routineName": "Pro Chest Routine 14",
+      "exercises": [
+        {
+          "name": "Barbell Pullover",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Eccentric Only Incline Push Up",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Ring Fly",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Cable Chest Press",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Shoulder Tap Push Up",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Exercise Ball Dumbbell Bench Press",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "chest_14",
+      "category": "Chest",
+      "routineName": "Quick Chest Pump 15",
+      "exercises": [
+        {
+          "name": "Bench Press Against Chains",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Push Up to Side Plank",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Incline Dumbbell Bench Press",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Smith Machine Bench Press",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Pec Foam Rolling",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Bosu Ball Push Up",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "chest_15",
+      "category": "Chest",
+      "routineName": "Essential Chest Protocol 16",
+      "exercises": [
+        {
+          "name": "Wide Grip Incline Bench Press",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Cable Inner Chest Press",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Straight Bar Dip",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Cable Crossovers (Upper Chest)",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Decline Dumbbell Twist Fly",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Sled Press",
+          "sets": 4,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "chest_16",
+      "category": "Chest",
+      "routineName": "Intense Chest Destroyer 17",
+      "exercises": [
+        {
+          "name": "Muscle Up",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Alternating Medicine Ball Push Up",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Incline Push Ups",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Lying Cable Pullover (Rope Extension)",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Lying Cable Pullover",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Reach Push Up",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "chest_17",
+      "category": "Chest",
+      "routineName": "Shred Chest Workout 18",
+      "exercises": [
+        {
+          "name": "Barbell Bench Press",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Lying Cable Pullover (Rope Extension)",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Alternating Medicine Ball Push Up",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Decline Dumbbell Flys",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "3 Board Bench Press",
+          "sets": 3,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "chest_18",
+      "category": "Chest",
+      "routineName": "Strength Chest Routine 19",
+      "exercises": [
+        {
+          "name": "Decline Push Up (Feet on Bench)",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Half Kneeling Medicine Ball Chest Pass",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Cable Inner Chest Press",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Cable Pullover (Rope Extension)",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "chest_19",
+      "category": "Chest",
+      "routineName": "Mass Building Chest Routine 20",
+      "exercises": [
+        {
+          "name": "Decline Cable Chest Press",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Lying Cable Pullover",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Yoga Push Up",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Alternating Medicine Ball Push Up",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Flat Bench Cable Flys",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Floor Press",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "chest_20",
+      "category": "Chest",
+      "routineName": "Core Chest Protocol 21",
+      "exercises": [
+        {
+          "name": "Bench Press Against Chains",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Alternating Incline Dumbbell Fly",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Hammer Strength Machine Incline Bench Press",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Decline Dumbbell Twist Fly",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "chest_21",
+      "category": "Chest",
+      "routineName": "Ultimate Chest Program 22",
+      "exercises": [
+        {
+          "name": "One-Arm Dumbbell Bench Press",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Incline Dumbbell Bench Press",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Lying Cable Pullover (Rope Extension)",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Incline Bench Press",
+          "sets": 3,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "chest_22",
+      "category": "Chest",
+      "routineName": "Essential Chest Session 23",
+      "exercises": [
+        {
+          "name": "Incline Dumbbell Twist Fly",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Hammer Strength Machine Incline Bench Press",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Decline Dumbbell Twist Fly",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Incline Bench Press",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Alternate Dumbbell Bench Press (high start)",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Stretch Push Up (On Risers)",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "chest_23",
+      "category": "Chest",
+      "routineName": "Intense Chest Program 24",
+      "exercises": [
+        {
+          "name": "Stretch Push Up (On Risers)",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Push Up to Side Plank",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Bird Dog Push Up",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "T-Push Up",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Alternating Dumbbell Fly",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "back_0",
+      "category": "Back",
+      "routineName": "Ultimate Back Workout 1",
+      "exercises": [
+        {
+          "name": "Wide Grip Pull Up",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Reverse Grip Smith Machine Bent-Over Row",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Deadstop Rack Row",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Around the Bar Chin Ups",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Tripod Dumbbell Row",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "back_1",
+      "category": "Back",
+      "routineName": "Power Back Challenge 2",
+      "exercises": [
+        {
+          "name": "Incline Bench Barbell Row",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Deadstop Rack Row",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Reverse Lunge Sled Row",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Band Assisted Chin Up (From Foot)",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "back_2",
+      "category": "Back",
+      "routineName": "Strength Back Pump 3",
+      "exercises": [
+        {
+          "name": "One-Arm Machine Row",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Superman",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Reverse Grip Bent-Over Dumbbell Row",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Machine T-Bar Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Inverted Row",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "back_3",
+      "category": "Back",
+      "routineName": "Dynamic Back Challenge 4",
+      "exercises": [
+        {
+          "name": "Single Pause Pull Up",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "One Arm Chin Up",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Bent Over Kettlebell Row",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Lateral Pulldown (Rope Extension)",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Field Goal Angel Foam Rolling",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "back_4",
+      "category": "Back",
+      "routineName": "Elite Back Session 5",
+      "exercises": [
+        {
+          "name": "Weighted Pull Up Hang",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Incline Bench Cable Row",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Rope Straight Arm Pull Down",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Thoracic Extension on Foam Roller",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Rope Climb",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "back_5",
+      "category": "Back",
+      "routineName": "Spartan Back Blast 6",
+      "exercises": [
+        {
+          "name": "Pendlay Row",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Bent Over Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Behind Neck Lat Pull Down",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Chest Supported Dumbbell Row with Isohold",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Close Grip Pull Up",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "back_6",
+      "category": "Back",
+      "routineName": "Mass Building Back Blast 7",
+      "exercises": [
+        {
+          "name": "Close Grip Lat Pull Down",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Archer Pull Up",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "One Arm Chin Up",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Standing Overhead Medicine Ball Slam",
+          "sets": 3,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "back_7",
+      "category": "Back",
+      "routineName": "Hypertrophy Back Session 8",
+      "exercises": [
+        {
+          "name": "Palm Rotational Row",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Banded Machine T-Bar Row",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "V-Bar Pull Up",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Bent Over Row",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Superman",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Thibaudeau Kayak Row",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "back_8",
+      "category": "Back",
+      "routineName": "Mass Building Back Destroyer 9",
+      "exercises": [
+        {
+          "name": "Triple Pause Chin Up",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Resistance Band Assisted Pull Up (From Foot)",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Ring Inverted Row with Chains",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated High Cable Row",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "back_9",
+      "category": "Back",
+      "routineName": "Hypertrophy Back Pump 10",
+      "exercises": [
+        {
+          "name": "Quadruped Extension Rotation",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Superman",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Underhand Close Grip Lateral Pulldown",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "World's Greatest Stretch",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Reverse Grip Bent-Over Row (EZ Bar)",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Reverse Grip Lat Pull Down (Underhand)",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "back_10",
+      "category": "Back",
+      "routineName": "Dynamic Back Pump 11",
+      "exercises": [
+        {
+          "name": "Close Grip Pull Up",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Weighted Pull Up",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Shotgun Row",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Rope Pull Up",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Band Assisted Chin Up (From Foot)",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Reverse Grip Smith Machine Bent-Over Row",
+          "sets": 5,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "back_11",
+      "category": "Back",
+      "routineName": "Intense Back Blast 12",
+      "exercises": [
+        {
+          "name": "Wide Grip Pull Up",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Weighted Chin Up Hang",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Smith Machine Deadlift",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "One Arm Chin Up",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Mixed Grip Chin Up",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "back_12",
+      "category": "Back",
+      "routineName": "Strength Back Pump 13",
+      "exercises": [
+        {
+          "name": "Double Pause Chin Up",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "V-Bar Pull Down",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Cable Palm Rotational Row",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Overhead Medicine Ball Figure 8 Slam",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Reverse Grip Incline Bench Two-Arm Dumbbell Row",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "back_13",
+      "category": "Back",
+      "routineName": "Intense Back Routine 14",
+      "exercises": [
+        {
+          "name": "One-Arm Machine Row",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Banded Machine T-Bar Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Incline Bench Two Arm Dumbbell Row",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Standing Overhead Medicine Ball Throw",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "back_14",
+      "category": "Back",
+      "routineName": "Intense Back Routine 15",
+      "exercises": [
+        {
+          "name": "Rope Crossover Seated Row",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Single Pause Pull Up",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Reverse Grip Smith Machine Bent-Over Row",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Underhand Close Grip Lateral Pulldown",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "back_15",
+      "category": "Back",
+      "routineName": "Hypertrophy Back Program 16",
+      "exercises": [
+        {
+          "name": "Lat Foam Rolling",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Superman",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Weighted Pull Up",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "L-Sit Pull Up",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Overhand Close Grip Lateral Pulldown",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "back_16",
+      "category": "Back",
+      "routineName": "Intense Back Circuit 17",
+      "exercises": [
+        {
+          "name": "Gironda Sternum Chin Up",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Thoracic Spine Foam Rolling",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "V-Bar Pull Up",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Banded Machine T-Bar Row",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Reverse Grip Bent-Over Dumbbell Row",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Bent Over Dumbbell Row",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "back_17",
+      "category": "Back",
+      "routineName": "Quick Back Session 18",
+      "exercises": [
+        {
+          "name": "V-Bar Pull Down",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Concept 2 Rowing Machine",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "One-Arm Machine Row",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "One Arm Dumbbell Row",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "L-Sit Pull Up",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Grip Ball Pull Ups",
+          "sets": 3,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "back_18",
+      "category": "Back",
+      "routineName": "Quick Back Workout 19",
+      "exercises": [
+        {
+          "name": "Chin Up With Leg Raise",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Mixed Grip Chin Up",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "V-Bar Pull Up",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Around the Bar Chin Ups",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Skin the Cat",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Rollover Into V-Sits",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "back_19",
+      "category": "Back",
+      "routineName": "Shred Back Protocol 20",
+      "exercises": [
+        {
+          "name": "Machine Row",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Palm Rotational Row",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Reverse Grip Smith Machine Bent-Over Row",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "One-Arm Landmine Row",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Skin the Cat",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "back_20",
+      "category": "Back",
+      "routineName": "Strength Back Session 21",
+      "exercises": [
+        {
+          "name": "Thoracic Spine Foam Rolling",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Smith Machine Deadlift",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "One Arm Chin Up",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Weighted Pull Up",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Dumbbell Deadlift",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "back_21",
+      "category": "Back",
+      "routineName": "Power Back Session 22",
+      "exercises": [
+        {
+          "name": "One-Arm Machine Row",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Inverted Row",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Around the Bar Chin Ups",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Incline Bench Cable Row (Rope Extension)",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Palms In Bent-Over Dumbbell Row",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Standing Overhead Medicine Ball Throw",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "back_22",
+      "category": "Back",
+      "routineName": "Power Back Pump 23",
+      "exercises": [
+        {
+          "name": "Palm Rotational Row",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Yoga Plex",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Rope Climb",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Smith Machine Bent-Over Row",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Wide Grip Lat Pull Down",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "back_23",
+      "category": "Back",
+      "routineName": "Power Back Destroyer 24",
+      "exercises": [
+        {
+          "name": "Band Assisted Chin Up (From Knee)",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Shotgun Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Rope Climb",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Overhand Close Grip Lateral Pulldown",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Reverse Grip Incline Bench Barbell Row",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "L-Sit Pull Up",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "back_24",
+      "category": "Back",
+      "routineName": "Quick Back Program 25",
+      "exercises": [
+        {
+          "name": "Overhand Close Grip Lateral Pulldown",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Pendlay Row",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Incline Bench Cable Row (Rope Extension)",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Pull Up",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Lat Pull Down",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Behind Neck Lat Pull Down",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "back_25",
+      "category": "Back",
+      "routineName": "Pro Back Workout 26",
+      "exercises": [
+        {
+          "name": "Feet Elevated Inverted Row",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Pull Up with Leg Raise",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Behind Neck Lat Pull Down",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated High Cable Row",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "V-Bar Pull Down",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Smith Machine One-Arm Row",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "back_26",
+      "category": "Back",
+      "routineName": "Spartan Back Pump 27",
+      "exercises": [
+        {
+          "name": "One-Arm Landmine Row",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Underhand Close Grip Lateral Pulldown",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Pendlay Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Shotgun Row",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "back_27",
+      "category": "Back",
+      "routineName": "Intense Back Pump 28",
+      "exercises": [
+        {
+          "name": "Close Grip Pull Up",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Reverse Grip Smith Machine Bent-Over Row",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Meadows Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Resistance Band Assisted Pull Up (From Knee)",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Weight Vest Weighted Inverted Row",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Rope Straight Arm Pull Down",
+          "sets": 3,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "back_28",
+      "category": "Back",
+      "routineName": "Dynamic Back Program 29",
+      "exercises": [
+        {
+          "name": "Rack Lat Stretch",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Chin Up With Leg Raise",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Reverse Grip Bent-Over Row (EZ Bar)",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Wide Grip Chin Up",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Lateral Pulldown (Rope Extension)",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Incline Bench Two Arm Dumbbell Row",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "back_29",
+      "category": "Back",
+      "routineName": "Pro Back Workout 30",
+      "exercises": [
+        {
+          "name": "Eccentric Only Pull Up",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Bench T-Spine Mobilization",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Smith Machine Bent-Over Row",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Rock Back Extension Rotation",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Straight Arm Lat Pull Down",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "back_30",
+      "category": "Back",
+      "routineName": "Strength Back Challenge 31",
+      "exercises": [
+        {
+          "name": "Rope Crossover Seated Row",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Thibaudeau Kayak Row",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Rope Climb",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Reverse Grip Incline Bench Cable Row",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Reverse Grip Incline Bench Barbell Row",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_0",
+      "category": "Shoulders",
+      "routineName": "Essential Shoulders Challenge 1",
+      "exercises": [
+        {
+          "name": "Band Pull Apart",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "One-Arm Seated Arnold Press",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Rotational Medicine Ball Shuffle Into Shot Put",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Cable Lateral Raise",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Single Arm Landmine Press",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Banded Y's",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_1",
+      "category": "Shoulders",
+      "routineName": "Intense Shoulders Session 2",
+      "exercises": [
+        {
+          "name": "One-Arm Seated Dumbbell Front Raise",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated Bradford Press (AKA Seated Rocky Press)",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Machine Reverse Fly",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Dumbbell Lateral Raise",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Tall Kneeling One Arm Bottoms Up Kettlebell Press",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Shuffle Into Rotational Medicine Ball Throw",
+          "sets": 4,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_2",
+      "category": "Shoulders",
+      "routineName": "Strength Shoulders Challenge 3",
+      "exercises": [
+        {
+          "name": "Standing Arnold Press",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Z Press",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Bench Supported Dumbbell External Rotation",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Lying Single Arm Trap Raise",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "One-Arm Dumbbell Rear Delt Fly",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Behind The Neck Push Press ",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_3",
+      "category": "Shoulders",
+      "routineName": "Pro Shoulders Workout 4",
+      "exercises": [
+        {
+          "name": "Half Kneeling Banded External Rotation",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Rotational Medicine Ball Step Behind Shot Put",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Standing Neutral Grip Dumbbell Shoulder Press",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Bent Over Dumbbell Reverse Fly",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "One-Arm Dumbbell Lateral Raise",
+          "sets": 4,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_4",
+      "category": "Shoulders",
+      "routineName": "Strength Shoulders Blast 5",
+      "exercises": [
+        {
+          "name": "Standing Banded Face Pull",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Seated Kettlebell Press",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Military Press (AKA Overhead Press)",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Half Kneeling Dumbbell Press",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_5",
+      "category": "Shoulders",
+      "routineName": "Shred Shoulders Circuit 6",
+      "exercises": [
+        {
+          "name": "Quadruped Push Up Plus",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Standing Cable Reverse Fly",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Machine Reverse Fly",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Overhead Front Raise (with Weight Plate)",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Kettlebell Lateral Raise",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_6",
+      "category": "Shoulders",
+      "routineName": "Strength Shoulders Pump 7",
+      "exercises": [
+        {
+          "name": "Power Slam Battling Rope",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Bus Drivers",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Barbell Overhead Front Raise",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "One Arm Seated Kettlebell Press",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_7",
+      "category": "Shoulders",
+      "routineName": "Power Shoulders Program 8",
+      "exercises": [
+        {
+          "name": "Scapular Wall Slide",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Band Pull Apart",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Smith Machine Shoulder Press",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Machine Shoulder Press",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Overhead Front Raise (with Weight Plate)",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_8",
+      "category": "Shoulders",
+      "routineName": "Shred Shoulders Circuit 9",
+      "exercises": [
+        {
+          "name": "Landmine Lateral Raise",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Dumbbell 6 Ways (Raise)",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Double Arm Circles Battling Ropes",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Rotational Medicine Ball Step Behind Shot Put",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Pronated 90 Degree Band Pull Apart",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Barbell Overhead Front Raise",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_9",
+      "category": "Shoulders",
+      "routineName": "Advanced Shoulders Challenge 10",
+      "exercises": [
+        {
+          "name": "Cable Lateral Raise",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Seated Alternating Neutral Grip Dumbbell Shoulder Press",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "One-Arm Cable Front Raise",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Seated Cuban Press",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Half Kneeling Bottoms Up Kettlebell Press",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Dublin Press",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_10",
+      "category": "Shoulders",
+      "routineName": "Ultimate Shoulders Routine 11",
+      "exercises": [
+        {
+          "name": "Dumbbell Upright Row",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Half Kneeling Banded Face Pull",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Scapular Wall Slide",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Lying Dumbbell Front Raise On Incline Bench",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Serrano Press",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_11",
+      "category": "Shoulders",
+      "routineName": "Dynamic Shoulders Session 12",
+      "exercises": [
+        {
+          "name": "One-Arm Seated Dumbbell Lateral Raise",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Modified Handstand Push Up (Off Box)",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Rotational Medicine Ball Step Behind Shot Put",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "One-Arm Neutral Grip Dumbbell Shoulder Press",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Seated Bent Over Dumbbell Reverse Fly",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Pronated 90 Degree Band Pull Apart",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_12",
+      "category": "Shoulders",
+      "routineName": "Dynamic Shoulders Destroyer 13",
+      "exercises": [
+        {
+          "name": "Seated Barbell Front Raise",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Reverse Lunge with Alternating Waves Battling Ropes",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Standing Banded Face Pull to Chest",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Barbell Rear Delt Row To Neck",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Lateral Raise Partials",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_13",
+      "category": "Shoulders",
+      "routineName": "Hypertrophy Shoulders Workout 14",
+      "exercises": [
+        {
+          "name": "One-Arm Dumbbell Rear Delt Fly",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Machine Reverse Fly",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Smith Machine Upright Row",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Standing External Rotation (\"No Money Drill\")",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Tall Kneeling Battling Ropes",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_14",
+      "category": "Shoulders",
+      "routineName": "Mass Building Shoulders Destroyer 15",
+      "exercises": [
+        {
+          "name": "One-Arm Seated Rear Delt Fly",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Dumbbell Front Raise",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Scapular Wall Slide",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated Dumbbell Press",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Banded Upright Row",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Banded Shoulder Dislocates",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_15",
+      "category": "Shoulders",
+      "routineName": "Ultimate Shoulders Session 16",
+      "exercises": [
+        {
+          "name": "Half Kneeling Battling Rope",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Smith Machine Behind the Neck Shoulder Press",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Kettlebell Arm Bar",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Rotational Medicine Ball Shuffle Into Shot Put",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Cable Face Pull",
+          "sets": 3,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_16",
+      "category": "Shoulders",
+      "routineName": "Hypertrophy Shoulders Protocol 17",
+      "exercises": [
+        {
+          "name": "Alternating Standing Kettlebell Press",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Seated Dumbbell Press",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Single Arm Landmine Press",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Standing Dublin Press",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Alternating Incline Rear Delt Fly",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Smith Machine Behind the Neck Shoulder Press",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "shoulders_17",
+      "category": "Shoulders",
+      "routineName": "Ultimate Shoulders Session 18",
+      "exercises": [
+        {
+          "name": "Alternating Incline Rear Delt Fly",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Overhead Front Raise (with Weight Plate)",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Standing Banded Face Pull",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Big Waves Battling Ropes",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Tall Kneeling One Arm Kettlebell Press",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Standing Cable Reverse Fly",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "biceps_0",
+      "category": "Biceps",
+      "routineName": "Essential Biceps Protocol 1",
+      "exercises": [
+        {
+          "name": "One-Arm Dumbbell Hammer Preacher Curl",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "One-Arm Seated Hammer Curl",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Hammer Bar Curl",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Squatting Cable Curl",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "biceps_1",
+      "category": "Biceps",
+      "routineName": "Elite Biceps Program 2",
+      "exercises": [
+        {
+          "name": "One-Arm Dumbbell Preacher Curl",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated Zottman Curl",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "One-Arm Seated Hammer Curl",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "EZ Bar Curl",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Alternating Seated Dumbbell Curl",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Seated Barbell Curl",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "biceps_2",
+      "category": "Biceps",
+      "routineName": "Ultimate Biceps Challenge 3",
+      "exercises": [
+        {
+          "name": "Cable Curl",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Seated Hammer Curl",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Incline Bench Dumbbell Curl",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Close Grip EZ Bar Curl",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "biceps_3",
+      "category": "Biceps",
+      "routineName": "Strength Biceps Challenge 4",
+      "exercises": [
+        {
+          "name": "Spider Curl",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Alternating Standing Hammer Curl",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Dumbbell Curl",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Incline Bench Dumbbell Curl",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "biceps_4",
+      "category": "Biceps",
+      "routineName": "Shred Biceps Protocol 5",
+      "exercises": [
+        {
+          "name": "Standing Hammer Curl",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Machine Bicep Curl",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Incline Cable Bicep Curl",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Incline Dumbbell Curl",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Dumbbell Preacher Curl",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "biceps_5",
+      "category": "Biceps",
+      "routineName": "Ultimate Biceps Blast 6",
+      "exercises": [
+        {
+          "name": "Lying High Pulley Close Grip Cable Curl",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Alternating Dumbbell Preacher Curl",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated Dumbbell Reverse Curl",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Lying Wide Dumbbell Curl",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "biceps_6",
+      "category": "Biceps",
+      "routineName": "Quick Biceps Destroyer 7",
+      "exercises": [
+        {
+          "name": "Incline Bench Dumbbell Curl",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Concentration Curl",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Incline Cable Bicep Curl",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Standing Barbell Curl",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Standing Hammer Curl",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "biceps_7",
+      "category": "Biceps",
+      "routineName": "Strength Biceps Session 8",
+      "exercises": [
+        {
+          "name": "Seated Dumbbell Reverse Curl",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Cross Body Hammer Curl (Pinwheel Curls)",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Cable Curl",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Alternating Incline Dumbbell Curl",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "biceps_8",
+      "category": "Biceps",
+      "routineName": "Shred Biceps Pump 9",
+      "exercises": [
+        {
+          "name": "Incline Bench Dumbbell Curl",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Cable Drag Curl",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Wide Grip Standing Barbell Curl",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Dumbbell Preacher Curl",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "biceps_9",
+      "category": "Biceps",
+      "routineName": "Spartan Biceps Destroyer 10",
+      "exercises": [
+        {
+          "name": "Bicep Curl Sled Drag",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "One-Arm Dumbbell Hammer Preacher Curl",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Machine Bicep Curl",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Prone Incline Hammer Curl",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Two-Arm Low Pulley Cable Curl",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "biceps_10",
+      "category": "Biceps",
+      "routineName": "Quick Biceps Circuit 11",
+      "exercises": [
+        {
+          "name": "Close Grip Standing Barbell Curl",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Alternating Dumbbell Hammer Preacher Curl",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Close Grip Cable Curl",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Wide Grip Cable Curl",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Machine Bicep Curl",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "biceps_11",
+      "category": "Biceps",
+      "routineName": "Ultimate Biceps Blast 12",
+      "exercises": [
+        {
+          "name": "Alternating Dumbbell Hammer Preacher Curl",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Cable Concentration Curl",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Dumbbell Preacher Curl",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Concentration Curl",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Smith Machine Bicep Curl",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Standing Dumbbell Reverse Curl",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "biceps_12",
+      "category": "Biceps",
+      "routineName": "Core Biceps Session 13",
+      "exercises": [
+        {
+          "name": "Cable Curl",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Hammer Bar Preacher Curl",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Zottman Preacher Curl",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "EZ Bar Preacher Curl",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "biceps_13",
+      "category": "Biceps",
+      "routineName": "Intense Biceps Circuit 14",
+      "exercises": [
+        {
+          "name": "Wide Grip Cable Curl",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Close Grip Cable Curl",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Squatting Cable Curl",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Cable Preacher Curl",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Exercise Ball Dumbbell Curl",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "triceps_0",
+      "category": "Triceps",
+      "routineName": "Core Triceps Blast 1",
+      "exercises": [
+        {
+          "name": "Single Bench Dip",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Reverse Grip Close Grip Bench Press",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "One-Arm Seated Dumbbell Kickback",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Decline Lying Dumbbell Extension",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Close Grip Press Behind-The-Neck",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Overhead Banded Tricep Extension",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "triceps_1",
+      "category": "Triceps",
+      "routineName": "Power Triceps Protocol 2",
+      "exercises": [
+        {
+          "name": "California Skullcrusher",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Bent Over Dumbbell Tricep Kickback",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Reverse One-Arm Cable Tricep Extension",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Cable Tricep Kickback",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "EZ Bar Incline Skullcrusher",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "triceps_2",
+      "category": "Triceps",
+      "routineName": "Hypertrophy Triceps Protocol 3",
+      "exercises": [
+        {
+          "name": "Rolling Dumbbell Extension",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Weighted Three Bench Dip",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Incline Close Grip Bench Press",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Reverse Grip Skull Crusher",
+          "sets": 5,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "triceps_3",
+      "category": "Triceps",
+      "routineName": "Elite Triceps Protocol 4",
+      "exercises": [
+        {
+          "name": "Decline Lying Tricep Extension (Skullcrusher)",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Machine Tricep Extension",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Overhead Tricep Extension Sled Drag",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "One-Arm Seated Overhead Tricep Extension",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "45 Degree Lying Tricep Extension (EZ Bar)",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "triceps_4",
+      "category": "Triceps",
+      "routineName": "Dynamic Triceps Program 5",
+      "exercises": [
+        {
+          "name": "Seated Bent Over Tricep Dumbbell Kickback",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Alternating Lying Dumbbell Extension",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Seated Dumbbell Tricep Extension",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "45 Degree Lying Tricep Extension",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "triceps_5",
+      "category": "Triceps",
+      "routineName": "Advanced Triceps Program 6",
+      "exercises": [
+        {
+          "name": "Weighted Bench Dip",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "One-Arm Seated Bent Over Dumbbell Kickback",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Smith Machine Close Grip Bench Press",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "One-Arm Lying Pronated Dumbbell Extension",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "triceps_6",
+      "category": "Triceps",
+      "routineName": "Mass Building Triceps Protocol 7",
+      "exercises": [
+        {
+          "name": "Three Bench Dip",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Sphinx Push Up",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Incline Skull Crusher",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "One Arm Bottoms Up Kettlebell Floor Press",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Overhead Tricep Extension Sled Drag",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Standing Overhead EZ Bar Tricep Extension",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "triceps_7",
+      "category": "Triceps",
+      "routineName": "Mass Building Triceps Protocol 8",
+      "exercises": [
+        {
+          "name": "Seated Dumbbell Tricep Extension",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Incline Cable Tricep Extension",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Incline Skull Crusher",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Sphinx Push Up",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Lying Dumbbell Extension",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Bench Dip",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "triceps_8",
+      "category": "Triceps",
+      "routineName": "Power Triceps Routine 9",
+      "exercises": [
+        {
+          "name": "Three Bench Dip",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Seated Alternating Bent Over Dumbbell Kickback",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "One-Arm Seated Dumbbell Extension",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Exercise Ball Two-Arm Dumbbell Extension",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Cable Tricep Extension With V-Bar",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "triceps_9",
+      "category": "Triceps",
+      "routineName": "Dynamic Triceps Session 10",
+      "exercises": [
+        {
+          "name": "Incline Close Grip Bench Press",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "EZ Bar Incline Skullcrusher",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Rolling Dumbbell Extension",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Single Bench Dip",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "triceps_10",
+      "category": "Triceps",
+      "routineName": "Shred Triceps Routine 11",
+      "exercises": [
+        {
+          "name": "High Pulley Overhead Tricep Extension",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "One-Arm Cable Tricep Extension",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Seated Reverse Grip One-Arm Overhead Tricep Extension",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "One-Arm Standing Dumbbell Extension",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "California Skullcrusher",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "One-Arm Lying Pronated Dumbbell Extension",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "triceps_11",
+      "category": "Triceps",
+      "routineName": "Advanced Triceps Circuit 12",
+      "exercises": [
+        {
+          "name": "Seated Reverse Grip One-Arm Overhead Tricep Extension",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Standing Overhead EZ Bar Tricep Extension",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Rope Tricep Extension",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Incline Skull Crusher",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Seated Low Pulley Overhead Tricep Extension (Rope Extension)",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "triceps_12",
+      "category": "Triceps",
+      "routineName": "Hypertrophy Triceps Pump 13",
+      "exercises": [
+        {
+          "name": "One Arm Bent Over Dumbbell Tricep Kickback",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Weighted Three Bench Dip",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Alternating Lying Dumbbell Extension",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "One-Arm Lying Pronated Dumbbell Extension",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Seated French Press",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "One-Arm Seated Dumbbell Extension",
+          "sets": 3,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "triceps_13",
+      "category": "Triceps",
+      "routineName": "Advanced Triceps Destroyer 14",
+      "exercises": [
+        {
+          "name": "High Pulley Overhead Tricep Extension",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Weighted Bench Dip",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "One Arm Bottoms Up Kettlebell Floor Press",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Barbell Tricep Extension (Skull Crusher)",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Dumbbell Tricep Kickback",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Exercise Ball Two-Arm Dumbbell Extension",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "triceps_14",
+      "category": "Triceps",
+      "routineName": "Pro Triceps Program 15",
+      "exercises": [
+        {
+          "name": "Seated Alternating Bent Over Dumbbell Kickback",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Weighted Tricep Dips",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Lying Barbell Tricep Extension (Skull Crusher)",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Reverse Grip Cable Tricep Kickback",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Incline Cable Tricep Extension (Rope Extension)",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "triceps_15",
+      "category": "Triceps",
+      "routineName": "Dynamic Triceps Session 16",
+      "exercises": [
+        {
+          "name": "Twisting Dumbbell Bench Press",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "One-Arm Standing Dumbbell Extension",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Rope Tricep Extension",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Weighted Bench Dip",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "legs_0",
+      "category": "Legs",
+      "routineName": "Pro Legs Program 1",
+      "exercises": [
+        {
+          "name": "Stiff Leg Deadlift (On Bench)",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Seated External Rotation",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "One-Leg Smith Machine Calf Raise",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "90/90 Piriformis Stretch",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "legs_1",
+      "category": "Legs",
+      "routineName": "Dynamic Legs Protocol 2",
+      "exercises": [
+        {
+          "name": "Paused Sumo Deadlift",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "1 Kettlebell Step Up",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "2 KB Kettlebell Split Snatch",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Valslide Leg Curl",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "legs_2",
+      "category": "Legs",
+      "routineName": "Essential Legs Protocol 3",
+      "exercises": [
+        {
+          "name": "Standing Barbell Calf Raise (On Floor)",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Overhead Banded Squat",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Half Kneeling Quad Stretch",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Hang Clean",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "legs_3",
+      "category": "Legs",
+      "routineName": "Power Legs Challenge 4",
+      "exercises": [
+        {
+          "name": "Double Kettlebell Front Squat",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Banded Sumo Deadlift",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Seated Box Jump",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "1 KB Kettlebell Jerk",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Trap Bar Deficit Deadlift",
+          "sets": 3,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "legs_4",
+      "category": "Legs",
+      "routineName": "Intense Legs Routine 5",
+      "exercises": [
+        {
+          "name": "Single Leg Wall Squat",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Razor Curl",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Deadlift",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "2 KB Kettlebell Clean & Press",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "1 Kettlebell Step Up",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Conventional Deadlift Against Chains",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "legs_5",
+      "category": "Legs",
+      "routineName": "Core Legs Circuit 6",
+      "exercises": [
+        {
+          "name": "Single Leg Front to Back Jump Rope",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Banded Multi Directional Toe Touch",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Lying Cable Leg Curl",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Box Squat",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "One-Leg 45 Degree Calf Raise",
+          "sets": 3,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "legs_6",
+      "category": "Legs",
+      "routineName": "Mass Building Legs Protocol 7",
+      "exercises": [
+        {
+          "name": "Narrow Stance Front Squat",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Barbell Jumping Squats",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "2 KB Kettlebell Snatch",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Kettlebell Walking Lunge",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Bodyweight Bulgarian Split Squat",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Depth Jump to Broad Jump",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "legs_7",
+      "category": "Legs",
+      "routineName": "Hypertrophy Legs Challenge 8",
+      "exercises": [
+        {
+          "name": "Barbell Box Squat",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Snatch Grip Deadlift",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Seated Box Jump",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Standing Barbell Calf Raise (On Floor)",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "legs_8",
+      "category": "Legs",
+      "routineName": "Hypertrophy Legs Protocol 9",
+      "exercises": [
+        {
+          "name": "Barbell Back Squat",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Single Leg Exercise Ball Leg Curl",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Single Leg Curl",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Barbell Front Box Squat",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "legs_9",
+      "category": "Legs",
+      "routineName": "Quick Legs Blast 10",
+      "exercises": [
+        {
+          "name": "Dumbbell Walking Lunge",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Banded Good Morning",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "One Arm Kettlebell Swing",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Anti-Rotation Forward Sled Walk",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "American Deadlift",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Quad Foam Rolling",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "legs_10",
+      "category": "Legs",
+      "routineName": "Essential Legs Protocol 11",
+      "exercises": [
+        {
+          "name": "Low Bar Back Squat",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Barbell Lunge",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Smith Machine Zercher Squat",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Dynamic Pigeon",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Snatch Grip Deadlift",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Banded Good Morning",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "legs_11",
+      "category": "Legs",
+      "routineName": "Hypertrophy Legs Blast 12",
+      "exercises": [
+        {
+          "name": "Double Kettlebell Split Squat",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Seated External Rotation",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Power Jerk",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Decline Bench Dumbbell Lunge",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Standing One-Leg Calf Raise With Dumbbell",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "legs_12",
+      "category": "Legs",
+      "routineName": "Shred Legs Session 13",
+      "exercises": [
+        {
+          "name": "Trap Bar Deadlift Against Chains",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Contralateral Load Split Squat",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Prone Quad Stretch",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Paused Trap Bar Deadlift",
+          "sets": 4,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "legs_13",
+      "category": "Legs",
+      "routineName": "Elite Legs Session 14",
+      "exercises": [
+        {
+          "name": "Wide Stance Smith Machine Squat",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Decline Bench Barbell Lunge",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Smith Machine Seated Toe Raise",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Glute Lacrosse Ball",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Reverse Lunge Sled Walk",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "legs_14",
+      "category": "Legs",
+      "routineName": "Advanced Legs Session 15",
+      "exercises": [
+        {
+          "name": "Depth Jump",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Dumbbell Thruster",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Bodyweight Floor Calf Raise",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Bodyweight Pistol Squat",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Trap Bar Deficit Deadlift",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "legs_15",
+      "category": "Legs",
+      "routineName": "Advanced Legs Workout 16",
+      "exercises": [
+        {
+          "name": "Reverse Hyperextension",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Decline Bench Bodyweight Lunge",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Leg Press",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Deep Front Squat",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Alternating Single Leg Jump Rope",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Leg Extension",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "legs_16",
+      "category": "Legs",
+      "routineName": "Dynamic Legs Protocol 17",
+      "exercises": [
+        {
+          "name": "1 Dumbbell Step Up",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Glute Kick Back",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Hip Flexion Machine",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "One-Leg Standing Bodyweight Calf Raise",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "legs_17",
+      "category": "Legs",
+      "routineName": "Intense Legs Challenge 18",
+      "exercises": [
+        {
+          "name": "Dumbbell Lateral Lunge",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Wide Stance Smith Machine Squat",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Snatch Grip Romanian Deadlift",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Hamstring Tiger Tail",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Quad Tiger Tail",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Power Snatch",
+          "sets": 5,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "legs_18",
+      "category": "Legs",
+      "routineName": "Intense Legs Circuit 19",
+      "exercises": [
+        {
+          "name": "Split Squat",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lateral Lunge to Drop Lunge",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Split Squat with Banded Adduction",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Standing Barbell Calf Raise (On Floor)",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Dumbbell Lunge",
+          "sets": 3,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "legs_19",
+      "category": "Legs",
+      "routineName": "Power Legs Pump 20",
+      "exercises": [
+        {
+          "name": "Rocking Standing Calf Raise",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Barbell Half Squat",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Rocking Soleus Emphasis Ankle Mobilization",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Kettlebell Step Up",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "45 Degree Toe Raise",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Muscle Snatch",
+          "sets": 3,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "legs_20",
+      "category": "Legs",
+      "routineName": "Ultimate Legs Blast 21",
+      "exercises": [
+        {
+          "name": "Bodyweight Wall Squat",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Good Mornings Off Pins",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Peroneal Tiger Tail",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "One-Leg Floor Calf Raise",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Seated External Rotation",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "legs_21",
+      "category": "Legs",
+      "routineName": "Mass Building Legs Circuit 22",
+      "exercises": [
+        {
+          "name": "Toes Out Seated Calf Raise",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "1 KB Kettlebell Snatch",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Tire Flip",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Barbell Walking Lunge",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Split Squat",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "legs_22",
+      "category": "Legs",
+      "routineName": "Shred Legs Destroyer 23",
+      "exercises": [
+        {
+          "name": "One-Leg Standing Bodyweight Calf Raise",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Bodyweight Lateral Lunge",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Kettlebell Thruster",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Kettlebell Romanian Deadlift",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Barbell Back Squat",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "legs_23",
+      "category": "Legs",
+      "routineName": "Spartan Legs Routine 24",
+      "exercises": [
+        {
+          "name": "Barbell Lateral Split Squat",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Dumbbell Goblet Squat",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Donkey Calf Raise",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Counterbalanced Skater Squat",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "legs_24",
+      "category": "Legs",
+      "routineName": "Hypertrophy Legs Blast 25",
+      "exercises": [
+        {
+          "name": "Banded Conventional Deadlift",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Smith Machine Lunge",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "1 Kettlebell Suitcase Deadlift",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Reverse Band Sumo Deadlift",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Kettlebell Step Up",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Bodyweight Squat Jump",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "legs_25",
+      "category": "Legs",
+      "routineName": "Pro Legs Pump 26",
+      "exercises": [
+        {
+          "name": "Glute Kick Back",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Hamstring Tiger Tail",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Anti-Rotation Forward Sled Walk",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Glute Lacrosse Ball",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "legs_26",
+      "category": "Legs",
+      "routineName": "Power Legs Pump 27",
+      "exercises": [
+        {
+          "name": "Smith Machine Calf Raise",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Reverse Band Sumo Deadlift",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Quad Foam Rolling",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Bodyweight Hip Thrust",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Single Leg Curl",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "1 Kettlebell Single Leg Deadlift",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "legs_27",
+      "category": "Legs",
+      "routineName": "Shred Legs Program 28",
+      "exercises": [
+        {
+          "name": "Seated Box Jump",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Front Squat",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Skipping Jump Rope",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Overhead Squat",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Bodyweight Lunge",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "traps_0",
+      "category": "Traps",
+      "routineName": "Quick Traps Circuit 1",
+      "exercises": [
+        {
+          "name": "Overhead Barbell Shrug",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Snatch Grip High Pull",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Machine Shrug",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Tate Press",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "traps_1",
+      "category": "Traps",
+      "routineName": "Elite Traps Pump 2",
+      "exercises": [
+        {
+          "name": "Machine Shrug",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "1 KB Kettlebell Sumo Deadlift High Pull",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Sumo High Pull",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Overhead Barbell Shrug",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "T-Bar Machine Shrug",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Cable Row to Neck",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "traps_2",
+      "category": "Traps",
+      "routineName": "Shred Traps Program 3",
+      "exercises": [
+        {
+          "name": "Overhead Barbell Shrug",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Seated Dumbbell Shrug",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Dumbbell Shrug",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Snatch Grip Barbell Shrug",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "2 KB Kettlebell Sumo Deadlift High Pull",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "traps_3",
+      "category": "Traps",
+      "routineName": "Elite Traps Destroyer 4",
+      "exercises": [
+        {
+          "name": "Overhead Barbell Shrug",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Trap Bar Shrug",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Cable Row to Neck",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Dumbbell Shrug",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "traps_4",
+      "category": "Traps",
+      "routineName": "Power Traps Circuit 5",
+      "exercises": [
+        {
+          "name": "Inverted Shrug",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Smith Machine Shrug",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Overhead Barbell Shrug",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Seated Cable Shrug",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Snatch Grip High Pull",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "traps_5",
+      "category": "Traps",
+      "routineName": "Quick Traps Program 6",
+      "exercises": [
+        {
+          "name": "Smith Machine Shrug",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Seated Cable Shrug",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Trap Bar Shrug",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Trap Lacrosse Ball",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Dumbbell Shrug",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "High Pull",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "traps_6",
+      "category": "Traps",
+      "routineName": "Quick Traps Session 7",
+      "exercises": [
+        {
+          "name": "Trap Bar Shrug",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Trap Lacrosse Ball",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Behind-The-Back Barbell Shrug",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Sumo High Pull",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Wide Grip Upright Row",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "T-Bar Machine Shrug",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "traps_7",
+      "category": "Traps",
+      "routineName": "Power Traps Blast 8",
+      "exercises": [
+        {
+          "name": "Inverted Shrug",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "2 KB Kettlebell Sumo Deadlift High Pull",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Lying Cable Shrug",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "1 KB Kettlebell Sumo Deadlift High Pull",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "One-Arm Dumbbell Upright Row",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Gittleson Shrug",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "traps_8",
+      "category": "Traps",
+      "routineName": "Intense Traps Protocol 9",
+      "exercises": [
+        {
+          "name": "Snatch Shrug",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Dumbbell Shrug",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Cable Row to Neck",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Snatch Grip Barbell Shrug",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Trap Bar Shrug",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "traps_9",
+      "category": "Traps",
+      "routineName": "Advanced Traps Pump 10",
+      "exercises": [
+        {
+          "name": "High Pull",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Overhead Barbell Shrug",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Cable Upright Row",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Barbell Upright Row",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Trap Lacrosse Ball",
+          "sets": 4,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "cardio_0",
+      "category": "Cardio",
+      "routineName": "Power Cardio Program 1",
+      "exercises": [
+        {
+          "name": "Treadmill Run",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "cardio_1",
+      "category": "Cardio",
+      "routineName": "Power Cardio Protocol 2",
+      "exercises": [
+        {
+          "name": "Treadmill Run",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "cardio_2",
+      "category": "Cardio",
+      "routineName": "Ultimate Cardio Workout 3",
+      "exercises": [
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "cardio_3",
+      "category": "Cardio",
+      "routineName": "Essential Cardio Routine 4",
+      "exercises": [
+        {
+          "name": "Treadmill Run",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Cycling",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "cardio_4",
+      "category": "Cardio",
+      "routineName": "Strength Cardio Workout 5",
+      "exercises": [
+        {
+          "name": "Cycling",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 3,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "cardio_5",
+      "category": "Cardio",
+      "routineName": "Advanced Cardio Challenge 6",
+      "exercises": [
+        {
+          "name": "Rowing Machine",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "cardio_6",
+      "category": "Cardio",
+      "routineName": "Mass Building Cardio Session 7",
+      "exercises": [
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "cardio_7",
+      "category": "Cardio",
+      "routineName": "Advanced Cardio Destroyer 8",
+      "exercises": [
+        {
+          "name": "Jump Rope",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Cycling",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "cardio_8",
+      "category": "Cardio",
+      "routineName": "Pro Cardio Program 9",
+      "exercises": [
+        {
+          "name": "Stairmaster",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Cycling",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "cardio_9",
+      "category": "Cardio",
+      "routineName": "Spartan Cardio Routine 10",
+      "exercises": [
+        {
+          "name": "Rowing Machine",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 4,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "cardio_10",
+      "category": "Cardio",
+      "routineName": "Spartan Cardio Routine 11",
+      "exercises": [
+        {
+          "name": "Jump Rope",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "cardio_11",
+      "category": "Cardio",
+      "routineName": "Core Cardio Session 12",
+      "exercises": [
+        {
+          "name": "Jump Rope",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Cycling",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "cardio_12",
+      "category": "Cardio",
+      "routineName": "Mass Building Cardio Challenge 13",
+      "exercises": [
+        {
+          "name": "Stairmaster",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Rowing Machine",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Cycling",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 5,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "cardio_13",
+      "category": "Cardio",
+      "routineName": "Power Cardio Session 14",
+      "exercises": [
+        {
+          "name": "Rowing Machine",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 4,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "cardio_14",
+      "category": "Cardio",
+      "routineName": "Power Cardio Session 15",
+      "exercises": [
+        {
+          "name": "Rowing Machine",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Stairmaster",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Treadmill Run",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Cycling",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Jump Rope",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_0",
+      "category": "Full Body Fat Loss",
+      "routineName": "Ultimate Full Body Fat Loss Destroyer 1",
+      "exercises": [
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_1",
+      "category": "Full Body Fat Loss",
+      "routineName": "Ultimate Full Body Fat Loss Destroyer 2",
+      "exercises": [
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_2",
+      "category": "Full Body Fat Loss",
+      "routineName": "Elite Full Body Fat Loss Workout 3",
+      "exercises": [
+        {
+          "name": "Kettlebell Swings",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_3",
+      "category": "Full Body Fat Loss",
+      "routineName": "Power Full Body Fat Loss Destroyer 4",
+      "exercises": [
+        {
+          "name": "Kettlebell Swings",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_4",
+      "category": "Full Body Fat Loss",
+      "routineName": "Advanced Full Body Fat Loss Circuit 5",
+      "exercises": [
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_5",
+      "category": "Full Body Fat Loss",
+      "routineName": "Core Full Body Fat Loss Destroyer 6",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_6",
+      "category": "Full Body Fat Loss",
+      "routineName": "Core Full Body Fat Loss Challenge 7",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_7",
+      "category": "Full Body Fat Loss",
+      "routineName": "Strength Full Body Fat Loss Blast 8",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Burpees",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_8",
+      "category": "Full Body Fat Loss",
+      "routineName": "Mass Building Full Body Fat Loss Program 9",
+      "exercises": [
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_9",
+      "category": "Full Body Fat Loss",
+      "routineName": "Dynamic Full Body Fat Loss Pump 10",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_10",
+      "category": "Full Body Fat Loss",
+      "routineName": "Hypertrophy Full Body Fat Loss Routine 11",
+      "exercises": [
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_11",
+      "category": "Full Body Fat Loss",
+      "routineName": "Dynamic Full Body Fat Loss Pump 12",
+      "exercises": [
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_12",
+      "category": "Full Body Fat Loss",
+      "routineName": "Strength Full Body Fat Loss Blast 13",
+      "exercises": [
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_13",
+      "category": "Full Body Fat Loss",
+      "routineName": "Ultimate Full Body Fat Loss Destroyer 14",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_14",
+      "category": "Full Body Fat Loss",
+      "routineName": "Hypertrophy Full Body Fat Loss Session 15",
+      "exercises": [
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_15",
+      "category": "Full Body Fat Loss",
+      "routineName": "Ultimate Full Body Fat Loss Blast 16",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_16",
+      "category": "Full Body Fat Loss",
+      "routineName": "Dynamic Full Body Fat Loss Routine 17",
+      "exercises": [
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_17",
+      "category": "Full Body Fat Loss",
+      "routineName": "Spartan Full Body Fat Loss Protocol 18",
+      "exercises": [
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_18",
+      "category": "Full Body Fat Loss",
+      "routineName": "Mass Building Full Body Fat Loss Blast 19",
+      "exercises": [
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "full_body_fat_loss_19",
+      "category": "Full Body Fat Loss",
+      "routineName": "Spartan Full Body Fat Loss Destroyer 20",
+      "exercises": [
+        {
+          "name": "Burpees",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Thrusters",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Box Jumps",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Kettlebell Swings",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 4,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "abs_0",
+      "category": "Abs",
+      "routineName": "Ultimate Abs Routine 1",
+      "exercises": [
+        {
+          "name": "Wall Press Heel Tap",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Barbell Climbs",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Side Plank with Hip Dip",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Half Kneeling Push-Pull",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Weighted Straight Leg Toe Touch",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Decline Bench Cable Crunch",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "abs_1",
+      "category": "Abs",
+      "routineName": "Intense Abs Program 2",
+      "exercises": [
+        {
+          "name": "Wide Stance Cable Anti-Rotation",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Seated Barbell Twist (On Floor)",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Reach And Catch",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Pallof Press with Rotation",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Standing Barbell Twist",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Kettlebell Windmill",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "abs_2",
+      "category": "Abs",
+      "routineName": "Dynamic Abs Circuit 3",
+      "exercises": [
+        {
+          "name": "Barbell Climbs",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Twisting Cable Crunch",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Straight Leg Toe Touch (Floor Toe Reach)",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Decline Bench Knee Raise",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Seated Barbell Twist (On Floor)",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "abs_3",
+      "category": "Abs",
+      "routineName": "Spartan Abs Pump 4",
+      "exercises": [
+        {
+          "name": "Standing Cable Crunch",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Standing Barbell Twist",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Half Kneeling Cable Chop",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Lying Cable Crunch",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Hanging Knee Raise",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "abs_4",
+      "category": "Abs",
+      "routineName": "Core Abs Circuit 5",
+      "exercises": [
+        {
+          "name": "Decline Bench Alternating Leg Raise",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Decline Bench Sit Up With Twist",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Glute Bridge Pallof Press",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Standing Push-Pull",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Weighted Crunch",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Russian Twist",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "abs_5",
+      "category": "Abs",
+      "routineName": "Dynamic Abs Circuit 6",
+      "exercises": [
+        {
+          "name": "Lying Cable Knee Raise",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Tall Kneeling Cable Chop",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Lying Leg Raise (On Bench)",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Lying Pallof Press",
+          "sets": 4,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "abs_6",
+      "category": "Abs",
+      "routineName": "Spartan Abs Circuit 7",
+      "exercises": [
+        {
+          "name": "Stir the Pot on Exercise Ball",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Russian Twist",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Half Kneeling Cable Lift",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Upper Body Band Resistance Dead Bug",
+          "sets": 5,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "abs_7",
+      "category": "Abs",
+      "routineName": "Elite Abs Workout 8",
+      "exercises": [
+        {
+          "name": "Exercise Ball Plank",
+          "sets": 3,
+          "reps": "Failure"
+        },
+        {
+          "name": "Lying Floor Knee Tuck",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Twisting Lying Cable Crunch",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Exercise Ball Knee Tuck",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "abs_8",
+      "category": "Abs",
+      "routineName": "Spartan Abs Workout 9",
+      "exercises": [
+        {
+          "name": "Medicine Ball Rollouts",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Bottoms Up Kettlebell Turkish Get Up to Knee",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Dragon Flag",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Weighted Russian Twist",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Glute Bridge Pallof Press",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "abs_9",
+      "category": "Abs",
+      "routineName": "Hypertrophy Abs Blast 10",
+      "exercises": [
+        {
+          "name": "3 Month Position Kettlebell Pullover",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Decline Bench Abdominal Reach",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Oblique Cable Crunch",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Tall Kneeling Push-Pull",
+          "sets": 4,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "abs_10",
+      "category": "Abs",
+      "routineName": "Spartan Abs Destroyer 11",
+      "exercises": [
+        {
+          "name": "Valslide Body Saw",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Tall Kneeling Cable Lift",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Roman Chair Weighted Knee Raise",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Seated Barbell Twist (On Floor)",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Shoulder Taps",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "abs_11",
+      "category": "Abs",
+      "routineName": "Pro Abs Pump 12",
+      "exercises": [
+        {
+          "name": "Cable Crunch",
+          "sets": 4,
+          "reps": "5"
+        },
+        {
+          "name": "Plank",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Feet Elevated Plank",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Straight Leg Dead Bug",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Glute Bridge Pallof Press",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "abs_12",
+      "category": "Abs",
+      "routineName": "Essential Abs Workout 13",
+      "exercises": [
+        {
+          "name": "Turkish Get Up to Hand",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Off Bench Oblique Hold",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Oblique Cable Crunch",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Lying Leg Raise With Hip Thrust",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Alternate Heel Touches",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Decline Bench Cable Knee Raise",
+          "sets": 4,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "abs_13",
+      "category": "Abs",
+      "routineName": "Hypertrophy Abs Challenge 14",
+      "exercises": [
+        {
+          "name": "Dumbbell Side Bends",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Weighted Hanging Knee Raise",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Abominal Hip Thrust",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Dead Bug with Plates",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Hanging Leg Raise",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "abs_14",
+      "category": "Abs",
+      "routineName": "Spartan Abs Challenge 15",
+      "exercises": [
+        {
+          "name": "Wall Press 90/90 Extension",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Decline Bench Abdominal Reach",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Exercise Ball Crunch",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Contralateral Bird Dog",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Turkish Get Up to Hand",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Lying Leg Raise (On Bench)",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "abs_15",
+      "category": "Abs",
+      "routineName": "Intense Abs Challenge 16",
+      "exercises": [
+        {
+          "name": "Tall Kneeling Cable Lift",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Lying Leg Raise With Hip Thrust",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Hands Overhead Ab Crunch",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Turkish Get Up to Knee",
+          "sets": 3,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "abs_16",
+      "category": "Abs",
+      "routineName": "Strength Abs Session 17",
+      "exercises": [
+        {
+          "name": "Decline Bench Sit Up",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Kettlebell Dead Bug",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Hollow Body Hold",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Kettlebell Windmill",
+          "sets": 5,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "abs_17",
+      "category": "Abs",
+      "routineName": "Dynamic Abs Challenge 18",
+      "exercises": [
+        {
+          "name": "Half Kneeling Cable Lift",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Half Kneeling Push-Pull",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Lower Body Band Resistance Dead Bug",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Kneeling Dumbbell Hold to Stand",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Turkish Get Up to Knee",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Shoulder Taps",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "abs_18",
+      "category": "Abs",
+      "routineName": "Pro Abs Workout 19",
+      "exercises": [
+        {
+          "name": "Kneeling Dumbbell Hold to Stand",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Lower Body Band Resistance Dead Bug",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Weighted Hanging Knee Raise",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Medicine Ball Rollouts",
+          "sets": 3,
+          "reps": "15"
+        }
+      ]
+    },
+    {
+      "id": "abs_19",
+      "category": "Abs",
+      "routineName": "Advanced Abs Pump 20",
+      "exercises": [
+        {
+          "name": "Exercise Ball Crunch",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Medicine Ball Dead Bug",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Weighted Russian Twist",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Exercise Ball Knee Tuck",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Lying Knee Tuck to Heel Raise",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    },
+    {
+      "id": "abs_20",
+      "category": "Abs",
+      "routineName": "Dynamic Abs Program 21",
+      "exercises": [
+        {
+          "name": "Exercise Ball Crunch",
+          "sets": 3,
+          "reps": "15"
+        },
+        {
+          "name": "Decline Bench Sit Up With Twist",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Weighted Straight Leg Toe Touch",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Upper Body Band Resistance Dead Bug",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Side Plank",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Standing Barbell Twist",
+          "sets": 3,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "abs_21",
+      "category": "Abs",
+      "routineName": "Spartan Abs Routine 22",
+      "exercises": [
+        {
+          "name": "One-Leg Lying Cable Knee Raise",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Weighted Straight Leg Toe Touch",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Lower Body Band Resistance Dead Bug",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Hands Overhead Ab Crunch",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Lying Floor Knee Tuck",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "glutes_0",
+      "category": "Glutes",
+      "routineName": "Quick Glutes Circuit 1",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "glutes_1",
+      "category": "Glutes",
+      "routineName": "Advanced Glutes Challenge 2",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "glutes_2",
+      "category": "Glutes",
+      "routineName": "Quick Glutes Destroyer 3",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 5,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "glutes_3",
+      "category": "Glutes",
+      "routineName": "Pro Glutes Workout 4",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 3,
+          "reps": "Failure"
+        }
+      ]
+    },
+    {
+      "id": "glutes_4",
+      "category": "Glutes",
+      "routineName": "Advanced Glutes Program 5",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 3,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "glutes_5",
+      "category": "Glutes",
+      "routineName": "Advanced Glutes Challenge 6",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "glutes_6",
+      "category": "Glutes",
+      "routineName": "Advanced Glutes Session 7",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 3,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "glutes_7",
+      "category": "Glutes",
+      "routineName": "Pro Glutes Blast 8",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "glutes_8",
+      "category": "Glutes",
+      "routineName": "Pro Glutes Challenge 9",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "glutes_9",
+      "category": "Glutes",
+      "routineName": "Essential Glutes Challenge 10",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 5,
+          "reps": "5"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 3,
+          "reps": "6-8"
+        }
+      ]
+    },
+    {
+      "id": "glutes_10",
+      "category": "Glutes",
+      "routineName": "Core Glutes Program 11",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 3,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 4,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "glutes_11",
+      "category": "Glutes",
+      "routineName": "Essential Glutes Routine 12",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 3,
+          "reps": "5"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 3,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "glutes_12",
+      "category": "Glutes",
+      "routineName": "Pro Glutes Circuit 13",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 5,
+          "reps": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "glutes_13",
+      "category": "Glutes",
+      "routineName": "Pro Glutes Program 14",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 5,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 3,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "Failure"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 3,
+          "reps": "12-15"
+        }
+      ]
+    },
+    {
+      "id": "glutes_14",
+      "category": "Glutes",
+      "routineName": "Dynamic Glutes Blast 15",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "Failure"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 5,
+          "reps": "60 secs"
+        }
+      ]
+    },
+    {
+      "id": "glutes_15",
+      "category": "Glutes",
+      "routineName": "Dynamic Glutes Destroyer 16",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 4,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 3,
+          "reps": "6-8"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 4,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "glutes_16",
+      "category": "Glutes",
+      "routineName": "Quick Glutes Circuit 17",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 4,
+          "reps": "12-15"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 5,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 4,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 5,
+          "reps": "8-10"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "10-12"
+        }
+      ]
+    },
+    {
+      "id": "glutes_17",
+      "category": "Glutes",
+      "routineName": "Mass Building Glutes Routine 18",
+      "exercises": [
+        {
+          "name": "Generic Glutes Exercise 5",
+          "sets": 4,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 3",
+          "sets": 5,
+          "reps": "10-12"
+        },
+        {
+          "name": "Generic Glutes Exercise 1",
+          "sets": 5,
+          "reps": "15"
+        },
+        {
+          "name": "Generic Glutes Exercise 2",
+          "sets": 4,
+          "reps": "60 secs"
+        },
+        {
+          "name": "Generic Glutes Exercise 4",
+          "sets": 5,
+          "reps": "5"
+        }
+      ]
+    }
+  ]
+}

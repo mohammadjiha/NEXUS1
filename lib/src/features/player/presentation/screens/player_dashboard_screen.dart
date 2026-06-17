@@ -1,0 +1,1793 @@
+import 'dart:convert';
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:sizer/sizer.dart';
+
+import '../../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/shared_preferences_provider.dart';
+import '../../../../core/utils/role_utils.dart';
+import '../../../../features/auth/data/auth_repository.dart';
+import '../../../../features/coach/presentation/screens/notifications_sheet.dart';
+import '../../../../features/coach/providers/notifications_provider.dart';
+import '../../../../features/coaching/presentation/screens/ai_coach_chat_screen.dart';
+import '../../../../features/community/presentation/screens/community_screen.dart';
+import '../../../../features/coaching/presentation/screens/ai_coach_live_screen.dart';
+import '../../../../features/coaching/presentation/screens/human_coach_chat_screen.dart';
+import '../../../../features/hub/presentation/screens/hub_screen.dart';
+import '../../../../features/nutrition/presentation/screens/nutrition_flow_coordinator.dart';
+import '../../../../features/profile/presentation/screens/profile_screen.dart';
+import '../../../../features/profile/providers/body_metrics_provider.dart';
+import '../../../../features/smart_workout/models/routine_model.dart';
+import '../../../../features/smart_workout/presentation/screens/ai_coach_flow_coordinator.dart';
+import '../../../../features/smart_workout/providers/routines_provider.dart';
+import '../../../../features/smart_workout/providers/split_setup_provider.dart';
+import '../../../../features/smart_workout/providers/workout_history_provider.dart';
+import '../../../../features/user/models/user_model.dart';
+import '../../../../features/wearables/presentation/screens/connect_device_screen.dart';
+
+class BottomNavIndexNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setIndex(int index) => state = index;
+}
+
+final bottomNavIndexProvider = NotifierProvider<BottomNavIndexNotifier, int>(
+  BottomNavIndexNotifier.new,
+);
+
+final nutritionTodayProvider = Provider<Map<String, int>>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final historyStr = prefs.getString('nutrition_history');
+  if (historyStr == null) return {'cKcal': 0, 'tKcal': 0};
+
+  final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+  try {
+    final List<dynamic> historyJson = jsonDecode(historyStr) as List<dynamic>;
+    for (final entry in historyJson) {
+      if (entry is Map && entry['date'] == todayStr) {
+        return {
+          'cKcal': (entry['consumedKcal'] ?? entry['totalKcal'] ?? 0) as int,
+          'tKcal': (entry['targetKcal'] ?? 0) as int,
+        };
+      }
+    }
+  } catch (_) {}
+  return {'cKcal': 0, 'tKcal': 0};
+});
+
+final todaysRoutineProvider = Provider<RoutineModel?>((ref) {
+  final hasPlan = ref.watch(splitSetupStatusProvider).value ?? false;
+  if (!hasPlan) return null;
+
+  final setupData =
+      ref.watch(splitSetupDataProvider).value ??
+      SplitSetupData(planStartDate: DateTime.now());
+  final planStartDate = setupData.planStartDate ?? DateTime.now();
+  final generatedPlan = ref.watch(generatedPlanProvider);
+  final now = DateTime.now();
+
+  final differenceInDays = DateTime(now.year, now.month, now.day)
+      .difference(
+        DateTime(planStartDate.year, planStartDate.month, planStartDate.day),
+      )
+      .inDays;
+  final todayIndex = differenceInDays >= 0 ? (differenceInDays % 7) : 0;
+
+  final today = generatedPlan.isNotEmpty ? generatedPlan[todayIndex] : null;
+  final routineId = today?.assignedRoutineId;
+
+  if (today == null || today.isRest || routineId == null) {
+    return null;
+  }
+
+  final routinesAsync = ref.watch(msRoutinesProvider);
+  return routinesAsync.maybeWhen(
+    data: (routines) {
+      if (routines.isEmpty) return null;
+      try {
+        return routines.firstWhere((r) => r.id == routineId);
+      } catch (_) {
+        return routines.first;
+      }
+    },
+    orElse: () => null,
+  );
+});
+
+class PlayerDashboardScreen extends ConsumerStatefulWidget {
+  const PlayerDashboardScreen({super.key});
+
+  @override
+  ConsumerState<PlayerDashboardScreen> createState() =>
+      _PlayerDashboardScreenState();
+}
+
+class _PlayerDashboardScreenState extends ConsumerState<PlayerDashboardScreen> {
+  bool _hasShownExpiredAlert = false;
+
+  Future<void> _logoutExpiredUser(BuildContext context) async {
+    await ref.read(authRepositoryProvider).signOut();
+    if (context.mounted) context.go('/onboarding');
+  }
+
+  Widget _getTab(
+    int index, {
+    required String? firstName,
+    required String initials,
+    required BodyMetrics metrics,
+    required Map<String, int> nutrition,
+    required List<CompletedSession> workoutHistory,
+    required RoutineModel? todaysRoutine,
+    required UserModel? userModel,
+    required UserModel? coach,
+  }) {
+    return switch (index) {
+      0 => _buildDashboardView(
+        context: context,
+        firstName: firstName,
+        initials: initials,
+        ref: ref,
+        metrics: metrics,
+        nutrition: nutrition,
+        workoutHistory: workoutHistory,
+        todaysRoutine: todaysRoutine,
+        userModel: userModel,
+        coach: coach,
+      ),
+      1 => const AiCoachFlowCoordinator(),
+      2 => const HubScreen(),
+      3 => const NutritionFlowCoordinator(),
+      4 => const CommunityScreen(),
+      _ => Center(child: Text('tab_not_found'.tr(context))),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstName = ref.watch(currentUserFirstNameProvider);
+    final initials = ref.watch(currentUserInitialsProvider);
+    final metrics = ref.watch(bodyMetricsProvider).value ?? BodyMetrics();
+    final nutrition = ref.watch(nutritionTodayProvider);
+    final workoutHistory = ref.watch(workoutHistoryProvider);
+    final todaysRoutine = ref.watch(todaysRoutineProvider);
+    final userModel = ref.watch(currentUserModelProvider).asData?.value;
+    final coach = ref.watch(assignedCoachProvider).asData?.value;
+
+    final tabIndex = ref.watch(bottomNavIndexProvider);
+
+    ref.listen(currentUserModelProvider, (previous, next) {
+      final model = next.asData?.value;
+      if (model != null && !model.isActive) {
+        if (context.mounted) {
+          context.go('/account_suspended');
+        }
+      } else if (model != null &&
+          model.subscriptionEnd != null &&
+          model.subscriptionEnd!.isBefore(DateTime.now())) {
+        if (!_hasShownExpiredAlert && context.mounted) {
+          _hasShownExpiredAlert = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.w),
+              ),
+              title: Text(
+                'subscription_expired_title'.tr(ctx),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.sp,
+                  color: const Color(0xFF1C1C1E),
+                ),
+              ),
+              content: Text(
+                'subscription_expired_desc'.tr(ctx),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: const Color(0xFF8E8E93),
+                  height: 1.5,
+                ),
+              ),
+              actions: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(2.w),
+                      ),
+                    ),
+                    child: Text(
+                      'ok_understood'.tr(ctx),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await _logoutExpiredUser(context);
+                    },
+                    child: Text(
+                      'logout'.tr(ctx),
+                      style: TextStyle(
+                        color: const Color(0xFFE53935),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    });
+
+    final bool isExpired =
+        userModel != null &&
+        userModel.subscriptionEnd != null &&
+        userModel.subscriptionEnd!.isBefore(DateTime.now());
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F7),
+      body: Stack(
+        children: [
+          AbsorbPointer(
+            absorbing: isExpired,
+            child: _getTab(
+              tabIndex,
+              firstName: firstName,
+              initials: initials,
+              metrics: metrics,
+              nutrition: nutrition,
+              workoutHistory: workoutHistory,
+              todaysRoutine: todaysRoutine,
+              userModel: userModel,
+              coach: coach,
+            ),
+          ),
+          if (isExpired)
+            Positioned.fill(
+              child: Container(color: Colors.grey.withValues(alpha: 0.4)),
+            ),
+          if (isExpired)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Container(
+                  width: double.infinity,
+                  color: const Color(0xFFE53935),
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'renew_subscription_banner'.tr(context),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _logoutExpiredUser(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 2.w),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'logout'.tr(context),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w900,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          _buildBottomNav(context, ref),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardView({
+    required BuildContext context,
+    String? firstName,
+    String initials = '?',
+    required WidgetRef ref,
+    required BodyMetrics metrics,
+    required Map<String, int> nutrition,
+    required List<CompletedSession> workoutHistory,
+    RoutineModel? todaysRoutine,
+    UserModel? userModel,
+    UserModel? coach,
+  }) {
+    // Subscription Logic
+    final now = DateTime.now();
+    final subEnd = userModel?.subscriptionEnd;
+    final owes = userModel?.amountRemaining ?? 0.0;
+
+    int? daysLeft;
+    if (subEnd != null) {
+      daysLeft = subEnd.difference(now).inDays;
+    }
+    return SafeArea(
+      bottom: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsetsDirectional.only(
+          start: 4.4.w,
+          end: 4.4.w,
+          bottom: 13.3.h,
+          top: 2.2.h,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTopBar(
+              context: context,
+              ref: ref,
+              metrics: metrics,
+              firstName: firstName,
+              initials: initials,
+            ),
+            SizedBox(height: 2.h),
+            if (daysLeft != null && daysLeft <= 7)
+              Container(
+                margin: EdgeInsets.only(bottom: 2.h),
+                padding: EdgeInsets.all(4.w),
+                decoration: BoxDecoration(
+                  color: daysLeft < 0
+                      ? const Color(0xFFE53935).withValues(alpha: 0.1)
+                      : const Color(0xFFFF9500).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4.w),
+                  border: Border.all(
+                    color: daysLeft < 0
+                        ? const Color(0xFFE53935)
+                        : const Color(0xFFFF9500),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      daysLeft < 0
+                          ? Icons.error_outline
+                          : Icons.warning_amber_rounded,
+                      color: daysLeft < 0
+                          ? const Color(0xFFE53935)
+                          : const Color(0xFFFF9500),
+                    ),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      child: Text(
+                        daysLeft < 0
+                            ? 'dash_sub_expired'.tr(context)
+                            : '${'dash_sub_expires_in'.tr(context)}$daysLeft ${'days'.tr(context)}',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: daysLeft < 0
+                              ? const Color(0xFFE53935)
+                              : const Color(0xFFFF9500),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (owes > 0)
+              Container(
+                margin: EdgeInsets.only(bottom: 2.h),
+                padding: EdgeInsets.all(4.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE53935).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4.w),
+                  border: Border.all(color: const Color(0xFFE53935)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.payments_outlined,
+                      color: Color(0xFFE53935),
+                    ),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      child: Text(
+                        '${'dash_outstanding_balance'.tr(context)}$owes${'dash_pay_reception'.tr(context)}',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFE53935),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(height: 1.3.h),
+            _buildStreakCard(context, ref, workoutHistory),
+            SizedBox(height: 2.2.h),
+            _buildSectionHeader(
+              title: 'todays_stats'.tr(context),
+              linkText: 'details'.tr(context),
+              onTap: () {},
+            ),
+            SizedBox(height: 1.7.h),
+            _buildMetricsGrid(context, ref, metrics, nutrition),
+            SizedBox(height: 3.3.h),
+            _buildSectionHeader(
+              title: 'todays_workout'.tr(context),
+              linkText: 'full_plan'.tr(context),
+              onTap: () =>
+                  ref.read(bottomNavIndexProvider.notifier).setIndex(1),
+            ),
+            SizedBox(height: 1.7.h),
+            _buildTodayWorkoutCard(context, todaysRoutine, ref),
+            SizedBox(height: 3.3.h),
+            _buildSectionHeader(
+              title: 'form_checker'.tr(context),
+              linkText: 'open_camera'.tr(context),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AICoachLiveScreen()),
+              ),
+            ),
+            SizedBox(height: 1.7.h),
+            _buildFormCheckerCard(context),
+            SizedBox(height: 3.3.h),
+            Text(
+              'your_coaches'.tr(context),
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF8E8E93),
+                letterSpacing: 0.5,
+              ),
+            ),
+            SizedBox(height: 1.5.h),
+            _buildCoachCard(
+              title: 'dash_nexus_ai_coach'.tr(context),
+              role: 'dash_ai_coach_role'.tr(context),
+              preview:
+                  "${'dash_ai_coach_preview'.tr(context)}${ref.watch(recoveryScoreProvider('Chest'))}${'dash_ai_coach_preview_ready'.tr(context)}",
+              time: 'dash_now'.tr(context),
+              badgeCount: 3,
+              isOnline: true,
+              avatarBg: const Color(0xFF1C1C1E),
+              avatarWidget: Icon(
+                Icons.show_chart_rounded,
+                color: Colors.white,
+                size: 18.sp,
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiCoachChatScreen()),
+                );
+              },
+            ),
+            SizedBox(height: 1.h),
+            Builder(builder: (context) {
+              // Derive live name: prefer streaming coach doc, fall back to cached field
+              final coachFirstName = coach?.firstName?.trim() ?? '';
+              final coachLastName = coach?.lastName?.trim() ?? '';
+              final liveName = (coachFirstName.isNotEmpty || coachLastName.isNotEmpty)
+                  ? '$coachFirstName $coachLastName'.trim()
+                  : (userModel?.assignedCoachName?.trim().isNotEmpty == true
+                      ? userModel!.assignedCoachName!
+                      : null);
+
+              // Online: lastLogin within last 2 hours
+              final isCoachOnline = coach?.lastLogin != null &&
+                  DateTime.now().difference(coach!.lastLogin!) <=
+                      const Duration(hours: 2);
+
+              return _buildCoachCard(
+                title: liveName ?? 'dash_assigned_coach'.tr(context),
+                role: 'dash_human_coach_role'.tr(context),
+                preview: coach != null
+                    ? (isCoachOnline
+                        ? 'dash_coach_online'.tr(context)
+                        : 'dash_human_coach_preview'.tr(context))
+                    : 'dash_human_coach_preview'.tr(context),
+                time: '',
+                badgeCount: 0,
+                isOnline: coach != null && isCoachOnline,
+                avatarBg: const Color(0xFFE8FFF0),
+                avatarWidget: Text(
+                  'coach_emoji'.tr(context),
+                  style: TextStyle(fontSize: 20.sp),
+                ),
+                onTap: () {
+                  final coachUid = userModel?.assignedCoachUid?.trim();
+                  final playerUid = userModel?.uid?.trim();
+                  if (coachUid != null &&
+                      playerUid != null &&
+                      coachUid.isNotEmpty &&
+                      playerUid.isNotEmpty) {
+                    final chatId = '${playerUid}_$coachUid';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HumanCoachChatScreen(
+                          chatId: chatId,
+                          participantName: liveName ?? 'Coach',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('no_coach_assigned_yet'.tr(context)),
+                      ),
+                    );
+                  }
+                },
+              );
+            }),
+            SizedBox(height: 3.3.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar({
+    required BuildContext context,
+    required WidgetRef ref,
+    required BodyMetrics metrics,
+    String? firstName,
+    String initials = '?',
+  }) {
+    final greeting = firstName != null
+        ? '${'dash_good_morning_name'.tr(context)}$firstName 👋'
+        : 'dash_good_morning'.tr(context);
+    final todayStr = DateFormat(
+      'EEEE, MMM d',
+    ).format(DateTime.now()).toUpperCase();
+    final hasMissingProfileData = !metrics.hasRequiredProfileData;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  todayStr,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF8E8E93),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                SizedBox(height: 0.6.h),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    greeting,
+                    style: TextStyle(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1C1C1E),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            // Admin dashboard shortcut — only visible to coaches / admins
+            Builder(
+              builder: (context) {
+                final role =
+                    ref.watch(currentUserModelProvider).asData?.value?.role ??
+                    '';
+                final isPrivileged = AppRole.isPrivileged(role);
+                if (!isPrivileged) return const SizedBox.shrink();
+                return Padding(
+                  padding: EdgeInsets.only(right: 2.2.w),
+                  child: GestureDetector(
+                    onTap: () => context.push('/admin'),
+                    child: Container(
+                      width: 12.2.w,
+                      height: 12.2.w,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1C1C1E),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: Colors.white,
+                        size: 20.sp,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            GestureDetector(
+              onTap: () {
+                _showNotificationsModal(context, ref);
+              },
+              child: Container(
+                width: 12.2.w,
+                height: 12.2.w,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE5E5EA)),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.notifications_none_rounded,
+                      color: const Color(0xFF1C1C1E),
+                      size: 24.5.sp,
+                    ),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final unreadCount = ref.watch(
+                          unreadNotificationsCountProvider,
+                        );
+                        if (unreadCount == 0 && !hasMissingProfileData) {
+                          return const SizedBox.shrink();
+                        }
+                        return PositionedDirectional(
+                          top: 2.7.w,
+                          end: 3.1.w,
+                          child: Container(
+                            width: 2.5.w,
+                            height: 2.5.w,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF3B30),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(width: 2.2.w),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+              child: Container(
+                width: 12.2.w,
+                height: 12.2.w,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1C1C1E),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showNotificationsModal(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => const NotificationsSheet(),
+    );
+  }
+
+  Widget _buildStreakCard(
+    BuildContext context,
+    WidgetRef ref,
+    List<CompletedSession> history,
+  ) {
+    int streak = 0;
+    final now = DateTime.now();
+    final user = ref.watch(currentUserModelProvider).asData?.value;
+
+    if (user != null) {
+      final startDate = user.subscriptionStart ?? user.createdAt;
+      final start = DateTime(startDate.year, startDate.month, startDate.day);
+      final today = DateTime(now.year, now.month, now.day);
+
+      streak = today.difference(start).inDays + 1;
+      if (streak < 1) streak = 1;
+    }
+
+    Color fireIconColor = Colors.white.withValues(alpha: 0.8);
+    Color fireBgColor = Colors.white.withValues(alpha: 0.08);
+
+    if (user != null) {
+      if (!user.isActive) {
+        fireIconColor = const Color(0xFFFF3B30); // Red
+        fireBgColor = const Color(0xFFFF3B30).withValues(alpha: 0.15);
+      } else if (user.subscriptionEnd != null) {
+        final daysLeft = user.subscriptionEnd!
+            .difference(DateTime.now())
+            .inDays;
+        if (daysLeft < 0) {
+          fireIconColor = const Color(0xFFFF3B30);
+          fireBgColor = const Color(0xFFFF3B30).withValues(alpha: 0.15);
+        } else if (daysLeft <= 3) {
+          fireIconColor = const Color(0xFFFF9500);
+          fireBgColor = const Color(0xFFFF9500).withValues(alpha: 0.15);
+        } else {
+          fireIconColor = const Color(0xFF34C759);
+          fireBgColor = const Color(0xFF34C759).withValues(alpha: 0.15);
+        }
+      } else {
+        fireIconColor = const Color(0xFF34C759);
+        fireBgColor = const Color(0xFF34C759).withValues(alpha: 0.15);
+      }
+    }
+
+    final generatedPlan = ref.watch(generatedPlanProvider);
+    final setupData = ref.watch(splitSetupDataProvider).value;
+    final planStartDate = setupData?.planStartDate;
+
+    return Container(
+      padding: EdgeInsets.all(4.4.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.circular(5.5.w),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'active_days'.tr(context).toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 13.8.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.5),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 0.6.h),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '$streak',
+                          style: TextStyle(
+                            fontSize: 31.9.sp,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                        SizedBox(width: 1.1.w),
+                        Text(
+                          'days'.tr(context),
+                          style: TextStyle(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 0.3.h),
+                    Text(
+                      streak > 0
+                          ? 'keep_it_up'.tr(context)
+                          : 'start_streak'.tr(context),
+                      style: TextStyle(
+                        fontSize: 14.9.sp,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 3.3.w),
+              Container(
+                width: 15.5.w,
+                height: 15.5.w,
+                decoration: BoxDecoration(
+                  color: fireBgColor,
+                  borderRadius: BorderRadius.circular(3.8.w),
+                ),
+                child: Icon(
+                  Icons.local_fire_department_rounded,
+                  color: fireIconColor,
+                  size: 28.7.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 3.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (i) {
+              final now = DateTime.now();
+              // Calculate offset from Saturday (0) to Friday (6)
+              final offsetFromSaturday = (now.weekday + 1) % 7;
+              final startOfWeek = now.subtract(
+                Duration(days: offsetFromSaturday),
+              );
+              final d = startOfWeek.add(Duration(days: i));
+
+              final dayInitial = DateFormat('E').format(d)[0];
+              final dateNum = d.day.toString();
+              final isToday =
+                  d.year == now.year &&
+                  d.month == now.month &&
+                  d.day == now.day;
+
+              bool isDone = false;
+              for (final session in history) {
+                if (session.timestampIso != null) {
+                  final sDate = DateTime.parse(session.timestampIso!);
+                  if (sDate.year == d.year &&
+                      sDate.month == d.month &&
+                      sDate.day == d.day) {
+                    isDone = true;
+                    break;
+                  }
+                }
+              }
+
+              bool isMissed = false;
+              final todayDay = DateTime(now.year, now.month, now.day);
+              final dDay = DateTime(d.year, d.month, d.day);
+              if (dDay.isBefore(todayDay) && !isDone && planStartDate != null) {
+                final planStartDay = DateTime(
+                  planStartDate.year,
+                  planStartDate.month,
+                  planStartDate.day,
+                );
+                if (!dDay.isBefore(planStartDay)) {
+                  final diffDays = dDay.difference(planStartDay).inDays;
+                  final index = diffDays >= 0 ? (diffDays % 7) : 0;
+                  final planDay = generatedPlan.isNotEmpty
+                      ? generatedPlan[index]
+                      : null;
+                  if (planDay != null && !planDay.isRest) {
+                    isMissed = true;
+                  }
+                }
+              }
+
+              return _buildStreakDay(
+                dayInitial,
+                dateNum,
+                isDone,
+                isToday,
+                isMissed,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStreakDay(
+    String dayInitial,
+    String dateNum,
+    bool isDone,
+    bool isToday,
+    bool isMissed,
+  ) {
+    return Container(
+      width: 10.5.w,
+      height: 15.5.w,
+      decoration: BoxDecoration(
+        color: isToday
+            ? Colors.white
+            : (isDone
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.08)),
+        borderRadius: BorderRadius.circular(4.w),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            dayInitial,
+            style: TextStyle(
+              fontSize: 11.5.sp,
+              fontWeight: FontWeight.w700,
+              color: isToday
+                  ? const Color(0xFF8E8E93)
+                  : (isDone
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.2)),
+            ),
+          ),
+          SizedBox(height: 0.2.h),
+          Text(
+            dateNum,
+            style: TextStyle(
+              fontSize: 15.5.sp,
+              fontWeight: FontWeight.w800,
+              color: isToday
+                  ? const Color(0xFF1C1C1E)
+                  : (isDone
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.3)),
+            ),
+          ),
+          SizedBox(height: 0.5.h),
+          Container(
+            width: 1.5.w,
+            height: 1.5.w,
+            decoration: BoxDecoration(
+              color: isToday
+                  ? const Color(0xFF007AFF)
+                  : (isDone
+                        ? const Color(0xFF34C759)
+                        : (isMissed
+                              ? const Color(0xFFE53935)
+                              : Colors.transparent)),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String linkText,
+    required VoidCallback onTap,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 19.1.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1C1C1E),
+          ),
+        ),
+        GestureDetector(
+          onTap: onTap,
+          child: Text(
+            linkText,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF007AFF),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricsGrid(
+    BuildContext context,
+    WidgetRef ref,
+    BodyMetrics metrics,
+    Map<String, int> nutrition,
+  ) {
+    final weightStr = metrics.weight > 0
+        ? metrics.weight.toStringAsFixed(1)
+        : '--';
+
+    final cKcal = nutrition['cKcal'] ?? 0;
+    final tKcal = nutrition['tKcal'] ?? 0;
+    final kcalProgress = tKcal > 0 ? (cKcal / tKcal).clamp(0.0, 1.0) : 0.0;
+    final kcalBadge = tKcal == 0
+        ? 'dash_no_plan'.tr(context)
+        : (cKcal > tKcal
+              ? 'dash_over'.tr(context)
+              : 'dash_on_track'.tr(context));
+
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 3.3.w,
+      mainAxisSpacing: 3.3.w,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.15,
+      children: [
+        _buildMetricCard(
+          icon: Icons.monitor_weight_outlined,
+          iconColor: const Color(0xFFFF6B35),
+          iconBg: const Color(0xFFFFF0E8),
+          badgeText: 'dash_updated'.tr(context),
+          badgeColor: const Color(0xFFFF6B35),
+          badgeBg: const Color(0xFFFFF0E8),
+          value: weightStr,
+          unit: ' ${'kg_upper'.tr(context).toLowerCase()}',
+          label: 'dash_body_weight'.tr(context),
+          progress: 1.0,
+          progressColor: const Color(0xFFFF6B35),
+          onTap: () =>
+              ref.read(bottomNavIndexProvider.notifier).setIndex(4), // Profile
+        ),
+        _buildMetricCard(
+          icon: Icons.local_fire_department_outlined,
+          iconColor: const Color(0xFF007AFF),
+          iconBg: const Color(0xFFE8F5FF),
+          badgeText: kcalBadge,
+          badgeColor: const Color(0xFF1A7A30),
+          badgeBg: const Color(0xFFE8FFF0),
+          value: cKcal.toString(),
+          unit: ' ${'calories_upper'.tr(context).toLowerCase()}',
+          label: 'dash_calories_today'.tr(context),
+          progress: kcalProgress,
+          progressColor: const Color(0xFF007AFF),
+          onTap: () => ref
+              .read(bottomNavIndexProvider.notifier)
+              .setIndex(2), // Nutrition
+        ),
+        _buildMetricCard(
+          icon: Icons.favorite_border_rounded,
+          iconColor: const Color(0xFF34C759),
+          iconBg: const Color(0xFFE8FFF0),
+          badgeText: '+12%',
+          badgeColor: const Color(0xFF1A7A30),
+          badgeBg: const Color(0xFFE8FFF0),
+          value: '148',
+          unit: ' bpm',
+          label: 'dash_avg_hr'.tr(context),
+          progress: 0.85,
+          progressColor: const Color(0xFF34C759),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConnectDeviceScreen()),
+            );
+          },
+        ),
+        _buildMetricCard(
+          icon: Icons.bedtime_outlined,
+          iconColor: const Color(0xFF7B5CF0),
+          iconBg: const Color(0xFFF0EEFF),
+          badgeText: 'dash_good'.tr(context),
+          badgeColor: const Color(0xFF1A7A30),
+          badgeBg: const Color(0xFFE8FFF0),
+          value: '7.2',
+          unit: ' hrs',
+          label: 'dash_sleep_last_night'.tr(context),
+          progress: 0.72,
+          progressColor: const Color(0xFF7B5CF0),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConnectDeviceScreen()),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String badgeText,
+    required Color badgeColor,
+    required Color badgeBg,
+    required String value,
+    required String unit,
+    required String label,
+    required double progress,
+    required Color progressColor,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(3.3.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4.4.w),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 8.3.w,
+                  height: 8.3.w,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(2.2.w),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20.2.sp),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 1.7.w,
+                    vertical: 0.3.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(2.2.w),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      fontSize: 12.8.sp,
+                      fontWeight: FontWeight.w700,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 23.4.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1C1C1E),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      unit,
+                      style: TextStyle(
+                        fontSize: 14.9.sp,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF8E8E93),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 0.3.h),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13.8.sp,
+                    color: const Color(0xFF8E8E93),
+                  ),
+                ),
+                SizedBox(height: 1.1.h),
+                Container(
+                  height: 0.6.h,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F0F5),
+                    borderRadius: BorderRadius.circular(1.1.w),
+                  ),
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FractionallySizedBox(
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: progressColor,
+                        borderRadius: BorderRadius.circular(1.1.w),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTodayWorkoutCard(
+    BuildContext context,
+    RoutineModel? todaysRoutine,
+    WidgetRef ref,
+  ) {
+    if (todaysRoutine == null) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(4.4.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4.4.w),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(4.w),
+              decoration: BoxDecoration(
+                color: const Color(0xFF007AFF).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: const Color(0xFF007AFF),
+                size: 26.sp,
+              ),
+            ),
+            SizedBox(height: 1.5.h),
+            Text(
+              'no_workout_scheduled'.tr(context),
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1C1C1E),
+                letterSpacing: -0.5,
+              ),
+            ),
+            SizedBox(height: 0.8.h),
+            Text(
+              'tap_create_smart_workout_plan'.tr(context),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5.sp,
+                color: const Color(0xFF8E8E93),
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 2.5.h),
+            SizedBox(
+              width: double.infinity,
+              height: 6.h,
+              child: ElevatedButton(
+                onPressed: () =>
+                    ref.read(bottomNavIndexProvider.notifier).setIndex(1),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007AFF),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(3.w),
+                  ),
+                ),
+                child: Text(
+                  'go_to_workouts'.tr(context),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => ref.read(bottomNavIndexProvider.notifier).setIndex(1),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4.4.w),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(3.8.w),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${todaysRoutine.category} - ${todaysRoutine.routineName}',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1C1C1E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: 2.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 2.2.w,
+                      vertical: 0.4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5FF),
+                      borderRadius: BorderRadius.circular(2.2.w),
+                    ),
+                    child: Text(
+                      '${todaysRoutine.exercises.length} ${'exercises'.tr(context)}',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF007AFF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...todaysRoutine.exercises.take(4).toList().asMap().entries.map((
+              entry,
+            ) {
+              final i = entry.key;
+              final e = entry.value;
+              return _buildWorkoutRow(
+                '${i + 1}',
+                e.name,
+                '${e.sets} ${'sets'.tr(context).toLowerCase()} × ${e.reps} ${'reps'.tr(context).toLowerCase()} · ${e.weight} kg',
+                false, // isDone
+                false, // isActive
+                isLast: i == 3 || i == todaysRoutine.exercises.length - 1,
+              );
+            }),
+            if (todaysRoutine.exercises.length > 4)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                child: Text(
+                  '+ ${todaysRoutine.exercises.length - 4} ${'more_exercises'.tr(context)}',
+                  style: TextStyle(
+                    color: const Color(0xFF8E8E93),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkoutRow(
+    String num,
+    String name,
+    String meta,
+    bool isDone,
+    bool isActive, {
+    bool isLast = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 3.8.w, vertical: 1.7.h),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFF8F8FF) : Colors.transparent,
+        border: const Border(
+          top: BorderSide(color: Color(0xFFF0F0F5), width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 7.2.w,
+            height: 7.2.w,
+            decoration: BoxDecoration(
+              color: isDone
+                  ? const Color(0xFFE8FFF0)
+                  : (isActive
+                        ? const Color(0xFFE8F5FF)
+                        : const Color(0xFFF5F5F7)),
+              borderRadius: BorderRadius.circular(1.7.w),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              num,
+              style: TextStyle(
+                fontSize: 14.9.sp,
+                fontWeight: FontWeight.w700,
+                color: isDone
+                    ? const Color(0xFF1A7A30)
+                    : (isActive
+                          ? const Color(0xFF007AFF)
+                          : const Color(0xFF3A3A3C)),
+              ),
+            ),
+          ),
+          SizedBox(width: 3.3.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isActive
+                        ? const Color(0xFF007AFF)
+                        : const Color(0xFF1C1C1E),
+                  ),
+                ),
+                SizedBox(height: 0.3.h),
+                Text(
+                  meta,
+                  style: TextStyle(
+                    fontSize: 13.8.sp,
+                    color: const Color(0xFF8E8E93),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 6.1.w,
+            height: 6.1.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDone
+                    ? const Color(0xFF34C759)
+                    : (isActive
+                          ? const Color(0xFF007AFF)
+                          : const Color(0xFFD1D1D6)),
+                width: 1.5,
+              ),
+              color: isDone ? const Color(0xFF34C759) : Colors.transparent,
+            ),
+            alignment: Alignment.center,
+            child: isDone
+                ? Icon(Icons.check, color: Colors.white, size: 18.sp)
+                : (isActive
+                      ? Container(
+                          width: 2.7.w,
+                          height: 2.7.w,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF007AFF),
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                      : null),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoachCard({
+    required String title,
+    required String role,
+    required String preview,
+    required String time,
+    required int badgeCount,
+    required Color avatarBg,
+    required Widget avatarWidget,
+    required VoidCallback onTap,
+    bool isOnline = true,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4.4.w),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                Container(
+                  width: 13.w,
+                  height: 13.w,
+                  decoration: BoxDecoration(
+                    color: avatarBg,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: avatarWidget,
+                ),
+                PositionedDirectional(
+                  bottom: 0,
+                  end: 0,
+                  child: Container(
+                    width: 3.5.w,
+                    height: 3.5.w,
+                    decoration: BoxDecoration(
+                      color: isOnline
+                          ? const Color(0xFF34C759)
+                          : const Color(0xFF8E8E93),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(width: 3.5.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14.5.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1C1C1E),
+                    ),
+                  ),
+                  SizedBox(height: 0.3.h),
+                  Text(
+                    role,
+                    style: TextStyle(
+                      fontSize: 11.5.sp,
+                      color: const Color(0xFF8E8E93),
+                    ),
+                  ),
+                  SizedBox(height: 0.5.h),
+                  Text(
+                    preview,
+                    style: TextStyle(
+                      fontSize: 11.5.sp,
+                      color: const Color(0xFF3A3A3C),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 2.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 10.5.sp,
+                    color: const Color(0xFF8E8E93),
+                  ),
+                ),
+                SizedBox(height: 0.5.h),
+                if (badgeCount > 0)
+                  Container(
+                    width: 5.w,
+                    height: 5.w,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF3B30),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      badgeCount.toString(),
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormCheckerCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AICoachLiveScreen()),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(4.4.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF007AFF), Color(0xFF0056B3)],
+          ),
+          borderRadius: BorderRadius.circular(4.4.w),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 12.w,
+              height: 12.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.camera_front_rounded,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ai_video_coach'.tr(context),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 0.5.h),
+                  Text(
+                    'ai_video_coach_desc'.tr(context),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 11.sp,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(bottomNavIndexProvider);
+
+    return PositionedDirectional(
+      bottom: 0,
+      start: 0,
+      end: 0,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: EdgeInsets.only(
+              bottom:
+                  2.2.h +
+                  (Theme.of(context).platform == TargetPlatform.android
+                      ? MediaQuery.of(context).padding.bottom * 0.5
+                      : 0),
+              top: 1.1.h,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F7).withValues(alpha: 0.95),
+              border: const Border(
+                top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(
+                  Icons.home_outlined,
+                  Icons.home_rounded,
+                  0,
+                  currentIndex,
+                  ref,
+                ),
+                _buildNavItem(
+                  Icons.bolt_outlined,
+                  Icons.bolt_rounded,
+                  1,
+                  currentIndex,
+                  ref,
+                ),
+                _buildNavItem(
+                  Icons.grid_view_outlined,
+                  Icons.grid_view_rounded,
+                  2,
+                  currentIndex,
+                  ref,
+                ),
+                _buildNavItem(
+                  Icons.restaurant_outlined,
+                  Icons.restaurant_rounded,
+                  3,
+                  currentIndex,
+                  ref,
+                ),
+                _buildNavItem(
+                  Icons.public_outlined,
+                  Icons.public_rounded,
+                  4,
+                  currentIndex,
+                  ref,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    IconData inactiveIcon,
+    IconData activeIcon,
+    int index,
+    int currentIndex,
+    WidgetRef ref,
+  ) {
+    final isSelected = index == currentIndex;
+    return GestureDetector(
+      onTap: () => ref.read(bottomNavIndexProvider.notifier).setIndex(index),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 13.w,
+        child: Icon(
+          isSelected ? activeIcon : inactiveIcon,
+          size: 22.sp,
+          color: isSelected ? const Color(0xFF1C1C1E) : const Color(0xFF8E8E93),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nexus — Super Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0A0A0F;--card:#111118;--card2:#18181f;
+  --red:#FF3B30;--green:#34C759;--blue:#5BA8FF;--orange:#FF9500;--purple:#BF5AF2;
+  --text:#fff;--text2:rgba(255,255,255,.55);--text3:rgba(255,255,255,.25);
+  --border:rgba(255,255,255,.08);--sidebar:220px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+input,select,textarea{outline:none;font-family:inherit}
+button{cursor:pointer;font-family:inherit}
+
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:400px}
+.auth-logo{font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:6px}
+.auth-logo span{color:var(--red)}
+.auth-sub{color:var(--text2);font-size:16px;margin-bottom:32px}
+.field-label{font-size:14px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase}
+.field-input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-size:16px;transition:.2s}
+.field-input:focus{border-color:var(--red)}
+.field-select{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:16px}
+.field-select option{background:#1a1a2e}
+.field-wrap{margin-bottom:14px}
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--red),#C0392B);border:none;border-radius:12px;color:#fff;font-size:18px;font-weight:800;margin-top:8px;transition:.2s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.auth-error{background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.3);border-radius:10px;padding:12px 16px;font-size:15px;color:var(--red);margin-top:14px;display:none}
+
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;top:0;right:0;width:var(--sidebar);height:100vh;background:var(--card);border-left:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;z-index:100;overflow-y:auto}
+.sidebar-logo{font-size:24px;font-weight:900;letter-spacing:-.5px;padding:0 10px;margin-bottom:16px}
+.sidebar-logo span{color:var(--red)}
+.sidebar-section{font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;padding:10px 12px 4px;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:16px;font-weight:600;color:var(--text2);cursor:pointer;transition:.15s;border:none;background:none;width:100%;text-align:right}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.nav-item.active{background:rgba(255,59,48,.12);color:var(--red)}
+.nav-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.sidebar-bottom{margin-top:auto;padding-top:12px}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:13px;color:var(--text3)}
+.logout-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px}
+.logout-btn:hover{color:var(--red)}
+
+.main{margin-right:var(--sidebar);padding:28px 32px;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:28px;font-weight:900;letter-spacing:-.5px;margin-bottom:4px}
+.page-sub{color:var(--text2);font-size:16px;margin-bottom:24px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.stat-icon{font-size:26px;margin-bottom:8px}
+.stat-val{font-size:32px;font-weight:900;letter-spacing:-1px;line-height:1}
+.stat-lbl{font-size:14px;font-weight:600;color:var(--text3);margin-top:4px;letter-spacing:.3px;text-transform:uppercase}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:16px;font-weight:700;color:var(--text2);letter-spacing:.3px;text-transform:uppercase}
+.btn-add{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--red);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700}
+.btn-add:hover{opacity:.9}
+.btn-add-blue{background:rgba(91,168,255,.15);border:1px solid rgba(91,168,255,.25);color:var(--blue);border-radius:10px;padding:8px 14px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.btn-add-blue:hover{background:rgba(91,168,255,.25)}
+
+.filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-input{flex:1;min-width:180px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-size:15px}
+.search-input::placeholder{color:var(--text3)}
+.search-input:focus{border-color:rgba(255,255,255,.2)}
+.filter-select{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:15px;cursor:pointer}
+.filter-select option{background:#1a1a2e}
+
+.table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+thead th{background:rgba(255,255,255,.04);padding:11px 14px;font-size:14px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;text-align:right}
+tbody tr{border-top:1px solid var(--border);transition:.12s}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
+.td-name{font-weight:700;font-size:16px}
+.td-sub{font-size:14px;color:var(--text3);margin-top:1px}
+.td-mono{font-family:monospace;font-size:15px;color:var(--text2)}
+.no-data{text-align:center;padding:48px 20px;color:var(--text2);font-size:16px}
+.no-data .no-icon{font-size:42px;margin-bottom:10px}
+
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:800;letter-spacing:.3px;white-space:nowrap}
+.badge-green{background:rgba(52,199,89,.15);color:var(--green)}
+.badge-red{background:rgba(255,59,48,.15);color:var(--red)}
+.badge-blue{background:rgba(91,168,255,.15);color:var(--blue)}
+.badge-orange{background:rgba(255,149,0,.15);color:var(--orange)}
+.badge-purple{background:rgba(191,90,242,.15);color:var(--purple)}
+.badge-gray{background:rgba(255,255,255,.08);color:var(--text2)}
+
+.gym-list{display:flex;flex-direction:column;gap:10px}
+.gym-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:.15s}
+.gym-card:hover{border-color:rgba(255,255,255,.15)}
+.gym-card-main{display:flex;align-items:center;gap:12px;flex:1;cursor:pointer}
+.gym-emoji{width:48px;height:48px;background:rgba(255,59,48,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.gym-info{flex:1;min-width:0}
+.gym-name{font-size:17px;font-weight:800}
+.gym-meta{font-size:14px;color:var(--text3);margin-top:2px}
+.gym-stats-row{display:flex;gap:14px;font-size:14px;color:var(--text2);margin-top:4px}
+.gym-actions{display:flex;gap:6px;flex-shrink:0}
+.icon-btn{background:rgba(255,255,255,.06);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:17px;cursor:pointer;transition:.15s}
+.icon-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.icon-btn.danger:hover{background:rgba(255,59,48,.15);color:var(--red)}
+.icon-btn.edit:hover{background:rgba(91,168,255,.15);color:var(--blue)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:720px}
+.modal-header{padding:18px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;border-bottom:1px solid var(--border)}
+.modal-title{font-size:20px;font-weight:900}
+.modal-actions{display:flex;gap:8px;align-items:center}
+.modal-close{background:rgba(255,255,255,.08);border:none;border-radius:8px;width:34px;height:34px;color:var(--text2);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.modal-close:hover{background:rgba(255,59,48,.15);color:var(--red)}
+.modal-body{padding:16px 22px 20px}
+.modal-section{font-size:14px;font-weight:700;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{padding:0 22px 18px;display:flex;gap:10px;justify-content:flex-end}
+.btn-cancel{padding:9px 18px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:16px;font-weight:700}
+.btn-cancel:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-save{padding:9px 22px;background:linear-gradient(135deg,var(--blue),#3a8ae8);border:none;border-radius:10px;color:#fff;font-size:16px;font-weight:800}
+.btn-save:hover{opacity:.9}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.btn-create{padding:9px 22px;background:linear-gradient(135deg,var(--red),#C0392B);border:none;border-radius:10px;color:#fff;font-size:16px;font-weight:800}
+.btn-create:hover{opacity:.9}
+.btn-create:disabled{opacity:.5;cursor:not-allowed}
+.btn-delete{padding:9px 18px;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.25);border-radius:10px;color:var(--red);font-size:16px;font-weight:700}
+.btn-delete:hover{background:rgba(255,59,48,.2)}
+.form-hint{font-size:14px;color:var(--text3);margin-top:4px}
+.id-row{display:flex;gap:8px;align-items:flex-end}
+.id-row .field-wrap{flex:1;margin-bottom:0}
+.refresh-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:18px;cursor:pointer;flex-shrink:0}
+.refresh-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+
+.user-detail-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.user-detail-avatar{width:56px;height:56px;border-radius:12px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;flex-shrink:0}
+.user-detail-name{font-size:20px;font-weight:900}
+.user-detail-email{font-size:15px;color:var(--text3);margin-top:2px}
+.user-action-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.field-item{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+.field-item-label{font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
+.field-item-value{font-size:16px;font-weight:600;word-break:break-word}
+.field-item-value.mono{font-family:monospace;font-size:15px}
+.field-item.full{grid-column:1/-1}
+
+.payment-list{display:flex;flex-direction:column;gap:8px}
+.payment-item{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.payment-amount{font-size:18px;font-weight:900;color:var(--green);min-width:70px}
+.payment-info{flex:1}
+.payment-type{font-size:16px;font-weight:700}
+.payment-date{font-size:14px;color:var(--text3);margin-top:1px}
+.payment-method{font-size:13px;color:var(--text2)}
+
+.cred-box{background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.2);border-radius:12px;padding:14px;margin-bottom:12px}
+.cred-row{margin-bottom:8px}
+.cred-label{font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px}
+.cred-value{font-size:16px;font-weight:700;font-family:monospace;color:var(--text);word-break:break-all}
+.cred-value.password{color:var(--green)}
+.warn-box{background:rgba(255,149,0,.1);border:1px solid rgba(255,149,0,.2);border-radius:10px;padding:10px;font-size:14px;color:var(--orange);font-weight:600;margin-top:8px}
+.btn-copy{width:100%;padding:10px;background:rgba(91,168,255,.12);border:1px solid rgba(91,168,255,.2);border-radius:10px;color:var(--blue);font-size:16px;font-weight:700;margin-top:10px}
+.btn-copy:hover{background:rgba(91,168,255,.2)}
+
+.access-error{background:rgba(255,149,0,.08);border:1px solid rgba(255,149,0,.25);border-radius:14px;padding:20px;margin-bottom:20px}
+.access-error h3{color:var(--orange);font-size:18px;margin-bottom:8px}
+.access-error p{font-size:15px;color:var(--text2);line-height:1.7}
+.access-error code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;font-size:14px;font-family:monospace}
+
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-left:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.toast{position:fixed;bottom:24px;left:24px;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px;z-index:9999;transform:translateY(80px);opacity:0;transition:.3s;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(52,199,89,.3);color:var(--green)}
+.toast.error{border-color:rgba(255,59,48,.3);color:var(--red)}
+
+.toggle-wrap{display:flex;align-items:center;gap:10px;font-size:16px;cursor:pointer;padding:4px 0}
+.toggle-wrap input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--green)}
+.info-box{background:rgba(91,168,255,.08);border:1px solid rgba(91,168,255,.2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--blue);font-weight:600}
+.err-box{display:none;background:rgba(255,59,48,.1);border:1px solid rgba(255,59,48,.25);border-radius:10px;padding:10px 12px;font-size:15px;color:var(--red);margin-top:10px;font-weight:600}
+
+.msg-chip{padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+.msg-chip:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.msg-chip-sel{background:rgba(91,168,255,.2);border-color:rgba(91,168,255,.5);color:var(--blue)}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-right:0;padding:16px}
+  .form-row,.fields-grid{grid-template-columns:1fr}
+  .field-item.full{grid-column:1}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ AUTH ══════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">NEXUS <span>⚡</span></div>
+    <div class="auth-sub">Super Admin — لوحة التحكم الرئيسية</div>
+    <div class="field-wrap"><div class="field-label">الإيميل</div>
+      <input class="field-input" id="login-email" type="email" placeholder="superadmin.nexus@gmail.com" dir="ltr"/>
+    </div>
+    <div class="field-wrap"><div class="field-label">كلمة المرور</div>
+      <input class="field-input" id="login-pass" type="password" placeholder="••••••••••" dir="ltr"/>
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">تسجيل الدخول</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">NEX<span>US</span></div>
+    <div class="sidebar-section">عام</div>
+    <button class="nav-item active" id="nav-overview" onclick="showPage('overview')"><span class="nav-icon">📊</span>نظرة عامة</button>
+    <button class="nav-item" id="nav-gyms" onclick="showPage('gyms')"><span class="nav-icon">🏋️</span>الأندية</button>
+    <div class="sidebar-section">المستخدمون</div>
+    <button class="nav-item" id="nav-users" onclick="showPage('users')"><span class="nav-icon">👥</span>كل المستخدمين</button>
+    <button class="nav-item" id="nav-players" onclick="showPage('players')"><span class="nav-icon">🏃</span>اللاعبون</button>
+    <button class="nav-item" id="nav-coaches" onclick="showPage('coaches')"><span class="nav-icon">🧑‍💼</span>الكوتش</button>
+    <div class="sidebar-section">المالية</div>
+    <button class="nav-item" id="nav-payments" onclick="showPage('payments')"><span class="nav-icon">💰</span>المدفوعات</button>
+    <button class="nav-item" id="nav-messages" onclick="showPage('messages')"><span class="nav-icon">📨</span>الرسائل المرسلة</button>
+    <div class="sidebar-section">إدارة</div>
+    <button class="nav-item" id="nav-create" onclick="openCreateModal()"><span class="nav-icon">➕</span>نادي جديد</button>
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">S</div>
+        <div class="user-info">
+          <div class="user-name" id="user-display">Super Admin</div>
+          <div class="user-role">super_admin</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="خروج">⏻</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Overview -->
+    <div class="page active" id="page-overview">
+      <div class="page-title">نظرة عامة 📊</div>
+      <div class="page-sub">إحصائيات لحظية لكل بيانات Firebase</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-val" id="ov-gyms">—</div><div class="stat-lbl">أندية</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="ov-users">—</div><div class="stat-lbl">مستخدم</div></div>
+        <div class="stat-card"><div class="stat-icon">🏃</div><div class="stat-val" id="ov-players">—</div><div class="stat-lbl">لاعب</div></div>
+        <div class="stat-card"><div class="stat-icon">🧑‍💼</div><div class="stat-val" id="ov-coaches">—</div><div class="stat-lbl">كوتش</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val" id="ov-active">—</div><div class="stat-lbl">نشطون</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="ov-revenue">—</div><div class="stat-lbl">إيرادات ₪</div></div>
+      </div>
+      <div id="access-warning" style="display:none" class="access-error">
+        <h3>⚠️ Firestore Rules تمنع القراءة</h3>
+        <p>غيّر دالة <code>isSuperAdmin()</code> في Firestore Rules إلى:<br/>
+        <code>return request.auth != null && request.auth.token.superAdmin == true;</code><br/>
+        ثم شغّل <code>node setup_admin.js</code> وأعد تسجيل الدخول.</p>
+      </div>
+      <div class="section-header"><span class="section-title">آخر المستخدمين</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>الاسم</th><th>الإيميل</th><th>الدور</th><th>النادي</th><th>التاريخ</th></tr></thead>
+        <tbody id="ov-recent-users"><tr><td colspan="5" class="no-data"><div class="spinner"></div></td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Gyms -->
+    <div class="page" id="page-gyms">
+      <div class="page-title">الأندية 🏋️</div>
+      <div class="page-sub">كل الأندية — اضغط لعرض التفاصيل والأعضاء</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-val" id="stat-gyms">—</div><div class="stat-lbl">إجمالي</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val" id="stat-active">—</div><div class="stat-lbl">نشط</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="stat-members">—</div><div class="stat-lbl">أعضاء (users)</div></div>
+        <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" id="stat-expiring">—</div><div class="stat-lbl">تنتهي قريباً</div></div>
+      </div>
+      <div class="section-header">
+        <span class="section-title">قائمة الأندية</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select class="filter-select" id="gym-filter" onchange="renderGyms()">
+            <option value="all">كل الأندية</option>
+            <option value="active">نشط فقط</option>
+            <option value="inactive">موقوف</option>
+            <option value="expiring">فيها اشتراكات تنتهي خلال 7 أيام</option>
+            <option value="expired">فيها اشتراكات منتهية</option>
+          </select>
+          <button style="padding:8px 14px;background:rgba(255,59,48,.15);border:1px solid rgba(255,59,48,.35);border-radius:10px;color:var(--red);font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px" onclick="openSendMsg(null)">📢 بث لكل الأندية</button>
+          <button class="btn-add-blue" onclick="exportGymsCSV()">📥 CSV</button>
+          <button class="btn-add" onclick="openCreateModal()">+ نادي جديد</button>
+        </div>
+      </div>
+      <div class="gym-list" id="gym-list"><div class="loading-state"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- All Users -->
+    <div class="page" id="page-users">
+      <div class="page-title">كل المستخدمين 👥</div>
+      <div class="page-sub">اضغط على أي صف لعرض التفاصيل والتعديل</div>
+      <div class="filter-bar">
+        <input class="search-input" id="user-search" placeholder="🔍 ابحث بالاسم أو الإيميل..." oninput="renderUsers()"/>
+        <select class="filter-select" id="user-role-filter" onchange="renderUsers()">
+          <option value="all">كل الأدوار</option>
+          <option value="player">لاعب</option>
+          <option value="coach">كوتش</option>
+          <option value="owner">owner</option>
+          <option value="admin">admin</option>
+          <option value="super_admin">super_admin</option>
+        </select>
+        <select class="filter-select" id="user-gym-filter" onchange="renderUsers()">
+          <option value="all">كل الأندية</option>
+        </select>
+        <button class="btn-add-blue" onclick="openAddUser()">+ مستخدم جديد</button>
+        <button class="btn-add-blue" onclick="exportUsersCSV()">📥 CSV</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>الاسم</th><th>الإيميل</th><th>الهاتف</th><th>الدور</th><th>النادي</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
+        <tbody id="users-tbody"><tr><td colspan="8" class="no-data"><div class="spinner"></div></td></tr></tbody>
+      </table></div>
+      <div id="users-count" style="font-size:14px;color:var(--text3);margin-top:8px;text-align:left"></div>
+    </div>
+
+    <!-- Players -->
+    <div class="page" id="page-players">
+      <div class="page-title">اللاعبون 🏃</div>
+      <div class="page-sub">بيانات الاشتراكات والمدفوعات</div>
+      <div class="filter-bar">
+        <input class="search-input" id="player-search" placeholder="🔍 ابحث بالاسم..." oninput="renderPlayers()"/>
+        <select class="filter-select" id="player-gym-filter" onchange="renderPlayers()"><option value="all">كل الأندية</option></select>
+        <select class="filter-select" id="player-sub-filter" onchange="renderPlayers()">
+          <option value="all">كل الاشتراكات</option>
+          <option value="active">نشط</option>
+          <option value="expired">منتهي</option>
+          <option value="unpaid">غير مكتمل الدفع</option>
+        </select>
+        <button class="btn-add-blue" onclick="openAddUser('player')">+ لاعب جديد</button>
+        <button class="btn-add-blue" onclick="exportPlayersCSV()">📥 CSV</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>اللاعب</th><th>النادي</th><th>الكوتش</th><th>الاشتراك</th><th>انتهاء</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th></th></tr></thead>
+        <tbody id="players-tbody"><tr><td colspan="9" class="no-data"><div class="spinner"></div></td></tr></tbody>
+      </table></div>
+      <div id="players-count" style="font-size:14px;color:var(--text3);margin-top:8px;text-align:left"></div>
+    </div>
+
+    <!-- Coaches -->
+    <div class="page" id="page-coaches">
+      <div class="page-title">الكوتش 🧑‍💼</div>
+      <div class="page-sub">قائمة المدربين</div>
+      <div class="filter-bar">
+        <input class="search-input" id="coach-search" placeholder="🔍 ابحث..." oninput="renderCoaches()"/>
+        <select class="filter-select" id="coach-gym-filter" onchange="renderCoaches()"><option value="all">كل الأندية</option></select>
+        <button class="btn-add-blue" onclick="openAddUser('coach')">+ كوتش جديد</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>الكوتش</th><th>الإيميل</th><th>الهاتف</th><th>النادي</th><th>اللاعبون</th><th>الحالة</th><th></th></tr></thead>
+        <tbody id="coaches-tbody"><tr><td colspan="7" class="no-data"><div class="spinner"></div></td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Payments -->
+    <div class="page" id="page-payments">
+      <div class="page-title">المدفوعات 💰</div>
+      <div class="page-sub">آخر 300 دفعة من كل الأندية — من subcollection الحقيقية</div>
+      <div class="filter-bar">
+        <input class="search-input" id="pay-search" placeholder="🔍 ابحث بالاسم..." oninput="filterPaymentsRender()"/>
+        <select class="filter-select" id="pay-gym-filter" onchange="filterPaymentsRender()"><option value="all">كل الأندية</option></select>
+        <button class="btn-add-blue" onclick="loadPaymentsPage()">🔄 تحديث</button>
+      </div>
+      <div id="pay-load-info" style="font-size:14px;color:var(--text3);margin-bottom:8px"></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>اللاعب</th><th>النادي</th><th>المبلغ</th><th>الخطة</th><th>الطريقة</th><th>التاريخ</th><th></th></tr></thead>
+        <tbody id="payments-tbody"><tr><td colspan="7" class="no-data">اضغط تحديث لتحميل الدفعات</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Sent Messages -->
+    <div class="page" id="page-messages">
+      <div class="page-title">الرسائل المرسلة 📨</div>
+      <div class="page-sub">كل الرسائل التي أرسلها Super Admin للأندية</div>
+      <div class="filter-bar">
+        <input class="search-input" id="msg-search" placeholder="🔍 ابحث بالعنوان..." oninput="filterMessagesRender()"/>
+        <select class="filter-select" id="msg-gym-filter" onchange="filterMessagesRender()"><option value="all">كل الأندية</option></select>
+        <select class="filter-select" id="msg-type-filter" onchange="filterMessagesRender()">
+          <option value="all">كل الأنواع</option>
+          <option value="info">💬 info</option>
+          <option value="warning">⚠️ warning</option>
+          <option value="alert">🚨 alert</option>
+          <option value="update">✅ update</option>
+        </select>
+        <button class="btn-add-blue" onclick="loadMessagesPage()">🔄 تحديث</button>
+      </div>
+      <div id="msg-load-info" style="font-size:14px;color:var(--text3);margin-bottom:8px"></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>العنوان</th><th>النادي</th><th>النوع</th><th>النص</th><th>قُرئت؟</th><th>التاريخ</th></tr></thead>
+        <tbody id="messages-tbody"><tr><td colspan="6" class="no-data">اضغط تحديث لتحميل الرسائل</td></tr></tbody>
+      </table></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ USER DETAIL MODAL ══════════ -->
+<div class="modal-overlay" id="user-detail-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="ud-title">تفاصيل المستخدم</div>
+      <div class="modal-actions">
+        <button class="icon-btn edit" onclick="editCurrentUser()" title="تعديل">✏️</button>
+        <button class="icon-btn danger" onclick="deleteCurrentUser()" title="حذف">🗑️</button>
+        <button class="modal-close" onclick="closeModal('user-detail-modal')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="user-detail-header">
+        <div class="user-detail-avatar" id="ud-avatar">?</div>
+        <div>
+          <div class="user-detail-name" id="ud-name">—</div>
+          <div class="user-detail-email" id="ud-email">—</div>
+          <div style="margin-top:6px" id="ud-badges"></div>
+        </div>
+      </div>
+      <div class="user-action-bar">
+        <button class="btn-add-blue" onclick="editCurrentUser()">✏️ تعديل</button>
+        <button class="btn-add-blue" onclick="payCurrentUser()">💰 إضافة دفعة</button>
+        <button class="btn-delete" onclick="deleteCurrentUser()">🗑️ حذف المستخدم</button>
+      </div>
+      <div class="modal-section">📋 كل البيانات المخزّنة في Firebase</div>
+      <div class="fields-grid" id="ud-fields"></div>
+      <div class="modal-section" style="display:flex;align-items:center;justify-content:space-between">
+        <span>💰 سجل المدفوعات</span>
+        <button class="btn-add-blue" style="padding:4px 12px;font-size:14px" onclick="payCurrentUser()">+ إضافة</button>
+      </div>
+      <div id="ud-payments-section"><div class="loading-state"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ GYM DETAIL MODAL ══════════ -->
+<div class="modal-overlay" id="gym-members-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="gm-title">تفاصيل النادي</div>
+      <div class="modal-actions">
+        <button class="icon-btn edit" onclick="editCurrentGym()" title="تعديل">✏️</button>
+        <button class="icon-btn danger" onclick="deleteCurrentGym()" title="حذف">🗑️</button>
+        <button class="modal-close" onclick="closeModal('gym-members-modal')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn-add-blue" onclick="editCurrentGym()">✏️ تعديل النادي</button>
+        <button class="btn-add-blue" onclick="openAddUser('',currentGymId)">+ إضافة مستخدم</button>
+        <button class="btn-delete" onclick="deleteCurrentGym()">🗑️ حذف النادي</button>
+      </div>
+      <div id="gm-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ EDIT GYM MODAL ══════════ -->
+<div class="modal-overlay" id="edit-gym-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل النادي</div>
+      <button class="modal-close" onclick="closeModal('edit-gym-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-wrap"><div class="field-label">اسم النادي</div><input class="field-input" id="eg-name"/></div>
+      <div class="field-wrap"><div class="field-label">المدينة</div><input class="field-input" id="eg-city"/></div>
+      <div class="field-wrap"><div class="field-label">الخطة (plan)</div>
+        <select class="field-select" id="eg-plan">
+          <option value="standard">Standard</option>
+          <option value="premium">Premium</option>
+          <option value="basic">Basic</option>
+        </select>
+      </div>
+      <label class="toggle-wrap"><input type="checkbox" id="eg-active"/> النادي نشط (isActive)</label>
+      <div id="eg-error" class="err-box"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('edit-gym-modal')">إلغاء</button>
+      <button class="btn-save" onclick="saveGym()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ EDIT USER MODAL ══════════ -->
+<div class="modal-overlay" id="edit-user-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل بيانات المستخدم</div>
+      <button class="modal-close" onclick="closeModal('edit-user-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">📋 البيانات الأساسية</div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الاسم الأول</div><input class="field-input" id="eu-firstname"/></div>
+        <div class="field-wrap"><div class="field-label">اسم العائلة</div><input class="field-input" id="eu-lastname"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الهاتف</div><input class="field-input" id="eu-phone" dir="ltr"/></div>
+        <div class="field-wrap"><div class="field-label">الدور (role)</div>
+          <select class="field-select" id="eu-role">
+            <option value="player">player — لاعب</option>
+            <option value="coach">coach — كوتش</option>
+            <option value="owner">owner — أدمن</option>
+            <option value="admin">admin</option>
+            <option value="super_admin">super_admin</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">ID النادي (gymId)</div><input class="field-input" id="eu-gymid" dir="ltr"/></div>
+        <div class="field-wrap" style="padding-top:20px">
+          <label class="toggle-wrap"><input type="checkbox" id="eu-active"/> نشط (isActive)</label>
+        </div>
+      </div>
+      <div class="modal-section">💰 الاشتراك والمدفوعات</div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">خطة الاشتراك</div><input class="field-input" id="eu-subplan" placeholder="Pro / Standard / Basic"/></div>
+        <div class="field-wrap"><div class="field-label">طريقة الدفع</div><input class="field-input" id="eu-paymethod" placeholder="cash / transfer"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">تاريخ البداية</div><input class="field-input" id="eu-substart" type="date"/></div>
+        <div class="field-wrap"><div class="field-label">تاريخ الانتهاء</div><input class="field-input" id="eu-subend" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">المبلغ الكلي ₪</div><input class="field-input" id="eu-total" type="number" min="0"/></div>
+        <div class="field-wrap"><div class="field-label">المدفوع ₪</div><input class="field-input" id="eu-paid" type="number" min="0"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">المتبقي ₪</div><input class="field-input" id="eu-remaining" type="number" min="0"/></div>
+        <div class="field-wrap"><div class="field-label">اسم الكوتش المسند</div><input class="field-input" id="eu-coach"/></div>
+      </div>
+      <div class="modal-section">🧊 تجميد الاشتراك</div>
+      <div class="form-row">
+        <div class="field-wrap" style="padding-top:20px">
+          <label class="toggle-wrap"><input type="checkbox" id="eu-frozen"/> مجمّد (isFrozen)</label>
+        </div>
+        <div class="field-wrap"><div class="field-label">مدة التجميد (أيام)</div><input class="field-input" id="eu-freezedays" type="number" min="0" placeholder="0"/></div>
+      </div>
+      <div class="field-wrap"><div class="field-label">سبب التجميد</div><input class="field-input" id="eu-freezereason" placeholder="سفر / إصابة..."/></div>
+      <div id="eu-error" class="err-box"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('edit-user-modal')">إلغاء</button>
+      <button class="btn-save" id="eu-save-btn" onclick="saveUser()">💾 حفظ التعديلات</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ADD USER MODAL ══════════ -->
+<div class="modal-overlay" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ إضافة مستخدم جديد</div>
+      <button class="modal-close" onclick="closeModal('add-user-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الاسم الأول *</div><input class="field-input" id="au-firstname"/></div>
+        <div class="field-wrap"><div class="field-label">اسم العائلة *</div><input class="field-input" id="au-lastname"/></div>
+      </div>
+      <div class="field-wrap"><div class="field-label">الإيميل *</div><input class="field-input" id="au-email" type="email" dir="ltr"/></div>
+      <div class="field-wrap"><div class="field-label">الهاتف</div><input class="field-input" id="au-phone" dir="ltr"/></div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الدور *</div>
+          <select class="field-select" id="au-role">
+            <option value="player">لاعب (player)</option>
+            <option value="coach">كوتش (coach)</option>
+            <option value="owner">أدمن (owner)</option>
+          </select>
+        </div>
+        <div class="field-wrap"><div class="field-label">ID النادي *</div><input class="field-input" id="au-gymid" dir="ltr"/></div>
+      </div>
+      <div class="field-wrap"><div class="field-label">خطة الاشتراك</div><input class="field-input" id="au-subplan" placeholder="Pro / Standard / Basic"/></div>
+      <div class="info-box">🔑 سيتم توليد كلمة مرور تلقائياً وتُنسخ إلى الـ clipboard</div>
+      <div id="au-error" class="err-box"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('add-user-modal')">إلغاء</button>
+      <button class="btn-create" id="add-user-btn" onclick="addUser()">إنشاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ADD PAYMENT MODAL ══════════ -->
+<div class="modal-overlay" id="add-payment-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💰 إضافة دفعة جديدة</div>
+      <button class="modal-close" onclick="closeModal('add-payment-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-wrap"><div class="field-label">المبلغ (₪) *</div><input class="field-input" id="ap-amount" type="number" min="1" placeholder="100"/></div>
+      <div class="field-wrap"><div class="field-label">اسم الخطة</div><input class="field-input" id="ap-plan" placeholder="Pro / Standard"/></div>
+      <div class="field-wrap"><div class="field-label">طريقة الدفع</div>
+        <select class="field-select" id="ap-method">
+          <option value="cash">نقدي (cash)</option>
+          <option value="transfer">تحويل (transfer)</option>
+          <option value="card">بطاقة (card)</option>
+        </select>
+      </div>
+      <div id="ap-error" class="err-box"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('add-payment-modal')">إلغاء</button>
+      <button class="btn-create" id="add-payment-btn" onclick="addPayment()">إضافة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CREATE GYM MODAL ══════════ -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🏗️ إنشاء نادي جديد</div>
+      <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">🏋️ معلومات النادي</div>
+      <div class="field-wrap"><div class="field-label">اسم النادي</div><input class="field-input" id="f-gym-name" placeholder="Iron Peak Gym"/></div>
+      <div class="field-wrap"><div class="field-label">المدينة</div><input class="field-input" id="f-gym-city" placeholder="Amman, Jordan"/></div>
+      <div class="id-row">
+        <div class="field-wrap"><div class="field-label">معرّف النادي (ID)</div><input class="field-input" id="f-gym-id" dir="ltr" placeholder="1002"/></div>
+        <button class="refresh-btn" onclick="genId()" title="توليد تلقائي">🔄</button>
+      </div>
+      <div class="form-hint">ID فريد — لا يمكن تغييره لاحقاً</div>
+      <div class="modal-section">👤 بيانات أدمن النادي</div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الاسم الأول</div><input class="field-input" id="f-first" placeholder="Ahmad"/></div>
+        <div class="field-wrap"><div class="field-label">اسم العائلة</div><input class="field-input" id="f-last" placeholder="Hassan"/></div>
+      </div>
+      <div class="field-wrap"><div class="field-label">الإيميل</div><input class="field-input" id="f-email" type="email" dir="ltr"/></div>
+      <div class="field-wrap"><div class="field-label">الهاتف (للـ OTP)</div><input class="field-input" id="f-phone" dir="ltr" placeholder="+970XXXXXXXXX"/></div>
+      <div class="info-box">✨ كلمة المرور ستُنشأ تلقائياً</div>
+      <div id="create-error" class="err-box"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('create-modal')">إلغاء</button>
+      <button class="btn-create" id="create-btn" onclick="createGym()">إنشاء النادي</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SUCCESS MODAL ══════════ -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✅ تم إنشاء النادي بنجاح</div>
+      <button class="modal-close" onclick="closeModal('success-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="cred-box">
+        <div class="cred-row"><div class="cred-label">اسم النادي</div><div class="cred-value" id="s-gym-name">—</div></div>
+        <div class="cred-row"><div class="cred-label">ID</div><div class="cred-value" id="s-gym-id">—</div></div>
+        <div class="cred-row"><div class="cred-label">إيميل الأدمن</div><div class="cred-value" id="s-email">—</div></div>
+        <div class="cred-row" style="margin-bottom:0"><div class="cred-label">كلمة المرور</div><div class="cred-value password" id="s-pass">—</div></div>
+      </div>
+      <div class="warn-box">⚠️ احفظ كلمة المرور — لن تظهر مجدداً</div>
+      <button class="btn-copy" onclick="copyCredentials()">📋 نسخ كل البيانات</button>
+    </div>
+    <div class="modal-footer"><button class="btn-create" onclick="closeModal('success-modal')">تم ✓</button></div>
+  </div>
+</div>
+
+<!-- ══════════ CONFIRM ACTION ══════════ -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="confirm-modal-title">⚠️ تأكيد</div>
+      <button class="modal-close" onclick="closeModal('confirm-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message" style="font-size:17px;line-height:1.7;color:var(--text2)"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('confirm-modal')">إلغاء</button>
+      <button class="btn-delete" id="confirm-ok-btn" onclick="doConfirm()" style="background:var(--red);color:#fff;border:none;padding:9px 22px;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CONFIRM HARD DELETE ══════════ -->
+<div class="modal-overlay" id="hard-delete-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🗑️ حذف نهائي</div>
+      <button class="modal-close" onclick="closeModal('hard-delete-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="warn-box" style="background:rgba(255,59,48,.12);border-color:rgba(255,59,48,.3);color:var(--red);margin-bottom:14px">
+        ⚠️ هذا الإجراء <strong>لا يمكن التراجع عنه</strong>. البيانات ستُحذف نهائياً من Firestore.
+      </div>
+      <p id="hd-message" style="font-size:16px;color:var(--text2);margin-bottom:14px;line-height:1.7"></p>
+      <div class="field-wrap">
+        <div class="field-label">اكتب الاسم للتأكيد:</div>
+        <div style="font-family:monospace;font-size:15px;color:var(--orange);margin-bottom:6px;padding:4px 0" id="hd-expected-name"></div>
+        <input class="field-input" id="hd-type-input" placeholder="اكتب الاسم هنا..." oninput="checkHardDeleteInput()"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('hard-delete-modal')">إلغاء</button>
+      <button id="hd-confirm-btn" disabled onclick="doHardDelete()"
+        style="padding:9px 22px;background:rgba(255,59,48,.15);border:1px solid rgba(255,59,48,.3);border-radius:10px;color:var(--red);font-size:16px;font-weight:800;cursor:not-allowed;opacity:.5">
+        حذف نهائي
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SEND MESSAGE MODAL ══════════ -->
+<div class="modal-overlay" id="send-msg-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="send-msg-title">📢 إرسال رسالة</div>
+      <button class="modal-close" onclick="closeModal('send-msg-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-wrap">
+        <div class="field-label">النوع</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="msg-type-chips">
+          <button onclick="selectMsgType('info')"    id="chip-info"    class="msg-chip msg-chip-sel" data-color="#5BA8FF">💬 info</button>
+          <button onclick="selectMsgType('warning')" id="chip-warning" class="msg-chip"              data-color="#FF9500">⚠️ warning</button>
+          <button onclick="selectMsgType('alert')"   id="chip-alert"   class="msg-chip"              data-color="#FF3B30">🚨 alert</button>
+          <button onclick="selectMsgType('update')"  id="chip-update"  class="msg-chip"              data-color="#34C759">✅ update</button>
+        </div>
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">العنوان *</div>
+        <input class="field-input" id="msg-title-input" placeholder="عنوان الرسالة"/>
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">النص *</div>
+        <textarea class="field-input" id="msg-body-input" rows="4" placeholder="نص الرسالة..."></textarea>
+      </div>
+      <div class="err-box" id="msg-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('send-msg-modal')">إلغاء</button>
+      <button class="btn-create" id="msg-send-btn" onclick="doSendMsg()">إرسال</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════ Firebase ══════════ -->
+<script type="module">
+import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut,
+         createUserWithEmailAndPassword, updateProfile }
+                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, collection, collectionGroup, getDocs, getDoc,
+         doc, setDoc, updateDoc, deleteDoc, addDoc, writeBatch,
+         query, orderBy, limit,
+         onSnapshot, serverTimestamp, Timestamp }
+                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBcVcL560bl4OwjTjRPrRNUL-EEHT05Eqg",
+  authDomain:"nexus-90e55.firebaseapp.com",
+  projectId:"nexus-90e55",
+  storageBucket:"nexus-90e55.firebasestorage.app",
+  messagingSenderId:"266704213953",
+  appId:"1:266704213953:web:bbd15a6df2c8fff19c8140",
+};
+const app    = initializeApp(firebaseConfig,'main');
+const auth   = getAuth(app);
+const db     = getFirestore(app);
+const appSec = initializeApp(firebaseConfig,'secondary');
+const authSec= getAuth(appSec);
+
+// ── State ──
+let currentUser     = null;
+let allGyms         = [];
+let allUsers        = [];
+let lastResult      = null;
+let unsubGyms       = null;
+let unsubUsers      = null;
+let currentPage     = 'overview';
+let accessDenied    = false;
+let currentDetailUid= null;
+let currentGymId    = null;
+let confirmCallback = null;
+
+// ── Extra state ──
+let _allPayments  = []; // flat list of actual payment docs
+let _allMessages  = []; // flat list of super_admin_messages docs
+
+// expose functions to window (needed by inline onclick in HTML)
+Object.assign(window, {
+  doLogin, doLogout, showPage, openCreateModal, closeModal,
+  openEditGym, saveGym, openEditUser, saveUser,
+  openAddUser, addUser, openAddPayment, addPayment,
+  openUserDetail, openGymMembers, doConfirm,
+  createGym, copyCredentials, genId, renderUsers, renderPlayers,
+  renderCoaches, renderPaymentsPage, loadPaymentsPage, filterPaymentsRender,
+  loadMessagesPage, filterMessagesRender, toggleUser, toggleGym,
+  confirmDelete, renderGyms, updateStats,
+  exportUsersCSV, exportPlayersCSV, exportGymsCSV,
+});
+
+// expose module-scoped state as live getters so onclick=""  can read them
+Object.defineProperty(window,'currentDetailUid',{get:()=>currentDetailUid,configurable:true});
+Object.defineProperty(window,'currentGymId',    {get:()=>currentGymId,    configurable:true});
+
+// ── Wrapper shortcuts used by modal header buttons ──────────────────────────
+window.editCurrentUser    = () => openEditUser(currentDetailUid);
+window.deleteCurrentUser  = () => confirmDelete('user', currentDetailUid,
+    document.getElementById('ud-name')?.textContent||'');
+window.payCurrentUser     = () => openAddPayment(currentDetailUid);
+window.editCurrentGym     = () => openEditGym(currentGymId);
+window.deleteCurrentGym   = () => confirmDelete('gym', currentGymId,
+    document.getElementById('gm-title')?.textContent||'');
+
+// ── Auth ──
+async function doLogin() {
+  const email=document.getElementById('login-email').value.trim();
+  const pass =document.getElementById('login-pass').value;
+  const btn  =document.getElementById('login-btn');
+  if (!email||!pass){showAuthError('أدخل الإيميل وكلمة المرور');return;}
+  btn.disabled=true; btn.innerHTML='جاري الدخول… <span class="spinner"></span>';
+  document.getElementById('auth-error').style.display='none';
+  try {
+    const cred=await signInWithEmailAndPassword(auth,email,pass);
+    currentUser=cred.user;
+    await currentUser.getIdToken(true); // refresh token → gets custom claims
+    try {
+      const snap=await getDoc(doc(db,'users',currentUser.uid));
+      const role=snap.data()?.role;
+      if (snap.exists()&&role&&role!=='super_admin'){
+        await signOut(auth);currentUser=null;
+        showAuthError('هذا الحساب ليس super_admin');
+        btn.disabled=false;btn.innerHTML='تسجيل الدخول';return;
+      }
+    } catch(_){}
+    showApp();
+  } catch(e){
+    showAuthError(mapAuthError(e.code));
+    btn.disabled=false;btn.innerHTML='تسجيل الدخول';
+  }
+}
+
+async function doLogout() {
+  unsubGyms?.();unsubUsers?.();
+  await signOut(auth);
+  currentUser=null;allGyms=[];allUsers=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('login-pass').value='';
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const email=currentUser.email||'';
+  document.getElementById('user-display').textContent=email.split('@')[0];
+  document.getElementById('user-avatar').textContent=email[0]?.toUpperCase()||'S';
+  loadGyms(); loadUsers();
+}
+
+// ── Data loading ──
+function loadGyms() {
+  unsubGyms=onSnapshot(collection(db,'gyms'),async snap=>{
+    allGyms=snap.docs.map(d=>({id:d.id,...d.data()}));
+    await Promise.all(allGyms.map(async g=>{
+      try{const ms=await getDocs(collection(db,'gyms',g.id,'members'));g._memberCount=ms.size;}
+      catch(_){g._memberCount=0;}
+    }));
+    updateGymFilters(); updateStats();
+    if(currentPage==='gyms') renderGyms();
+    if(currentPage==='overview') renderOverview();
+  },err=>console.error('loadGyms:',err));
+}
+
+function loadUsers() {
+  unsubUsers=onSnapshot(collection(db,'users'),snap=>{
+    allUsers=snap.docs.map(d=>({uid:d.id,...d.data()}));
+    accessDenied=false;
+    document.getElementById('access-warning').style.display='none';
+    updateStats();
+    if(currentPage==='overview') renderOverview();
+    if(currentPage==='users')    renderUsers();
+    if(currentPage==='players')  renderPlayers();
+    if(currentPage==='coaches')  renderCoaches();
+    if(currentPage==='payments') renderPaymentsPage();
+  },err=>{
+    if(err.code==='permission-denied'){
+      accessDenied=true;
+      document.getElementById('access-warning').style.display='block';
+    }
+  });
+}
+
+// ── Navigation ──
+function showPage(page) {
+  currentPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`page-${page}`)?.classList.add('active');
+  document.getElementById(`nav-${page}`)?.classList.add('active');
+  ({overview:renderOverview,gyms:renderGyms,users:renderUsers,
+    players:renderPlayers,coaches:renderCoaches,
+    payments:loadPaymentsPage,messages:loadMessagesPage})[page]?.();
+}
+
+// updateStats defined below (new version)
+
+// ── Render Overview ──
+function renderOverview() {
+  const tbody=document.getElementById('ov-recent-users');
+  const recent=[...allUsers].sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,10);
+  if(!recent.length){tbody.innerHTML=`<tr><td colspan="5" class="no-data">لا يوجد مستخدمون</td></tr>`;return;}
+  tbody.innerHTML=recent.map(u=>`
+    <tr style="cursor:pointer" onclick="openUserDetail('${u.uid}')">
+      <td><div class="td-name">${esc(fullName(u))}</div></td>
+      <td><span class="td-mono">${esc(u.email||'—')}</span></td>
+      <td>${roleBadge(u.role)}</td>
+      <td><span class="badge badge-gray">${esc(u.gymId||'—')}</span></td>
+      <td><span class="td-mono">${fmtDate(u.createdAt)}</span></td>
+    </tr>`).join('');
+}
+
+// renderGyms defined below (new version with filters)
+
+// ── Render Users ──
+function renderUsers() {
+  const tbody =document.getElementById('users-tbody');
+  const search=document.getElementById('user-search')?.value.toLowerCase()||'';
+  const roleF =document.getElementById('user-role-filter')?.value||'all';
+  const gymF  =document.getElementById('user-gym-filter')?.value||'all';
+  if(accessDenied){tbody.innerHTML=permRow(8);return;}
+  let u=allUsers;
+  if(search) u=u.filter(x=>fullName(x).toLowerCase().includes(search)||(x.email||'').toLowerCase().includes(search));
+  if(roleF!=='all') u=u.filter(x=>(x.role||'').toLowerCase()===roleF);
+  if(gymF!=='all')  u=u.filter(x=>x.gymId===gymF);
+  document.getElementById('users-count').textContent=`${u.length} مستخدم`;
+  if(!u.length){tbody.innerHTML=`<tr><td colspan="8" class="no-data">لا يوجد نتائج</td></tr>`;return;}
+  tbody.innerHTML=u.map(x=>`
+    <tr>
+      <td style="cursor:pointer" onclick="openUserDetail('${x.uid}')">
+        <div class="td-name">${esc(fullName(x))}</div>
+        <div class="td-sub">${esc(x.uid||'').slice(0,14)}…</div>
+      </td>
+      <td onclick="openUserDetail('${x.uid}')" style="cursor:pointer"><span class="td-mono">${esc(x.email||'—')}</span></td>
+      <td><span class="td-mono">${esc(x.phone||'—')}</span></td>
+      <td>${roleBadge(x.role)}</td>
+      <td><span class="badge badge-gray">${esc(x.gymId||'—')}</span></td>
+      <td>
+        <button onclick="toggleUser('${x.uid}',${x.isActive!==false})"
+          style="padding:3px 10px;border-radius:20px;border:none;font-size:13px;font-weight:800;cursor:pointer;background:${x.isActive!==false?'rgba(52,199,89,.15)':'rgba(255,59,48,.15)'};color:${x.isActive!==false?'var(--green)':'var(--red)'}">
+          ${x.isActive!==false?'نشط ✓':'موقوف ✗'}
+        </button>
+      </td>
+      <td><span class="td-mono">${fmtDate(x.createdAt)}</span></td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn edit" onclick="openEditUser('${x.uid}')" title="تعديل">✏️</button>
+          <button class="icon-btn danger" onclick="confirmDelete('user','${x.uid}','${esc(fullName(x))}')" title="حذف">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ── Render Players ──
+function renderPlayers() {
+  const tbody =document.getElementById('players-tbody');
+  const search=document.getElementById('player-search')?.value.toLowerCase()||'';
+  const gymF  =document.getElementById('player-gym-filter')?.value||'all';
+  const subF  =document.getElementById('player-sub-filter')?.value||'all';
+  if(accessDenied){tbody.innerHTML=permRow(9);return;}
+  let pl=allUsers.filter(u=>(u.role||'').toLowerCase()==='player');
+  if(search) pl=pl.filter(u=>fullName(u).toLowerCase().includes(search));
+  if(gymF!=='all') pl=pl.filter(u=>u.gymId===gymF);
+  if(subF==='active')  pl=pl.filter(u=>isSubActive(u));
+  if(subF==='expired') pl=pl.filter(u=>!isSubActive(u)&&u.subscriptionEnd);
+  if(subF==='unpaid')  pl=pl.filter(u=>(Number(u.amountRemaining)||0)>0);
+  document.getElementById('players-count').textContent=`${pl.length} لاعب`;
+  if(!pl.length){tbody.innerHTML=`<tr><td colspan="9" class="no-data">لا يوجد لاعبون</td></tr>`;return;}
+  tbody.innerHTML=pl.map(u=>{
+    const rem=Number(u.amountRemaining)||0;
+    const active=isSubActive(u);
+    return `<tr>
+      <td style="cursor:pointer" onclick="openUserDetail('${u.uid}')">
+        <div class="td-name">${esc(fullName(u))}</div>
+        <div class="td-sub">${esc(u.phone||'—')}</div>
+      </td>
+      <td><span class="badge badge-gray">${esc(u.gymId||'—')}</span></td>
+      <td>${esc(u.assignedCoachName||'—')}</td>
+      <td>${esc(u.subscriptionPlan||'—')}</td>
+      <td><span class="badge ${active?'badge-green':'badge-red'}">${fmtDate(u.subscriptionEnd)}</span></td>
+      <td style="color:var(--green);font-weight:800">${Number(u.amountPaid||0).toLocaleString()} ₪</td>
+      <td style="color:${rem>0?'var(--red)':'var(--green)'};font-weight:800">${rem.toLocaleString()} ₪</td>
+      <td>${active?'<span class="badge badge-green">نشط</span>':'<span class="badge badge-red">منتهي</span>'}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn edit" onclick="openEditUser('${u.uid}')" title="تعديل">✏️</button>
+          <button class="icon-btn" onclick="openAddPayment('${u.uid}')" title="إضافة دفعة">💰</button>
+          <button class="icon-btn danger" onclick="confirmDelete('user','${u.uid}','${esc(fullName(u))}')" title="حذف">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Render Coaches ──
+function renderCoaches() {
+  const tbody =document.getElementById('coaches-tbody');
+  const search=document.getElementById('coach-search')?.value.toLowerCase()||'';
+  const gymF  =document.getElementById('coach-gym-filter')?.value||'all';
+  if(accessDenied){tbody.innerHTML=permRow(7);return;}
+  let co=allUsers.filter(u=>(u.role||'').toLowerCase()==='coach');
+  if(search) co=co.filter(u=>fullName(u).toLowerCase().includes(search));
+  if(gymF!=='all') co=co.filter(u=>u.gymId===gymF);
+  if(!co.length){tbody.innerHTML=`<tr><td colspan="7" class="no-data">لا يوجد كوتش</td></tr>`;return;}
+  tbody.innerHTML=co.map(c=>{
+    const cnt=allUsers.filter(u=>u.assignedCoachUid===c.uid||u.assignedCoachName===fullName(c)).length;
+    return `<tr>
+      <td style="cursor:pointer" onclick="openUserDetail('${c.uid}')">
+        <div class="td-name">${esc(fullName(c))}</div></td>
+      <td><span class="td-mono">${esc(c.email||'—')}</span></td>
+      <td><span class="td-mono">${esc(c.phone||'—')}</span></td>
+      <td><span class="badge badge-gray">${esc(c.gymId||'—')}</span></td>
+      <td><span style="font-weight:800;color:var(--blue)">${cnt}</span></td>
+      <td><span class="badge ${c.isActive!==false?'badge-green':'badge-red'}">${c.isActive!==false?'نشط':'موقوف'}</span></td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn edit" onclick="openEditUser('${c.uid}')" title="تعديل">✏️</button>
+          <button class="icon-btn danger" onclick="confirmDelete('user','${c.uid}','${esc(fullName(c))}')" title="حذف">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Render Payments page ──
+function renderPaymentsPage() {
+  const tbody =document.getElementById('payments-tbody');
+  const search=document.getElementById('pay-search')?.value.toLowerCase()||'';
+  const gymF  =document.getElementById('pay-gym-filter')?.value||'all';
+  if(accessDenied){tbody.innerHTML=permRow(8);return;}
+  let pl=allUsers.filter(u=>(u.role||'').toLowerCase()==='player');
+  if(search) pl=pl.filter(u=>fullName(u).toLowerCase().includes(search));
+  if(gymF!=='all') pl=pl.filter(u=>u.gymId===gymF);
+  if(!pl.length){tbody.innerHTML=`<tr><td colspan="8" class="no-data">لا يوجد</td></tr>`;return;}
+  tbody.innerHTML=pl.map(u=>{
+    const rem=Number(u.amountRemaining)||0;
+    return `<tr>
+      <td style="cursor:pointer" onclick="openUserDetail('${u.uid}')">
+        <div class="td-name">${esc(fullName(u))}</div>
+        <div class="td-sub">${esc(u.email||'')}</div>
+      </td>
+      <td><span class="badge badge-gray">${esc(u.gymId||'—')}</span></td>
+      <td style="font-weight:700">${Number(u.totalAmount||0).toLocaleString()} ₪</td>
+      <td style="color:var(--green);font-weight:800">${Number(u.amountPaid||0).toLocaleString()} ₪</td>
+      <td style="color:${rem>0?'var(--red)':'var(--green)'};font-weight:800">${rem.toLocaleString()} ₪</td>
+      <td>${esc(u.paymentMethod||'—')}</td>
+      <td><span class="td-mono">${fmtDate(u.updatedAt)}</span></td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn edit" onclick="openEditUser('${u.uid}')" title="تعديل">✏️</button>
+          <button class="icon-btn" onclick="openAddPayment('${u.uid}')" title="إضافة دفعة">💰</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── User Detail Modal ──
+async function openUserDetail(uid) {
+  currentDetailUid=uid;
+  const user=allUsers.find(u=>u.uid===uid);
+  if(!user) return;
+  const name=fullName(user);
+  document.getElementById('ud-title').textContent=`تفاصيل: ${name}`;
+  document.getElementById('ud-avatar').textContent=(user.firstName||user.email||'?')[0]?.toUpperCase();
+  document.getElementById('ud-name').textContent =name;
+  document.getElementById('ud-email').textContent=user.email||'—';
+  document.getElementById('ud-badges').innerHTML =roleBadge(user.role)+' '+
+    `<span class="badge ${user.isActive!==false?'badge-green':'badge-red'}">${user.isActive!==false?'نشط':'موقوف'}</span>`;
+
+  // All fields
+  const fields=Object.entries(user).filter(([k])=>!k.startsWith('_'))
+    .map(([k,v])=>{
+      let d='';
+      if(v===null||v===undefined) d='—';
+      else if(typeof v==='boolean') d=v?'✅ نعم':'❌ لا';
+      else if(v&&typeof v==='object'&&v.seconds) d=fmtDate(v);
+      else if(typeof v==='object') d=JSON.stringify(v);
+      else d=String(v);
+      return `<div class="field-item${d.length>40?' full':''}">
+        <div class="field-item-label">${esc(k)}</div>
+        <div class="field-item-value mono">${esc(d)}</div>
+      </div>`;
+    });
+  document.getElementById('ud-fields').innerHTML=fields.join('')||'<div class="no-data">لا توجد بيانات</div>';
+
+  // Payments
+  const payEl=document.getElementById('ud-payments-section');
+  payEl.innerHTML=`<div class="loading-state"><div class="spinner"></div></div>`;
+  document.getElementById('user-detail-modal').classList.add('open');
+
+  try {
+    const snap=await getDocs(collection(db,'users',uid,'payments'));
+    const pays=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    if(!pays.length){
+      payEl.innerHTML=`<div class="no-data"><div class="no-icon">💳</div>لا توجد مدفوعات</div>`;
+    } else {
+      payEl.innerHTML=`<div class="payment-list">${pays.map(p=>`
+        <div class="payment-item">
+          <div class="payment-amount">${Number(p.amount||0).toLocaleString()} ₪</div>
+          <div class="payment-info">
+            <div class="payment-type">${esc(p.planName||p.type||'—')}</div>
+            <div class="payment-date">${fmtDate(p.paymentDate||p.createdAt)}</div>
+            <div class="payment-method">طريقة: ${esc(p.paymentMethod||'—')}</div>
+          </div>
+          <span class="badge badge-green">مدفوع</span>
+          <button class="icon-btn danger" onclick="deletePaymentRecord('${uid}','${p.id}')" title="حذف الدفعة">🗑️</button>
+        </div>`).join('')}</div>`;
+    }
+  } catch(e){
+    payEl.innerHTML=`<div class="no-data" style="color:var(--red)">خطأ: ${e.message}</div>`;
+  }
+}
+
+// ── Gym Detail Modal ──
+async function openGymMembers(gymId) {
+  currentGymId=gymId;
+  const gym=allGyms.find(g=>g.id===gymId)||{id:gymId};
+  document.getElementById('gm-title').textContent=`🏋️ ${gym.name||gymId}`;
+  document.getElementById('gm-content').innerHTML=`<div class="loading-state"><div class="spinner"></div></div>`;
+  document.getElementById('gym-members-modal').classList.add('open');
+
+  let gymData={...gym};
+  try{const s=await getDoc(doc(db,'gyms',gymId));if(s.exists())gymData={id:s.id,...s.data()};}catch(_){}
+
+  const fieldsHtml=Object.entries(gymData).filter(([k])=>!k.startsWith('_'))
+    .map(([k,v])=>{
+      let d='';
+      if(v===null||v===undefined) d='—';
+      else if(typeof v==='boolean') d=v?'✅ نعم':'❌ لا';
+      else if(v&&typeof v==='object'&&v.seconds) d=fmtDate(v);
+      else if(typeof v==='object') d=JSON.stringify(v);
+      else d=String(v);
+      return `<div class="field-item"><div class="field-item-label">${esc(k)}</div><div class="field-item-value mono">${esc(d)}</div></div>`;
+    }).join('');
+
+  let membersHtml='';
+  try{
+    const snap=await getDocs(collection(db,'gyms',gymId,'members'));
+    const mems=snap.docs.map(d=>d.data());
+    membersHtml=mems.length?`<div class="table-wrap"><table>
+      <thead><tr><th>الاسم</th><th>الإيميل</th><th>الدور</th><th>الحالة</th></tr></thead>
+      <tbody>${mems.map(m=>`
+        <tr style="cursor:pointer" onclick="closeModal('gym-members-modal');openUserDetail('${m.uid}')">
+          <td><div class="td-name">${esc(m.displayName||'—')}</div></td>
+          <td><span class="td-mono">${esc(m.email||'—')}</span></td>
+          <td>${roleBadge(m.role)}</td>
+          <td><span class="badge ${m.status==='active'?'badge-green':'badge-gray'}">${esc(m.status||'—')}</span></td>
+        </tr>`).join('')}
+      </tbody></table></div>`
+    :`<div class="no-data">لا يوجد أعضاء في subcollection</div>`;
+  }catch(e){membersHtml=`<div class="no-data" style="color:var(--red)">خطأ: ${e.message}</div>`;}
+
+  const gymUsers=allUsers.filter(u=>u.gymId===gymId);
+  const usersHtml=gymUsers.length?`
+    <div class="modal-section">👥 مستخدمو هذا النادي (${gymUsers.length})</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>الاسم</th><th>الإيميل</th><th>الهاتف</th><th>الدور</th><th>الاشتراك</th><th></th></tr></thead>
+      <tbody>${gymUsers.map(u=>`
+        <tr>
+          <td style="cursor:pointer" onclick="closeModal('gym-members-modal');openUserDetail('${u.uid}')"><div class="td-name">${esc(fullName(u))}</div></td>
+          <td><span class="td-mono">${esc(u.email||'—')}</span></td>
+          <td><span class="td-mono">${esc(u.phone||'—')}</span></td>
+          <td>${roleBadge(u.role)}</td>
+          <td>${esc(u.subscriptionPlan||'—')}</td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <button class="icon-btn edit" onclick="closeModal('gym-members-modal');openEditUser('${u.uid}')">✏️</button>
+              <button class="icon-btn danger" onclick="confirmDelete('user','${u.uid}','${esc(fullName(u))}')">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody></table></div>`:'' ;
+
+  document.getElementById('gm-content').innerHTML=`
+    <div class="modal-section">📋 بيانات النادي</div>
+    <div class="fields-grid">${fieldsHtml||'<div class="no-data">لا توجد بيانات</div>'}</div>
+    <div class="modal-section">👥 Subcollection members</div>
+    ${membersHtml}
+    ${usersHtml}`;
+}
+
+// ── Edit Gym ──
+function openEditGym(gymId) {
+  const gym=allGyms.find(g=>g.id===gymId);if(!gym) return;
+  document.getElementById('eg-name').value      =gym.name||'';
+  document.getElementById('eg-city').value      =gym.city||'';
+  document.getElementById('eg-plan').value      =gym.plan||'standard';
+  document.getElementById('eg-active').checked  =gym.isActive!==false;
+  document.getElementById('eg-error').style.display='none';
+  document.getElementById('edit-gym-modal').classList.add('open');
+  document.getElementById('edit-gym-modal').dataset.gymId=gymId;
+}
+
+async function saveGym() {
+  const gymId=document.getElementById('edit-gym-modal').dataset.gymId;
+  const data={
+    name:    document.getElementById('eg-name').value.trim(),
+    city:    document.getElementById('eg-city').value.trim(),
+    plan:    document.getElementById('eg-plan').value,
+    isActive:document.getElementById('eg-active').checked,
+    updatedAt:serverTimestamp(),
+  };
+  try{
+    await updateDoc(doc(db,'gyms',gymId),data);
+    closeModal('edit-gym-modal');
+    showToast('✅ تم تحديث النادي','success');
+  }catch(e){
+    document.getElementById('eg-error').textContent=e.message;
+    document.getElementById('eg-error').style.display='block';
+  }
+}
+
+// ── Edit User ──
+function openEditUser(uid) {
+  const user=allUsers.find(u=>u.uid===uid);if(!user) return;
+  document.getElementById('eu-firstname').value=user.firstName||'';
+  document.getElementById('eu-lastname').value =user.lastName||'';
+  document.getElementById('eu-phone').value    =user.phone||'';
+  document.getElementById('eu-role').value     =user.role||'player';
+  document.getElementById('eu-gymid').value    =user.gymId||'';
+  document.getElementById('eu-active').checked =user.isActive!==false;
+  document.getElementById('eu-subplan').value  =user.subscriptionPlan||'';
+  document.getElementById('eu-substart').value =tsToDate(user.subscriptionStart);
+  document.getElementById('eu-subend').value   =tsToDate(user.subscriptionEnd);
+  document.getElementById('eu-total').value    =user.totalAmount||'';
+  document.getElementById('eu-paid').value     =user.amountPaid||'';
+  document.getElementById('eu-remaining').value=user.amountRemaining||'';
+  document.getElementById('eu-paymethod').value=user.paymentMethod||'';
+  document.getElementById('eu-coach').value       =user.assignedCoachName||'';
+  document.getElementById('eu-frozen').checked    =!!user.isFrozen;
+  document.getElementById('eu-freezedays').value  =user.freezeDays||'';
+  document.getElementById('eu-freezereason').value=user.freezeReason||'';
+  document.getElementById('eu-error').style.display='none';
+  document.getElementById('edit-user-modal').classList.add('open');
+  document.getElementById('edit-user-modal').dataset.uid=uid;
+}
+
+async function saveUser() {
+  const uid=document.getElementById('edit-user-modal').dataset.uid;
+  const btn=document.getElementById('eu-save-btn');
+  btn.disabled=true;btn.innerHTML='جاري الحفظ… <span class="spinner"></span>';
+  const gymId=document.getElementById('eu-gymid').value.trim();
+  const data={
+    firstName:       document.getElementById('eu-firstname').value.trim(),
+    lastName:        document.getElementById('eu-lastname').value.trim(),
+    phone:           document.getElementById('eu-phone').value.trim()||null,
+    role:            document.getElementById('eu-role').value,
+    gymId,gymCode:   gymId,
+    isActive:        document.getElementById('eu-active').checked,
+    subscriptionPlan:document.getElementById('eu-subplan').value.trim()||null,
+    paymentMethod:   document.getElementById('eu-paymethod').value.trim()||null,
+    totalAmount:     Number(document.getElementById('eu-total').value)||0,
+    amountPaid:      Number(document.getElementById('eu-paid').value)||0,
+    amountRemaining: Number(document.getElementById('eu-remaining').value)||0,
+    assignedCoachName:document.getElementById('eu-coach').value.trim()||null,
+    isFrozen:        document.getElementById('eu-frozen')?.checked||false,
+    freezeDays:      Number(document.getElementById('eu-freezedays')?.value)||0,
+    freezeReason:    document.getElementById('eu-freezereason')?.value.trim()||null,
+    updatedAt:       serverTimestamp(),
+  };
+  if(data.isFrozen) data.frozenAt=serverTimestamp();
+  const s=document.getElementById('eu-substart').value;
+  const e=document.getElementById('eu-subend').value;
+  if(s) data.subscriptionStart=Timestamp.fromDate(new Date(s));
+  if(e) data.subscriptionEnd  =Timestamp.fromDate(new Date(e));
+  try{
+    await updateDoc(doc(db,'users',uid),data);
+    closeModal('edit-user-modal');
+    showToast('✅ تم تحديث المستخدم','success');
+    setTimeout(()=>openUserDetail(uid),400);
+  }catch(err){
+    document.getElementById('eu-error').textContent=err.message;
+    document.getElementById('eu-error').style.display='block';
+  }finally{btn.disabled=false;btn.innerHTML='💾 حفظ التعديلات';}
+}
+
+// ── Add User ──
+function openAddUser(defaultRole='', defaultGymId='') {
+  document.getElementById('au-firstname').value='';
+  document.getElementById('au-lastname').value ='';
+  document.getElementById('au-email').value    ='';
+  document.getElementById('au-phone').value    ='';
+  document.getElementById('au-role').value     =defaultRole||'player';
+  document.getElementById('au-gymid').value    =defaultGymId||'';
+  document.getElementById('au-subplan').value  ='';
+  document.getElementById('au-error').style.display='none';
+  document.getElementById('add-user-modal').classList.add('open');
+}
+
+async function addUser() {
+  const firstName=document.getElementById('au-firstname').value.trim();
+  const lastName =document.getElementById('au-lastname').value.trim();
+  const email    =document.getElementById('au-email').value.trim().toLowerCase();
+  const phone    =document.getElementById('au-phone').value.trim();
+  const role     =document.getElementById('au-role').value;
+  const gymId    =document.getElementById('au-gymid').value.trim();
+  const subPlan  =document.getElementById('au-subplan').value.trim();
+  if(!firstName||!lastName||!email||!gymId){
+    document.getElementById('au-error').textContent='أكمل الحقول المطلوبة (*)';
+    document.getElementById('au-error').style.display='block';return;
+  }
+  const btn=document.getElementById('add-user-btn');
+  btn.disabled=true;btn.innerHTML='جاري الإنشاء… <span class="spinner"></span>';
+  try{
+    const password=genPassword();
+    const cred=await createUserWithEmailAndPassword(authSec,email,password);
+    const uid=cred.user.uid;
+    await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
+    await signOut(authSec);
+    await setDoc(doc(db,'users',uid),{
+      uid,email,firstName,lastName,phone:phone||null,
+      gymId,gymCode:gymId,role,
+      subscriptionPlan:subPlan||null,
+      isActive:true,emailVerified:true,
+      authProvider:'password',temporaryPasswordSet:true,
+      createdAt:serverTimestamp(),updatedAt:serverTimestamp(),
+    });
+    await setDoc(doc(db,'gyms',gymId,'memberEmails',email),{
+      role,status:'active',firstName,lastName,phone:phone||null,
+      addedBy:currentUser.uid,addedAt:serverTimestamp(),
+    });
+    await setDoc(doc(db,'gyms',gymId,'members',uid),{
+      uid,email,gymId,role,displayName:`${firstName} ${lastName}`,
+      status:'active',joinedAt:serverTimestamp(),updatedAt:serverTimestamp(),
+    });
+    navigator.clipboard.writeText(`إيميل: ${email}\nكلمة المرور: ${password}`).catch(()=>{});
+    closeModal('add-user-modal');
+    showToast(`✅ تم الإنشاء — كلمة المرور نُسخت للـ clipboard`,'success');
+  }catch(err){
+    document.getElementById('au-error').textContent=err.message;
+    document.getElementById('au-error').style.display='block';
+  }finally{btn.disabled=false;btn.innerHTML='إنشاء';}
+}
+
+// ── Add Payment ──
+function openAddPayment(uid) {
+  document.getElementById('ap-amount').value='';
+  document.getElementById('ap-plan').value  ='';
+  document.getElementById('ap-method').value='cash';
+  document.getElementById('ap-error').style.display='none';
+  document.getElementById('add-payment-modal').classList.add('open');
+  document.getElementById('add-payment-modal').dataset.uid=uid;
+}
+
+async function addPayment() {
+  const uid   =document.getElementById('add-payment-modal').dataset.uid;
+  const amount=Number(document.getElementById('ap-amount').value);
+  const plan  =document.getElementById('ap-plan').value.trim();
+  const method=document.getElementById('ap-method').value;
+  if(!amount||amount<=0){
+    document.getElementById('ap-error').textContent='أدخل مبلغاً صحيحاً';
+    document.getElementById('ap-error').style.display='block';return;
+  }
+  const btn=document.getElementById('add-payment-btn');
+  btn.disabled=true;btn.innerHTML='جاري الحفظ… <span class="spinner"></span>';
+  try{
+    await addDoc(collection(db,'users',uid,'payments'),{
+      amount,planName:plan||'—',paymentMethod:method,
+      type:'subscription',paymentDate:serverTimestamp(),
+      createdAt:serverTimestamp(),registeredBy:currentUser.uid,
+    });
+    const user=allUsers.find(u=>u.uid===uid);
+    if(user){
+      const newPaid=((Number(user.amountPaid)||0)+amount);
+      const newRem =Math.max(0,((Number(user.totalAmount)||0)-newPaid));
+      await updateDoc(doc(db,'users',uid),{amountPaid:newPaid,amountRemaining:newRem,updatedAt:serverTimestamp()});
+    }
+    closeModal('add-payment-modal');
+    showToast('✅ تم إضافة الدفعة','success');
+    if(currentDetailUid===uid) setTimeout(()=>openUserDetail(uid),400);
+  }catch(err){
+    document.getElementById('ap-error').textContent=err.message;
+    document.getElementById('ap-error').style.display='block';
+  }finally{btn.disabled=false;btn.innerHTML='إضافة';}
+}
+
+// ── Delete Payment record ──
+window.deletePaymentRecord = (uid, payId) => {
+  confirmAction(`حذف هذه الدفعة نهائياً؟`,async()=>{
+    try{
+      await deleteDoc(doc(db,'users',uid,'payments',payId));
+      showToast('✅ تم حذف الدفعة','success');
+      if(currentDetailUid===uid) setTimeout(()=>openUserDetail(uid),300);
+    }catch(e){showToast('❌ '+e.message,'error');}
+  });
+};
+
+// ── Confirm + Delete ──
+function confirmDelete(type,id,name) {
+  const labels={gym:'النادي',user:'المستخدم'};
+  confirmAction(`هل تريد حذف ${labels[type]||type}: "${name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`,async()=>{
+    try{
+      if(type==='gym'){
+        await deleteDoc(doc(db,'gyms',id));
+        closeModal('gym-members-modal');
+        showToast('✅ تم حذف النادي من Firestore','success');
+      } else if(type==='user'){
+        await deleteDoc(doc(db,'users',id));
+        closeModal('user-detail-modal');
+        showToast('✅ تم حذف المستخدم من Firestore','success');
+      }
+    }catch(e){showToast('❌ '+e.message,'error');}
+  });
+}
+
+// ── Send Message / Broadcast ──
+let _sendMsgGymId = null; // null = broadcast
+
+window.openSendMsg = function openSendMsg(gymId) {
+  _sendMsgGymId = gymId;
+  const gym = gymId ? allGyms.find(g=>g.id===gymId) : null;
+  document.getElementById('send-msg-title').textContent =
+    gym ? `🔔 رسالة لـ ${gym.name||gymId}` : '📢 بث لكل الأندية';
+  document.getElementById('msg-title-input').value = '';
+  document.getElementById('msg-body-input').value = '';
+  document.getElementById('msg-error').style.display = 'none';
+  selectMsgType('info');
+  document.getElementById('send-msg-modal').classList.add('open');
+}
+
+window.selectMsgType = function selectMsgType(type) {
+  const colorMap = {info:'#5BA8FF',warning:'#FF9500',alert:'#FF3B30',update:'#34C759'};
+  ['info','warning','alert','update'].forEach(t=>{
+    const chip = document.getElementById('chip-'+t);
+    chip.className = 'msg-chip' + (t===type?' msg-chip-sel':'');
+    chip.style.background = t===type ? colorMap[t]+'33' : '';
+    chip.style.borderColor = t===type ? colorMap[t]+'88' : '';
+    chip.style.color = t===type ? colorMap[t] : '';
+  });
+  window._msgType = type;
+}
+
+window.doSendMsg = async function doSendMsg() {
+  const title = document.getElementById('msg-title-input').value.trim();
+  const body  = document.getElementById('msg-body-input').value.trim();
+  const errEl = document.getElementById('msg-error');
+  if(!title||!body){errEl.textContent='العنوان والنص مطلوبان';errEl.style.display='block';return;}
+  errEl.style.display='none';
+  const btn = document.getElementById('msg-send-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  const type = window._msgType||'info';
+  const superAdminUid = auth.currentUser?.uid||'';
+  const now = serverTimestamp();
+  try {
+    if(_sendMsgGymId) {
+      // Single gym
+      const gym = allGyms.find(g=>g.id===_sendMsgGymId)||{};
+      const batch = writeBatch(db);
+      // gym inbox
+      batch.set(doc(collection(db,'gyms',_sendMsgGymId,'super_admin_messages')),{
+        title,body,type,gymId:_sendMsgGymId,gymName:gym.name||'',
+        senderUid:superAdminUid,senderRole:'super_admin',read:false,sentAt:now
+      });
+      // owner notification
+      if(gym.ownerId){
+        batch.set(doc(collection(db,'users',gym.ownerId,'notifications')),{
+          title,body,type:'super_admin_message',senderId:superAdminUid,
+          gymId:_sendMsgGymId,isRead:false,createdAt:now
+        });
+      }
+      await batch.commit();
+    } else {
+      // Broadcast all gyms
+      for(const gym of allGyms){
+        const batch = writeBatch(db);
+        batch.set(doc(collection(db,'gyms',gym.id,'super_admin_messages')),{
+          title,body,type,gymId:gym.id,gymName:gym.name||'',
+          senderUid:superAdminUid,senderRole:'super_admin',read:false,sentAt:now
+        });
+        if(gym.ownerId){
+          batch.set(doc(collection(db,'users',gym.ownerId,'notifications')),{
+            title,body,type:'super_admin_message',senderId:superAdminUid,
+            gymId:gym.id,isRead:false,createdAt:now
+          });
+        }
+        await batch.commit();
+      }
+    }
+    closeModal('send-msg-modal');
+    showToast('✅ تم الإرسال','success');
+  } catch(e) {
+    errEl.textContent='خطأ: '+e.message;errEl.style.display='block';
+  } finally {
+    btn.disabled=false;btn.innerHTML='إرسال';
+  }
+}
+
+// ── Toggle User Active ──
+async function toggleUser(uid, currentlyActive) {
+  const newState = !currentlyActive;
+  const label = newState ? 'تفعيل' : 'إيقاف';
+  const user = allUsers.find(u=>u.uid===uid);
+  confirmAction(`${label} حساب "${user?fullName(user):uid}"؟`, async()=>{
+    try {
+      await updateDoc(doc(db,'users',uid),{isActive:newState,updatedAt:serverTimestamp()});
+      showToast(`✅ تم ${label} الحساب`,'success');
+    } catch(e){showToast('❌ '+e.message,'error');}
+  });
+}
+
+// ── Toggle Gym Active ──
+async function toggleGym(gymId, currentlyActive) {
+  const newState = !currentlyActive;
+  const label = newState ? 'تفعيل' : 'إيقاف';
+  const gym = allGyms.find(g=>g.id===gymId);
+  confirmAction(`${label} النادي "${gym?.name||gymId}"؟`, async()=>{
+    try {
+      await updateDoc(doc(db,'gyms',gymId),{isActive:newState,updatedAt:serverTimestamp()});
+      showToast(`✅ تم ${label} النادي`,'success');
+    } catch(e){showToast('❌ '+e.message,'error');}
+  });
+}
+
+// ── Payments Page (real subcollection) ──
+async function loadPaymentsPage() {
+  const tbody = document.getElementById('payments-tbody');
+  const info  = document.getElementById('pay-load-info');
+  tbody.innerHTML=`<tr><td colspan="7" class="no-data"><div class="spinner"></div></td></tr>`;
+  info.textContent='جاري التحميل…';
+  try {
+    const snap = await getDocs(
+      query(collectionGroup(db,'payments'), orderBy('createdAt','desc'), limit(300))
+    );
+    _allPayments = snap.docs.map(d=>({_docId:d.id,_uid:d.ref.parent.parent.id,...d.data()}));
+    info.textContent=`${_allPayments.length} دفعة محمّلة`;
+    filterPaymentsRender();
+  } catch(e) {
+    tbody.innerHTML=`<tr><td colspan="7" class="no-data" style="color:var(--red)">خطأ: ${e.message}</td></tr>`;
+    info.textContent='';
+  }
+}
+
+function filterPaymentsRender() {
+  const tbody  = document.getElementById('payments-tbody');
+  const search = document.getElementById('pay-search')?.value.toLowerCase()||'';
+  const gymF   = document.getElementById('pay-gym-filter')?.value||'all';
+  if(!_allPayments.length){
+    tbody.innerHTML=`<tr><td colspan="7" class="no-data">اضغط تحديث لتحميل الدفعات</td></tr>`;
+    return;
+  }
+  let pays = _allPayments;
+  if(gymF!=='all') pays=pays.filter(p=>{
+    const u=allUsers.find(u=>u.uid===p._uid);
+    return u?.gymId===gymF;
+  });
+  if(search) pays=pays.filter(p=>{
+    const u=allUsers.find(u=>u.uid===p._uid);
+    return fullName(u||{}).toLowerCase().includes(search)||
+           (p.planName||'').toLowerCase().includes(search);
+  });
+  if(!pays.length){tbody.innerHTML=`<tr><td colspan="7" class="no-data">لا يوجد نتائج</td></tr>`;return;}
+  tbody.innerHTML=pays.map(p=>{
+    const u=allUsers.find(u=>u.uid===p._uid)||{};
+    return `<tr>
+      <td style="cursor:pointer" onclick="openUserDetail('${p._uid}')">
+        <div class="td-name">${esc(fullName(u)||p._uid)}</div>
+        <div class="td-sub">${esc(u.phone||'')}</div>
+      </td>
+      <td><span class="badge badge-gray">${esc(u.gymId||'—')}</span></td>
+      <td style="color:var(--green);font-weight:900;font-size:17px">${Number(p.amount||0).toLocaleString()} ₪</td>
+      <td>${esc(p.planName||p.type||'—')}</td>
+      <td>${esc(p.paymentMethod||'—')}</td>
+      <td><span class="td-mono">${fmtDate(p.paymentDate||p.createdAt)}</span></td>
+      <td>
+        <button class="icon-btn danger" onclick="deletePaymentRecord('${p._uid}','${p._docId}')" title="حذف">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// legacy alias (players table still calls this)
+function renderPaymentsPage(){loadPaymentsPage();}
+
+// ── Messages Page ──
+async function loadMessagesPage() {
+  const tbody = document.getElementById('messages-tbody');
+  const info  = document.getElementById('msg-load-info');
+  tbody.innerHTML=`<tr><td colspan="6" class="no-data"><div class="spinner"></div></td></tr>`;
+  info.textContent='جاري التحميل…';
+  try {
+    const snap = await getDocs(
+      query(collectionGroup(db,'super_admin_messages'), orderBy('sentAt','desc'), limit(200))
+    );
+    _allMessages = snap.docs.map(d=>({_docId:d.id,...d.data()}));
+    // update gym filter options
+    const msgGymFilter = document.getElementById('msg-gym-filter');
+    if(msgGymFilter){
+      const cur=msgGymFilter.value;
+      msgGymFilter.innerHTML='<option value="all">كل الأندية</option>'+
+        allGyms.map(g=>`<option value="${g.id}"${g.id===cur?' selected':''}>${esc(g.name||g.id)}</option>`).join('');
+    }
+    info.textContent=`${_allMessages.length} رسالة محمّلة`;
+    filterMessagesRender();
+  } catch(e) {
+    tbody.innerHTML=`<tr><td colspan="6" class="no-data" style="color:var(--red)">خطأ: ${e.message}</td></tr>`;
+    info.textContent='';
+  }
+}
+
+function filterMessagesRender() {
+  const tbody   = document.getElementById('messages-tbody');
+  const search  = document.getElementById('msg-search')?.value.toLowerCase()||'';
+  const gymF    = document.getElementById('msg-gym-filter')?.value||'all';
+  const typeF   = document.getElementById('msg-type-filter')?.value||'all';
+  if(!_allMessages.length){
+    tbody.innerHTML=`<tr><td colspan="6" class="no-data">اضغط تحديث لتحميل الرسائل</td></tr>`;
+    return;
+  }
+  const typeColors={info:'var(--blue)',warning:'var(--orange)',alert:'var(--red)',update:'var(--green)'};
+  const typeIcons ={info:'💬',warning:'⚠️',alert:'🚨',update:'✅'};
+  let msgs = _allMessages;
+  if(gymF!=='all')  msgs=msgs.filter(m=>m.gymId===gymF);
+  if(typeF!=='all') msgs=msgs.filter(m=>m.type===typeF);
+  if(search)        msgs=msgs.filter(m=>(m.title||'').toLowerCase().includes(search)||(m.body||'').toLowerCase().includes(search));
+  if(!msgs.length){tbody.innerHTML=`<tr><td colspan="6" class="no-data">لا يوجد نتائج</td></tr>`;return;}
+  tbody.innerHTML=msgs.map(m=>`
+    <tr>
+      <td><div class="td-name">${esc(m.title||'—')}</div></td>
+      <td><span class="badge badge-gray">${esc(m.gymName||m.gymId||'—')}</span></td>
+      <td><span style="font-weight:800;color:${typeColors[m.type]||'var(--text2)'}">${typeIcons[m.type]||''} ${esc(m.type||'—')}</span></td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)">${esc(m.body||'—')}</td>
+      <td><span class="badge ${m.read?'badge-green':'badge-gray'}">${m.read?'نعم':'لا'}</span></td>
+      <td><span class="td-mono">${fmtDate(m.sentAt)}</span></td>
+    </tr>`).join('');
+}
+
+// ── Hard Delete (type-to-confirm) ──
+let _hardDeleteCallback = null;
+let _hardDeleteExpected  = '';
+
+function confirmDelete(type, id, name) {
+  _hardDeleteExpected  = name;
+  _hardDeleteCallback  = async () => {
+    try {
+      if(type==='gym'){
+        await updateDoc(doc(db,'gyms',id),{deleted:true,deletedAt:serverTimestamp(),isActive:false});
+        closeModal('gym-members-modal');
+        showToast('🗑️ تم حذف النادي (soft-delete)','success');
+      } else if(type==='user'){
+        await updateDoc(doc(db,'users',id),{deleted:true,deletedAt:serverTimestamp(),isActive:false});
+        closeModal('user-detail-modal');
+        showToast('🗑️ تم حذف المستخدم (soft-delete)','success');
+      }
+    } catch(e){showToast('❌ '+e.message,'error');}
+  };
+  document.getElementById('hd-message').textContent =
+    `هل تريد حذف ${type==='gym'?'النادي':'المستخدم'}: "${name}"؟\nسيُخفى من النظام ويُوسَم بـ deleted:true.`;
+  document.getElementById('hd-expected-name').textContent = name;
+  document.getElementById('hd-type-input').value='';
+  document.getElementById('hd-confirm-btn').disabled=true;
+  document.getElementById('hd-confirm-btn').style.opacity='0.5';
+  document.getElementById('hd-confirm-btn').style.cursor='not-allowed';
+  closeModal('confirm-modal');
+  document.getElementById('hard-delete-modal').classList.add('open');
+}
+window.checkHardDeleteInput = function() {
+  const val = document.getElementById('hd-type-input').value;
+  const ok  = val===_hardDeleteExpected;
+  const btn = document.getElementById('hd-confirm-btn');
+  btn.disabled=!ok;
+  btn.style.opacity=ok?'1':'0.5';
+  btn.style.cursor=ok?'pointer':'not-allowed';
+  btn.style.background=ok?'var(--red)':'rgba(255,59,48,.15)';
+  btn.style.color=ok?'#fff':'var(--red)';
+  btn.style.border=ok?'none':'1px solid rgba(255,59,48,.3)';
+};
+window.doHardDelete = async function() {
+  closeModal('hard-delete-modal');
+  if(_hardDeleteCallback){await _hardDeleteCallback();_hardDeleteCallback=null;}
+};
+
+// ── Stats: per-gym revenue + expiring ──
+function updateStats() {
+  const players  = allUsers.filter(u=>u.role==='player');
+  const coaches  = allUsers.filter(u=>u.role==='coach');
+  const members  = allUsers.filter(u=>u.gymId); // users with a gym
+  const now      = Date.now();
+  const week     = 7*24*3600*1000;
+  const expiring = players.filter(u=>{
+    if(!u.subscriptionEnd) return false;
+    const ms=u.subscriptionEnd.seconds?u.subscriptionEnd.seconds*1000:u.subscriptionEnd;
+    return ms>now && ms-now<week;
+  });
+  const rev = players.reduce((s,p)=>s+(Number(p.amountPaid)||0),0);
+
+  document.getElementById('ov-gyms').textContent    = allGyms.length||'—';
+  document.getElementById('ov-users').textContent   = allUsers.length||(accessDenied?'?':'—');
+  document.getElementById('ov-players').textContent = players.length||(accessDenied?'?':'—');
+  document.getElementById('ov-coaches').textContent = coaches.length||(accessDenied?'?':'—');
+  document.getElementById('ov-active').textContent  = allUsers.filter(u=>u.isActive!==false).length||(accessDenied?'?':'—');
+  document.getElementById('ov-revenue').textContent = rev>0?rev.toLocaleString():(accessDenied?'?':'—');
+  document.getElementById('stat-gyms').textContent    = allGyms.length;
+  document.getElementById('stat-active').textContent  = allGyms.filter(g=>g.isActive!==false).length;
+  document.getElementById('stat-members').textContent = members.length;  // fix #7
+  document.getElementById('stat-expiring').textContent= expiring.length; // fix #5
+}
+
+// ── Render Gyms (with filter + per-gym stats) ──
+function renderGyms() {
+  const el    = document.getElementById('gym-list');
+  const filt  = document.getElementById('gym-filter')?.value||'all';
+  const now   = Date.now();
+  const week  = 7*24*3600*1000;
+
+  let gyms = allGyms;
+  if(filt==='active')   gyms=gyms.filter(g=>g.isActive!==false);
+  if(filt==='inactive') gyms=gyms.filter(g=>g.isActive===false);
+  if(filt==='expiring') gyms=gyms.filter(g=>{
+    return allUsers.some(u=>u.gymId===g.id&&u.role==='player'&&u.subscriptionEnd&&(()=>{
+      const ms=u.subscriptionEnd.seconds?u.subscriptionEnd.seconds*1000:u.subscriptionEnd;
+      return ms>now&&ms-now<week;
+    })());
+  });
+  if(filt==='expired') gyms=gyms.filter(g=>{
+    return allUsers.some(u=>u.gymId===g.id&&u.role==='player'&&u.subscriptionEnd&&(()=>{
+      const ms=u.subscriptionEnd.seconds?u.subscriptionEnd.seconds*1000:u.subscriptionEnd;
+      return ms<now;
+    })());
+  });
+
+  if(!gyms.length){el.innerHTML=`<div class="loading-state">🏗️ لا يوجد أندية تطابق الفلتر</div>`;return;}
+
+  el.innerHTML=gyms.map(g=>{
+    const gymPlayers  = allUsers.filter(u=>u.gymId===g.id&&u.role==='player');
+    const gymRevenue  = gymPlayers.reduce((s,p)=>s+(Number(p.amountPaid)||0),0);
+    const gymActive   = gymPlayers.filter(u=>u.isActive!==false&&isSubActive(u)).length;
+    const gymExpiring = gymPlayers.filter(u=>{
+      if(!u.subscriptionEnd) return false;
+      const ms=u.subscriptionEnd.seconds?u.subscriptionEnd.seconds*1000:u.subscriptionEnd;
+      return ms>now&&ms-now<week;
+    }).length;
+
+    return `
+    <div class="gym-card">
+      <div class="gym-card-main" onclick="openGymMembers('${g.id}')">
+        <div class="gym-emoji">🏋️</div>
+        <div class="gym-info">
+          <div class="gym-name">${esc(g.name||g.id)}</div>
+          <div class="gym-meta">ID: ${esc(g.id)} &nbsp;•&nbsp; ${esc(g.city||'—')} &nbsp;•&nbsp; ${esc(g.ownerEmail||'—')}</div>
+          <div class="gym-stats-row">
+            <span>👥 ${gymPlayers.length} لاعب</span>
+            <span style="color:var(--green)">💰 ${gymRevenue.toLocaleString()} ₪</span>
+            <span style="color:var(--blue)">✅ ${gymActive} نشط</span>
+            ${gymExpiring>0?`<span style="color:var(--orange)">⚠️ ${gymExpiring} تنتهي قريباً</span>`:''}
+          </div>
+        </div>
+        <button onclick="event.stopPropagation();toggleGym('${g.id}',${g.isActive!==false})"
+          style="padding:4px 12px;border-radius:20px;border:none;font-size:13px;font-weight:800;cursor:pointer;margin-left:8px;background:${g.isActive!==false?'rgba(52,199,89,.15)':'rgba(255,59,48,.15)'};color:${g.isActive!==false?'var(--green)':'var(--red)'}">
+          ${g.isActive!==false?'نشط ✓':'موقوف ✗'}
+        </button>
+      </div>
+      <div class="gym-actions">
+        <button class="icon-btn" onclick="event.stopPropagation();openSendMsg('${g.id}')" title="إرسال رسالة" style="color:var(--orange)">🔔</button>
+        <button class="icon-btn edit" onclick="event.stopPropagation();openEditGym('${g.id}')" title="تعديل">✏️</button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();confirmDelete('gym','${g.id}','${esc(g.name||g.id)}')" title="حذف">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+// ── CSV Export ──
+function csvRow(arr){ return arr.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','); }
+function downloadCSV(filename, rows) {
+  const blob = new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'),{href:url,download:filename});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.exportUsersCSV = function() {
+  const rows = [csvRow(['الاسم','الإيميل','الهاتف','الدور','النادي','نشط','التاريخ'])];
+  allUsers.forEach(u=>rows.push(csvRow([fullName(u),u.email||'',u.phone||'',u.role||'',u.gymId||'',u.isActive!==false?'نشط':'موقوف',fmtDate(u.createdAt)])));
+  downloadCSV('users.csv',rows);
+  showToast('✅ تم تصدير المستخدمين','success');
+};
+window.exportPlayersCSV = function() {
+  const rows = [csvRow(['الاسم','الإيميل','الهاتف','النادي','الاشتراك','الانتهاء','المدفوع','المتبقي','نشط'])];
+  allUsers.filter(u=>u.role==='player').forEach(u=>rows.push(csvRow([
+    fullName(u),u.email||'',u.phone||'',u.gymId||'',u.subscriptionPlan||'',
+    fmtDate(u.subscriptionEnd),u.amountPaid||0,u.amountRemaining||0,
+    isSubActive(u)?'نشط':'منتهي'
+  ])));
+  downloadCSV('players.csv',rows);
+  showToast('✅ تم تصدير اللاعبين','success');
+};
+window.exportGymsCSV = function() {
+  const rows = [csvRow(['اسم النادي','ID','المدينة','نشط','عدد اللاعبين','الإيراد ₪','التاريخ'])];
+  allGyms.forEach(g=>{
+    const gp  = allUsers.filter(u=>u.gymId===g.id&&u.role==='player');
+    const rev = gp.reduce((s,p)=>s+(Number(p.amountPaid)||0),0);
+    rows.push(csvRow([g.name||g.id,g.id,g.city||'',g.isActive!==false?'نشط':'موقوف',gp.length,rev,fmtDate(g.createdAt)]));
+  });
+  downloadCSV('gyms.csv',rows);
+  showToast('✅ تم تصدير الأندية','success');
+};
+
+function confirmAction(msg,onConfirm) {
+  document.getElementById('confirm-message').textContent=msg;
+  document.getElementById('confirm-modal').classList.add('open');
+  confirmCallback=onConfirm;
+}
+
+function doConfirm() {
+  closeModal('confirm-modal');
+  if(confirmCallback){confirmCallback();confirmCallback=null;}
+}
+
+// ── Create Gym ──
+function openCreateModal(){clearForm();document.getElementById('create-modal').classList.add('open');}
+
+async function createGym() {
+  const gymName =document.getElementById('f-gym-name').value.trim();
+  const gymCity =document.getElementById('f-gym-city').value.trim();
+  const gymId   =document.getElementById('f-gym-id').value.trim();
+  const firstName=document.getElementById('f-first').value.trim();
+  const lastName =document.getElementById('f-last').value.trim();
+  const email   =document.getElementById('f-email').value.trim().toLowerCase();
+  const phone   =document.getElementById('f-phone').value.trim();
+  document.getElementById('create-error').style.display='none';
+  if(!gymName||!gymId||!firstName||!lastName||!email||!phone){
+    document.getElementById('create-error').textContent='أكمل جميع الحقول';
+    document.getElementById('create-error').style.display='block';return;
+  }
+  const btn=document.getElementById('create-btn');
+  btn.disabled=true;btn.innerHTML='جاري الإنشاء… <span class="spinner"></span>';
+  try{
+    const password=genPassword();
+    const cred=await createUserWithEmailAndPassword(authSec,email,password);
+    const uid=cred.user.uid;
+    await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
+    await signOut(authSec);
+    await setDoc(doc(db,'gyms',gymId),{
+      id:gymId,gymCode:gymId,name:gymName,city:gymCity,
+      ownerId:uid,ownerEmail:email,createdBy:currentUser.uid,
+      createdAt:serverTimestamp(),updatedAt:serverTimestamp(),isActive:true,plan:'standard'});
+    await setDoc(doc(db,'users',uid),{
+      uid,email,firstName,lastName,phone,gymId,gymCode:gymId,role:'owner',
+      isActive:true,emailVerified:true,authProvider:'password',temporaryPasswordSet:false,
+      createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    await setDoc(doc(db,'gyms',gymId,'memberEmails',email),{
+      role:'owner',status:'active',firstName,lastName,phone,
+      addedBy:currentUser.uid,addedAt:serverTimestamp()});
+    await setDoc(doc(db,'gyms',gymId,'members',uid),{
+      uid,email,gymId,role:'owner',displayName:`${firstName} ${lastName}`,
+      status:'active',joinedAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    lastResult={gymName,gymId,email,password};
+    document.getElementById('s-gym-name').textContent=gymName;
+    document.getElementById('s-gym-id').textContent  =gymId;
+    document.getElementById('s-email').textContent   =email;
+    document.getElementById('s-pass').textContent    =password;
+    closeModal('create-modal');
+    document.getElementById('success-modal').classList.add('open');
+    showToast('✅ تم إنشاء النادي','success');
+  }catch(e){
+    document.getElementById('create-error').textContent=e.message;
+    document.getElementById('create-error').style.display='block';
+  }finally{btn.disabled=false;btn.innerHTML='إنشاء النادي';}
+}
+
+function copyCredentials() {
+  const text=[
+    `اسم النادي: ${document.getElementById('s-gym-name').textContent}`,
+    `ID: ${document.getElementById('s-gym-id').textContent}`,
+    `إيميل: ${document.getElementById('s-email').textContent}`,
+    `كلمة المرور: ${document.getElementById('s-pass').textContent}`,
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(()=>showToast('✅ تم النسخ','success'));
+}
+
+// ── Helpers ──
+function updateGymFilters() {
+  ['user-gym-filter','player-gym-filter','coach-gym-filter'].forEach(id=>{
+    const el=document.getElementById(id);if(!el) return;
+    const cur=el.value;
+    el.innerHTML='<option value="all">كل الأندية</option>'+
+      allGyms.map(g=>`<option value="${g.id}"${g.id===cur?' selected':''}>${esc(g.name||g.id)}</option>`).join('');
+  });
+}
+
+function fullName(u) {
+  if(u.firstName||u.lastName) return `${u.firstName||''} ${u.lastName||''}`.trim();
+  return u.displayName||u.email||'—';
+}
+function roleBadge(role) {
+  const m={player:['badge-blue','لاعب'],coach:['badge-orange','كوتش'],
+    owner:['badge-purple','owner'],admin:['badge-purple','admin'],
+    gymadmin:['badge-purple','gymAdmin'],super_admin:['badge-red','super admin']};
+  const [cls,lbl]=m[(role||'').toLowerCase()]||['badge-gray',role||'—'];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+function isSubActive(u) {
+  if(!u.subscriptionEnd) return false;
+  const ms=u.subscriptionEnd.seconds?u.subscriptionEnd.seconds*1000:u.subscriptionEnd;
+  return ms>Date.now();
+}
+function fmtDate(ts) {
+  if(!ts) return '—';
+  const ms=ts.seconds?ts.seconds*1000:(ts.toMillis?.()??ts);
+  if(isNaN(ms)) return '—';
+  return new Date(ms).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
+}
+function tsToDate(ts) {
+  if(!ts) return '';
+  const ms=ts.seconds?ts.seconds*1000:(ts.toMillis?.()??ts);
+  if(isNaN(ms)) return '';
+  return new Date(ms).toISOString().split('T')[0];
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function permRow(cols){return `<tr><td colspan="${cols}" class="no-data">🔒 قم بتحديث Firestore Rules</td></tr>`;}
+function genPassword(){
+  const c='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  return Array.from({length:12},()=>c[Math.floor(Math.random()*c.length)]).join('');
+}
+function genId(){document.getElementById('f-gym-id').value=String(Date.now()).slice(-6);}
+function clearForm(){
+  ['f-gym-name','f-gym-city','f-first','f-last','f-email','f-phone'].forEach(id=>document.getElementById(id).value='');
+  genId();document.getElementById('create-error').style.display='none';
+}
+function closeModal(id){document.getElementById(id)?.classList.remove('open');}
+function showAuthError(m){const e=document.getElementById('auth-error');e.textContent=m;e.style.display='block';}
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type}`;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
+}
+function mapAuthError(c){
+  return {'auth/user-not-found':'الإيميل غير موجود','auth/wrong-password':'كلمة مرور خاطئة',
+    'auth/invalid-email':'إيميل غير صحيح','auth/too-many-requests':'محاولات كثيرة، انتظر',
+    'auth/invalid-credential':'إيميل أو كلمة مرور خاطئة'}[c]||`خطأ: ${c}`;
+}
+
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+genId();
+</script>
+</body>
+</html>

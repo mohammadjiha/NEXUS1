@@ -1,0 +1,1420 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:sizer/sizer.dart';
+import '../../../../../core/localization/app_localizations.dart';
+import '../../../../core/utils/intl_formatter.dart';
+import '../../../coaching/presentation/screens/human_coach_chat_screen.dart';
+import '../../../user/models/user_model.dart';
+import '../../data/coach_repository.dart';
+import '../../models/payment_record.dart';
+import '../../../auth/data/auth_repository.dart';
+
+class CoachPlayerDetailScreen extends ConsumerStatefulWidget {
+  final UserModel? player;
+  final String? playerName;
+
+  const CoachPlayerDetailScreen({super.key, this.player, this.playerName});
+
+  @override
+  ConsumerState<CoachPlayerDetailScreen> createState() =>
+      _CoachPlayerDetailScreenState();
+}
+
+class _CoachPlayerDetailScreenState
+    extends ConsumerState<CoachPlayerDetailScreen> {
+  int _currentTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final player = _currentPlayer();
+    if (player == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F7),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopbar(player),
+            Expanded(
+              child: SingleChildScrollView(child: _buildCurrentTab(player)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  UserModel? _currentPlayer() {
+    if (widget.player != null) return widget.player;
+    final players = ref.watch(coachMembersProvider).asData?.value ?? [];
+    try {
+      return players.firstWhere(
+        (p) => '${p.firstName} ${p.lastName}'.trim() == widget.playerName,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  String _displayName(UserModel player) {
+    return '${player.firstName ?? ''} ${player.lastName ?? ''}'.trim();
+  }
+
+  String _formatDob(DateTime? date) {
+    if (date == null) return 'unknown'.tr(context);
+    return AppIntl.shortDateYear(context, date);
+  }
+
+  String _formatLastLogin(DateTime? date) {
+    if (date == null) return 'never'.tr(context);
+    return AppIntl.fullDateTime(context, date);
+  }
+
+  Widget _buildTopbar(UserModel player) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 1.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _circleButton(Icons.arrow_back_ios_new_rounded, () => context.pop()),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  _tabTitle(),
+                  style: TextStyle(
+                    fontSize: 19.sp,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF1C1C1E),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 11.w),
+        ],
+      ),
+    );
+  }
+
+  Widget _circleButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 11.w,
+        height: 11.w,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.5),
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, size: 19.sp, color: const Color(0xFF1C1C1E)),
+      ),
+    );
+  }
+
+  String _tabTitle() {
+    switch (_currentTab) {
+      case 0:
+        return 'Player Profile';
+      case 1:
+        return 'Training Plan';
+      case 2:
+        return 'Body & Vitals';
+      case 3:
+        return 'Activity History';
+      case 4:
+        return 'Finance';
+      default:
+        return 'Player';
+    }
+  }
+
+  Widget _buildCurrentTab(UserModel player) {
+    switch (_currentTab) {
+      case 0:
+        return _buildOverviewTab(player);
+      case 1:
+        return _buildTrainingTab(player, context);
+      case 2:
+        return _buildBodyTab(player, context);
+      case 3:
+        return _buildHistoryTab(player, context);
+      case 4:
+        return _buildFinanceTab(player, context);
+      default:
+        return const SizedBox();
+    }
+  }
+
+  Widget _buildOverviewTab(UserModel player) {
+    return Column(
+      children: [
+        _buildHeroSection(player),
+        _buildQuickActions(player),
+        _buildPersonalInfoCard(player, context),
+        _buildAccountInfoCard(player, context),
+        SizedBox(height: 4.h),
+      ],
+    );
+  }
+
+  Widget _buildHeroSection(UserModel player) {
+    return Container(
+      margin: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 3.h),
+      padding: EdgeInsets.all(5.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF242A32),
+        borderRadius: BorderRadius.circular(6.w),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 18.w,
+                height: 18.w,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF333942),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text('ðŸ’ª', style: TextStyle(fontSize: 28.sp)),
+              ),
+              SizedBox(width: 4.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _displayName(player),
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    SizedBox(height: 0.5.h),
+                    Text(
+                      'ID: #${player.uid.substring(0, 4).toUpperCase()} Â· Member since ${DateFormat('MMM yyyy').format(player.createdAt)}',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    SizedBox(height: 1.5.h),
+                    Wrap(
+                      spacing: 2.w,
+                      runSpacing: 1.h,
+                      children: [
+                        _buildHeroBadge(
+                          'Gamma Membership Plan',
+                          const Color(0xFF1B406B),
+                          Colors.blue[300]!,
+                        ),
+                        _buildHeroBadge(
+                          'ðŸŸ¢ Active',
+                          const Color(0xFF1A4731),
+                          Colors.greenAccent,
+                        ),
+                        _buildHeroBadge(
+                          '12ðŸ”¥ Streak',
+                          const Color(0xFF3A3B3C),
+                          Colors.orangeAccent,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 2.5.h),
+          Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+          SizedBox(height: 2.5.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildHeroStat('47', 'SESSIONS'),
+              _buildHeroVerticalDivider(),
+              _buildHeroStat('87%', 'ADHERENCE'),
+              _buildHeroVerticalDivider(),
+              _buildHeroStat('-8 kg', 'PROGRESS'),
+              _buildHeroVerticalDivider(),
+              _buildHeroStat('30d', 'REMAINING'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroBadge(String text, Color bgColor, Color textColor) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 3.5.w, vertical: 0.8.h),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(2.w),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13.sp,
+          fontWeight: FontWeight.w700,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroStat(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 0.5.h),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[500],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroVerticalDivider() {
+    return Container(
+      height: 4.h,
+      width: 1,
+      color: Colors.white.withValues(alpha: 0.1),
+    );
+  }
+
+  Widget _buildQuickActions(UserModel player) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4.w, 0, 4.w, 3.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildQaItem('ðŸ’¬', 'Message', () {
+            final coachUid = ref.read(currentUserModelProvider).value?.uid;
+            if (coachUid != null && widget.player != null) {
+              final name = [
+                widget.player!.firstName,
+                widget.player!.lastName,
+              ].where((p) => p != null).join(' ');
+              final displayName = name.trim().isEmpty
+                  ? widget.player!.email
+                  : name.trim();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HumanCoachChatScreen(
+                    chatId: '${widget.player!.uid}_$coachUid',
+                    participantName: displayName,
+                    isCoachView: true,
+                  ),
+                ),
+              );
+            }
+          }),
+          _buildQaItem('ðŸ¤–', 'AI Track', () => _showAiTrackingSheet(player, context)),
+          _buildQaItem(
+            'ðŸ’°',
+            'Payment',
+            () => setState(() => _currentTab = 4),
+          ),
+          _buildQaItem('ðŸ“…', 'Renew', () => _showRenewSheet(player)),
+          _buildQaItem(
+            'ðŸ“‹',
+            'Monitor',
+            () => context.push('/coach_monitoring', extra: player),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQaItem(String emoji, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 17.w,
+        padding: EdgeInsets.symmetric(vertical: 1.5.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(3.w),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: TextStyle(fontSize: 24.sp)),
+            SizedBox(height: 1.h),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1C1C1E),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAiTrackingSheet(UserModel player, BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            5.w,
+            4.h,
+            5.w,
+            MediaQuery.of(ctx).viewInsets.bottom + 6.h,
+          ),
+          height: 75.h,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(5.w)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'coach_ai_nutrition_tracking'.tr(context),
+                    style: TextStyle(
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1C1C1E),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 3.w,
+                      vertical: 0.8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5FF),
+                      borderRadius: BorderRadius.circular(2.w),
+                    ),
+                    child: Text(
+                      'today'.tr(context),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF007AFF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                "Monitor ${_displayName(player)}'s daily macro adherence.",
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: const Color(0xFF8E8E93),
+                ),
+              ),
+              SizedBox(height: 4.h),
+              _buildMacroProgress('Protein', 150, 200, Colors.blue),
+              SizedBox(height: 2.h),
+              _buildMacroProgress('Carbs', 200, 250, Colors.orange),
+              SizedBox(height: 2.h),
+              _buildMacroProgress('Fats', 50, 70, Colors.red),
+              SizedBox(height: 4.h),
+              Container(
+                padding: EdgeInsets.all(4.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F7),
+                  borderRadius: BorderRadius.circular(3.w),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.insights,
+                      color: const Color(0xFF007AFF),
+                      size: 24.sp,
+                    ),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      child: Text(
+                        'coach_ai_analysis_macro_warning'.tr(context),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: const Color(0xFF1C1C1E),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 6.5.h,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007AFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(3.w),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'close'.tr(context),
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMacroProgress(
+    String label,
+    int current,
+    int target,
+    Color color,
+  ) {
+    double progress = current / target;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+            ),
+            Text(
+              "$current / $target g",
+              style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
+            ),
+          ],
+        ),
+        SizedBox(height: 1.h),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2.w),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 1.5.h,
+            backgroundColor: const Color(0xFFE5E5EA),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showRenewSheet(UserModel player) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => RenewSubscriptionSheet(player: player),
+    );
+  }
+
+  Widget _buildPersonalInfoCard(UserModel player, BuildContext context) {
+    return _buildCard(
+      title: 'personal_info'.tr(context),
+      icon: 'ðŸ‘¤',
+      iconBg: const Color(0xFFE6F2FF),
+      iconColor: const Color(0xFF007AFF),
+      actionText: 'edit'.tr(context),
+      onAction: () {},
+      children: [
+        _buildInfoRow('full_name'.tr(context), _displayName(player)),
+        _buildDivider(),
+        _buildInfoRow(
+          'date_of_birth'.tr(context),
+          _formatAgeAndDob(player.dateOfBirth, context),
+        ),
+        _buildDivider(),
+        _buildInfoRow('gender'.tr(context), player.gender ?? 'male'),
+        _buildDivider(),
+        _buildInfoRow(
+          'phone'.tr(context),
+          player.phone ?? '0780805230',
+          valueColor: const Color(0xFF007AFF),
+        ),
+        _buildDivider(),
+        _buildInfoRow(
+          'email'.tr(context),
+          player.email,
+          valueColor: const Color(0xFF007AFF),
+        ),
+        _buildDivider(),
+        _buildInfoRow(
+          'gym'.tr(context),
+          '${player.gymId ?? 'Iron Peak Gym'} ðŸ“',
+        ),
+        _buildDivider(),
+        _buildInfoRow(
+          'coach'.tr(context),
+          player.assignedCoachName ?? 'qutaiba',
+        ),
+        _buildDivider(),
+        _buildInfoRow(
+          'training_mode'.tr(context),
+          '${player.trainingMode ?? 'gym_only'} ðŸ‹ï¸',
+        ),
+      ],
+    );
+  }
+
+  String _formatAgeAndDob(DateTime? date, BuildContext context) {
+    if (date == null) return 'Dec 31, 2006 (20 ${'years_short'.tr(context)})';
+    int age = DateTime.now().year - date.year;
+    return '${DateFormat('MMM d, yyyy').format(date)} ($age ${'years_short'.tr(context)})';
+  }
+
+  Widget _buildAccountInfoCard(UserModel player, BuildContext context) {
+    return _buildCard(
+      title: 'account'.tr(context),
+      icon: 'ðŸ”',
+      iconBg: const Color(0xFFF3E8FF),
+      iconColor: Colors.purple,
+      actionText: 'manage'.tr(context),
+      onAction: () {},
+      children: [
+        _buildInfoRow(
+          'username'.tr(context),
+          '@${player.firstName ?? 'ØºØ§Ù„Ø¨'}',
+          valueColor: const Color(0xFF007AFF),
+        ),
+        _buildDivider(),
+        _buildInfoRow('login_email'.tr(context), player.email),
+        _buildDivider(),
+        _buildInfoRow('password'.tr(context), '........'),
+        _buildDivider(),
+        _buildInfoRow(
+          'account_status'.tr(context),
+          player.isActive ? 'active'.tr(context) : 'suspended'.tr(context),
+          valueColor: player.isActive ? Colors.green : Colors.red,
+        ),
+        _buildDivider(),
+        _buildInfoRow(
+          'last_login'.tr(context),
+          _formatLastLogin(player.lastLogin),
+        ),
+        _buildDivider(),
+        _buildInfoRow('device'.tr(context), 'iPhone 15 Pro'),
+        _buildDivider(),
+        _buildInfoRow('app_version'.tr(context), 'NEXUS v2.4.1'),
+        _buildDivider(),
+        _buildResetPasswordRow(context),
+      ],
+    );
+  }
+
+  Widget _buildResetPasswordRow(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 1.5.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Text('ðŸ”‘', style: TextStyle(fontSize: 16.sp)),
+              SizedBox(width: 2.w),
+              Text(
+                'coach_reset_password'.tr(context),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: const Color(0xFF8E8E93),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            'coach_send_email'.tr(context),
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF007AFF),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(color: const Color(0xFFF2F2F7), height: 1, thickness: 1);
+  }
+
+  Widget _buildTrainingTab(UserModel player, BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      child: Center(
+        child: Text(
+          'coach_training_plan_area'.tr(context),
+          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBodyTab(UserModel player, BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      child: Center(
+        child: Text(
+          'coach_body_vitals_area'.tr(context),
+          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryTab(UserModel player, BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      child: Center(
+        child: Text(
+          'coach_activity_history_area'.tr(context),
+          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinanceTab(UserModel player, BuildContext context) {
+    final isExpired =
+        player.subscriptionEnd != null &&
+        player.subscriptionEnd!.isBefore(DateTime.now());
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 2.h),
+          _buildSubscriptionCard(player, isExpired, context),
+          if (isExpired) _buildRenewalAlert(player, context),
+          SizedBox(height: 3.h),
+          _buildFinancialSummary(player),
+          SizedBox(height: 3.h),
+          Text(
+            'coach_payment_history'.tr(context),
+            style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w800),
+          ),
+          SizedBox(height: 2.h),
+          _buildPaymentHistoryList(player, context),
+          SizedBox(height: 10.h),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionCard(UserModel player, bool isExpired, BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(5.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isExpired
+              ? [Colors.redAccent, Colors.red]
+              : [const Color(0xFF007AFF), const Color(0xFF0056B3)],
+        ),
+        borderRadius: BorderRadius.circular(4.w),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'coach_current_subscription'.tr(context),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 13.sp,
+                ),
+              ),
+              Icon(
+                isExpired ? Icons.warning_rounded : Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20.sp,
+              ),
+            ],
+          ),
+          SizedBox(height: 1.5.h),
+          Text(
+            player.subscriptionPlan ?? 'coach_custom_plan'.tr(context),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'coach_expires_on'.tr(context),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                  Text(
+                    player.subscriptionEnd != null
+                        ? DateFormat(
+                            'MMM dd, yyyy',
+                          ).format(player.subscriptionEnd!)
+                        : 'Never',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'coach_status'.tr(context),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                  Text(
+                    isExpired ? 'Expired' : 'Active',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRenewalAlert(UserModel player, BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(top: 2.h),
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(3.w),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.red, size: 22.sp),
+          SizedBox(width: 3.w),
+          Expanded(
+            child: Text(
+              'coach_subscription_expired_suspended'.tr(context),
+              style: TextStyle(
+                color: Colors.red[800],
+                fontSize: 13.sp,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinancialSummary(UserModel player) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSummaryBox(
+            'Total Paid',
+            '\$${player.amountPaid ?? 0}',
+            Colors.green,
+          ),
+        ),
+        SizedBox(width: 3.w),
+        Expanded(
+          child: _buildSummaryBox(
+            'Remaining',
+            '\$${player.amountRemaining ?? 0}',
+            Colors.orange,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryBox(String label, String amount, Color color) {
+    return Container(
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(3.w),
+        border: Border.all(color: const Color(0xFFE5E5EA)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 1.h),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentHistoryList(UserModel player, BuildContext context) {
+    final paymentsAsync = ref.watch(coachPaymentsProvider(player.uid));
+    return paymentsAsync.when(
+      data: (payments) {
+        if (payments.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: Text(
+                'coach_no_payment_history'.tr(context),
+                style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+              ),
+            ),
+          );
+        }
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: payments.length,
+          itemBuilder: (context, index) {
+            final p = payments[index];
+            return Container(
+              margin: EdgeInsets.only(bottom: 2.h),
+              padding: EdgeInsets.all(4.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(3.w),
+                border: Border.all(color: const Color(0xFFE5E5EA)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.planName,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 0.5.h),
+                      Text(
+                        DateFormat(
+                          'MMM dd, yyyy',
+                        ).format(p.paymentDate ?? DateTime.now()),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${p.amount}',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      SizedBox(height: 0.5.h),
+                      Text(
+                        p.paymentMethod,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Center(child: Text('${'error_prefix'.tr(context)} $e')),
+    );
+  }
+
+  Widget _buildCard({
+    required String title,
+    required String icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String actionText,
+    required VoidCallback onAction,
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+      padding: EdgeInsets.all(5.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6.w),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(2.5.w),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(3.w),
+                ),
+                child: Text(icon, style: TextStyle(fontSize: 18.sp)),
+              ),
+              SizedBox(width: 3.w),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 19.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1C1C1E),
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: onAction,
+                child: Text(
+                  actionText,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF007AFF),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 2.h),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 1.5.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: const Color(0xFF8E8E93),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? const Color(0xFF1C1C1E),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showToast(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class RenewSubscriptionSheet extends ConsumerStatefulWidget {
+  final UserModel player;
+  const RenewSubscriptionSheet({super.key, required this.player});
+
+  @override
+  ConsumerState<RenewSubscriptionSheet> createState() =>
+      _RenewSubscriptionSheetState();
+}
+
+class _RenewSubscriptionSheetState
+    extends ConsumerState<RenewSubscriptionSheet> {
+  late DateTime _startDate;
+  int _selectedMonths = 1;
+  late DateTime _endDate;
+  String _paymentMethod = 'cash';
+  double _amount = 0.0;
+  final TextEditingController _amountController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _startDate =
+        widget.player.subscriptionEnd != null &&
+            widget.player.subscriptionEnd!.isAfter(DateTime.now())
+        ? widget.player.subscriptionEnd!
+        : DateTime.now();
+    _updateEndDate();
+  }
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+
+  void _updateEndDate() {
+    setState(() {
+      _endDate = DateTime(
+        _startDate.year,
+        _startDate.month + _selectedMonths,
+        _startDate.day,
+      );
+    });
+  }
+
+  Future<void> _pickStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        _updateEndDate();
+      });
+    }
+  }
+
+  Future<void> _pickEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate,
+      firstDate: _startDate,
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+        _selectedMonths = ((_endDate.difference(_startDate).inDays) / 30)
+            .round();
+        if (_selectedMonths < 1) _selectedMonths = 1;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        6.w,
+        4.w,
+        6.w,
+        MediaQuery.of(context).viewInsets.bottom + 4.w,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(6.w)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'coach_renew_subscription'.tr(context),
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            SizedBox(height: 2.h),
+            Text(
+              '${'enter_renewal_details_for'.tr(context)} ${widget.player.firstName ?? ''}:',
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
+            ),
+            SizedBox(height: 3.h),
+
+            // Start Date
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'coach_start_date'.tr(context),
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                DateFormat('MMM dd, yyyy').format(_startDate),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: const Color(0xFF007AFF),
+                ),
+              ),
+              trailing: const Icon(
+                Icons.calendar_today,
+                color: Color(0xFF007AFF),
+              ),
+              onTap: _pickStartDate,
+            ),
+            Divider(color: Colors.grey[200]),
+
+            // Duration in Months
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'coach_duration_months'.tr(context),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                DropdownButton<int>(
+                  value: _selectedMonths,
+                  items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(
+                            "$m Months",
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() {
+                        _selectedMonths = v;
+                        _updateEndDate();
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            Divider(color: Colors.grey[200]),
+
+            // End Date
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'coach_end_date'.tr(context),
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                DateFormat('MMM dd, yyyy').format(_endDate),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: const Color(0xFF007AFF),
+                ),
+              ),
+              trailing: const Icon(
+                Icons.edit_calendar,
+                color: Color(0xFF007AFF),
+              ),
+              onTap: _pickEndDate,
+            ),
+            Divider(color: Colors.grey[200]),
+
+            // Payment Method
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'coach_payment_method'.tr(context),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                DropdownButton<String>(
+                  value: _paymentMethod,
+                  items:
+                      [
+                            'coach_cash'.tr(context),
+                            'coach_visa'.tr(context),
+                            'coach_bank_transfer'.tr(context),
+                            'coach_wallet'.tr(context),
+                          ]
+                          .map(
+                            (m) => DropdownMenuItem(
+                              value: m,
+                              child: Text(m, style: TextStyle(fontSize: 14.sp)),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _paymentMethod = v);
+                  },
+                ),
+              ],
+            ),
+            Divider(color: Colors.grey[200]),
+
+            SizedBox(height: 2.h),
+
+            // Amount
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'coach_amount_paid_usd'.tr(context),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(3.w),
+                ),
+                prefixIcon: const Icon(Icons.attach_money),
+              ),
+              onChanged: (v) => _amount = double.tryParse(v) ?? 0.0,
+            ),
+
+            SizedBox(height: 4.h),
+            SizedBox(
+              width: double.infinity,
+              height: 6.5.h,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007AFF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(3.w),
+                  ),
+                ),
+                onPressed: () {
+                  ref
+                      .read(coachRepositoryProvider)
+                      .renewSubscription(
+                        uid: widget.player.uid,
+                        startDate: _startDate,
+                        endDate: _endDate,
+                        amount: _amount,
+                        planName: '$_selectedMonths Month(s) Plan',
+                        paymentMethod: _paymentMethod,
+                      );
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('coach_subscription_renewed'.tr(context)),
+                    ),
+                  );
+                },
+                child: Text(
+                  'coach_confirm_renewal'.tr(context),
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+             

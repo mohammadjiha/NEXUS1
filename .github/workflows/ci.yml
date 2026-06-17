@@ -1,0 +1,170 @@
+# .github/workflows/ci.yml
+#
+# Nexus CI — runs on every push and pull request to main / master.
+#
+# Jobs
+# ────
+#   analyze   — flutter analyze (strict lint + type check)
+#   test      — flutter test (unit + widget tests with coverage)
+#   coverage  — uploads lcov report to Codecov (optional, free tier)
+#
+# Secrets needed (repo Settings → Secrets → Actions):
+#   CODECOV_TOKEN   — from codecov.io (optional; coverage upload step is skipped if absent)
+#
+# Firebase credentials are NOT needed: all tests use mocked providers.
+# The iOS build workflow (build_ios.yml) runs separately on macOS runners.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+# Cancel in-progress runs for the same branch/PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Static analysis ──────────────────────────────────────────────────────
+  analyze:
+    name: flutter analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Generate code (json_serializable / freezed) before analyzing.
+      - name: Run build_runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        continue-on-error: true   # skip if no generators configured
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+  # ── 2. Unit + Widget tests with coverage ────────────────────────────────────
+  test:
+    name: flutter test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: analyze        # only run tests if analysis passes
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Generate code before running tests.
+      - name: Run build_runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        run: |
+          flutter test \
+            --coverage \
+            --reporter expanded \
+            test/
+
+      # Filter out generated files from coverage so they don't dilute the score.
+      - name: Remove generated files from coverage
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            lcov \
+              --remove coverage/lcov.info \
+              '**/*.g.dart' \
+              '**/*.freezed.dart' \
+              '**/firebase_options.dart' \
+              --output-file coverage/lcov.info \
+              --ignore-errors unused 2>/dev/null || true
+          fi
+
+      # Upload the lcov report to Codecov (requires CODECOV_TOKEN secret).
+      - name: Upload coverage to Codecov
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          flags: unittests
+          fail_ci_if_error: false
+          verbose: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      # Publish the lcov file as a CI artifact so you can inspect it locally.
+      - name: Upload lcov artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/lcov.info
+          retention-days: 7
+
+  # ── 3. Coverage gate — fail if < 40% line coverage ──────────────────────────
+  #
+  # 40% is a safe floor for a project with existing Firebase-heavy screens.
+  # Raise it incrementally as you add tests: 40 → 50 → 60.
+  coverage-gate:
+    name: Coverage gate (≥ 40%)
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Install lcov
+        run: sudo apt-get install -y lcov
+
+      - name: Check coverage threshold
+        run: |
+          if [ ! -f coverage/lcov.info ]; then
+            echo "⚠️  No coverage/lcov.info found — skipping gate"
+            exit 0
+          fi
+
+          # Extract line coverage percentage.
+          TOTAL=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+(?=%)' | head -1)
+          echo "Line coverage: ${TOTAL}%"
+
+          # Fail if below threshold.
+          THRESHOLD=40
+          if (( $(echo "$TOTAL < $THRESHOLD" | bc -l) )); then
+            echo "❌  Coverage ${TOTAL}% is below the ${THRESHOLD}% threshold."
+            exit 1
+          fi
+
+          echo "✅  Coverage ${TOTAL}% meets the ${THRESHOLD}% threshold."
