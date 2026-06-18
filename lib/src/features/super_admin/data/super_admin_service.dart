@@ -193,6 +193,16 @@ class SuperAdminService {
     return snap.size;
   }
 
+  /// All messages ever sent by Super Admin across all gyms (collectionGroup).
+  Stream<List<Map<String, dynamic>>> getSentMessagesStream() {
+    return _db
+        .collectionGroup('super_admin_messages')
+        .orderBy('sentAt', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
   // ── Send message to a gym owner ─────────────────────────────────────────────
 
   /// Writes to gyms/{gymId}/super_admin_messages AND users/{ownerUid}/notifications
@@ -276,6 +286,11 @@ final superAdminServiceProvider = Provider<SuperAdminService>(
 final allGymsStreamProvider =
     StreamProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(superAdminServiceProvider).getGymsStream();
+});
+
+final superAdminSentMessagesProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(superAdminServiceProvider).getSentMessagesStream();
 });
 
 /// Coaches for a specific gym (role == 'coach' AND gymId == gymId)

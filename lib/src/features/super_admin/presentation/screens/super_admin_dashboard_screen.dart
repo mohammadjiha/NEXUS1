@@ -6,6 +6,7 @@ import '../../../auth/data/auth_repository.dart';
 import '../../data/super_admin_service.dart';
 import 'create_gym_screen.dart';
 import 'super_admin_gym_detail_screen.dart';
+import 'super_admin_sent_messages_screen.dart';
 
 class SuperAdminDashboardScreen extends ConsumerWidget {
   const SuperAdminDashboardScreen({super.key});
@@ -89,20 +90,57 @@ class SuperAdminDashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          GestureDetector(
-            onTap: () => ref.read(authRepositoryProvider).signOut(),
-            child: Container(
-              padding: EdgeInsets.all(2.5.w),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const SuperAdminSentMessagesScreen(),
+                  ),
+                ),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 3.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5BA8FF).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(2.w),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.send_rounded,
+                          color: const Color(0xFF5BA8FF),
+                          size: 11.sp),
+                      SizedBox(width: 1.w),
+                      Text(
+                        'الرسائل المرسلة',
+                        style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF5BA8FF)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: Icon(
-                Icons.logout_rounded,
-                color: Colors.white54,
-                size: 14.sp,
+              SizedBox(width: 2.w),
+              GestureDetector(
+                onTap: () => ref.read(authRepositoryProvider).signOut(),
+                child: Container(
+                  padding: EdgeInsets.all(2.5.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: Colors.white54,
+                    size: 14.sp,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

@@ -198,27 +198,63 @@ class UserRepository {
       final normalizedCode = gymCode.trim();
       if (normalizedCode.isEmpty) return null;
 
-      final codeValue = int.tryParse(normalizedCode) ?? normalizedCode;
-      final query = await _firestore
-          .collection('gyms')
-          .where('gymCode', isEqualTo: codeValue)
-          .limit(1)
-          .get()
-          .timeout(const Duration(seconds: 10));
-      if (query.docs.isEmpty) return null;
+      // Try int first, then string — handles both storage types in Firestore
+      final candidates = <Object>[
+        if (int.tryParse(normalizedCode) != null) int.parse(normalizedCode),
+        normalizedCode,
+      ];
 
-      final doc = query.docs.first;
-      final data = doc.data();
-      final status = data['status'];
-      if (status != null && status != 'active') return null;
+      for (final codeValue in candidates) {
+        try {
+          final query = await _firestore
+              .collection('gyms')
+              .where('gymCode', isEqualTo: codeValue)
+              .limit(1)
+              .get()
+              .timeout(const Duration(seconds: 10));
 
-      return GymLookupResult(
-        id: doc.id,
-        code: normalizedCode,
-        name: data['name'] as String?,
-      );
+          if (query.docs.isNotEmpty) {
+            final doc  = query.docs.first;
+            final data = doc.data();
+            final status = data['status'];
+            // Accept gyms with no status field, or status == 'active'
+            if (status != null && status != 'active') return null;
+            return GymLookupResult(
+              id:   doc.id,
+              code: normalizedCode,
+              name: data['name'] as String?,
+            );
+          }
+        } catch (e) {
+          // Log per-attempt errors but continue to next candidate type.
+          debugPrint('findGymByCode attempt ($codeValue / ${codeValue.runtimeType}): $e');
+        }
+      }
+
+      // Last resort: direct document get in case gymCode == document ID.
+      try {
+        final doc = await _firestore
+            .collection('gyms')
+            .doc(normalizedCode)
+            .get()
+            .timeout(const Duration(seconds: 10));
+        if (doc.exists) {
+          final data = doc.data()!;
+          final status = data['status'];
+          if (status != null && status != 'active') return null;
+          return GymLookupResult(
+            id:   doc.id,
+            code: normalizedCode,
+            name: data['name'] as String?,
+          );
+        }
+      } catch (e) {
+        debugPrint('findGymByCode direct-id attempt ($normalizedCode): $e');
+      }
+
+      return null;
     } catch (e) {
-      debugPrint('Error finding gym by code: $e');
+      debugPrint('findGymByCode outer error: $e');
       return null;
     }
   }

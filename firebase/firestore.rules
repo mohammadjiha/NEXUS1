@@ -141,8 +141,11 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return request.auth != null &&
-             request.auth.token.superAdmin == true;
+      // Primary: custom claim (set via setup_admin.js — most secure)
+      // Fallback: Firestore role field (works before custom claim is configured)
+      return (request.auth != null && request.auth.token.superAdmin == true) ||
+             (signedIn() && currentUser().role == 'SuperAdmin') ||
+             (signedIn() && currentUser().role == 'super_admin');
     }
 
     function userGymId(userId) {
@@ -180,8 +183,10 @@ service cloud.firestore {
     // requiring signedIn() here is safe and doesn't break registration.
     // Sensitive sub-collections (memberEmails, members) have their own rules.
     match /gyms/{gymId} {
-      allow get:  if signedIn();
-      allow list: if signedIn();
+      // Public read: needed so the onboarding screen can look up a gym by gymCode
+      // before the user creates an account. Only non-sensitive fields are exposed.
+      allow get:  if true;
+      allow list: if true;
       allow read, write: if isSuperAdmin();
       // Only owner / admin can edit gym settings — coach excluded.
       allow write: if canAdminGym() && gymId == currentUserGymId();
@@ -266,7 +271,7 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.auth.uid == userId &&
         request.resource.data.email == request.auth.token.email &&
-        request.resource.data.email == 'admin@nexus90.com' &&
+        request.resource.data.email == 'superadmin.nexus@gmail.com' &&
         request.resource.data.role == 'SuperAdmin';
 
       // User edits their own profile — cannot change role, gym, or email.
@@ -449,6 +454,11 @@ service cloud.firestore {
       allow update, delete: if canManageGym() && isSameGym(resource.data.gymId);
     }
 
+    // collectionGroup query across all gyms' super_admin_messages — Super Admin only.
+    match /{path=**}/super_admin_messages/{msgId} {
+      allow read, write: if isSuperAdmin();
+    }
+
     match /{path=**}/payments/{paymentId} {
       allow read, write: if isSuperAdmin();
       // Allow gym admins/owners to read their own gym's payments via
@@ -461,6 +471,7 @@ service cloud.firestore {
     }
 
     match /chats/{chatId} {
+      allow read, write: if isSuperAdmin();
       allow read: if signedIn() && request.auth.uid in resource.data.participants;
       allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
       allow update: if signedIn() &&
@@ -470,18 +481,17 @@ service cloud.firestore {
         );
 
       match /messages/{messageId} {
+        allow read, write: if isSuperAdmin();
         // Only participants of the parent chat room can read messages.
         allow read: if chatParticipant(chatId);
 
         // Sender must be a participant, must be the author, AND must not exceed
         // 1 message per second (rate-limited via chatDoc.lastMessageAt).
-        // Client updates chats/{chatId}.lastMessageAt = serverTimestamp() in the
-        // same batch write as the new message document.
         allow create: if signedIn() &&
           request.auth.uid == request.resource.data.senderId &&
           chatParticipantAfter(chatId) &&
-          chatMessageAllowed(chatId, 1) &&          // max 1 msg/second per room
-          withinSizeLimit(5000);                    // max ~5 KB per message
+          chatMessageAllowed(chatId, 1) &&
+          withinSizeLimit(5000);
 
         // Messages are immutable once sent.
         allow update, delete: if false;
