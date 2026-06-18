@@ -674,8 +674,8 @@ class _AdminNotificationsViewState
                 );
               },
               child: Container(
-                margin: EdgeInsets.only(bottom: 1.h),
-                padding: EdgeInsets.all(4.w),
+                margin: EdgeInsets.only(bottom: 1.5.h),
+                padding: EdgeInsets.all(5.w),
                 decoration: BoxDecoration(
                   color: isUnread
                       ? const Color(0xFF5BA8FF).withOpacity(0.08)
@@ -692,17 +692,17 @@ class _AdminNotificationsViewState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 10.w,
-                      height: 10.w,
+                      width: 13.w,
+                      height: 13.w,
                       decoration: BoxDecoration(
                         color: const Color(0xFF5BA8FF).withOpacity(0.15),
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
                       child:
-                          Text('🛡️', style: TextStyle(fontSize: 14.sp)),
+                          Text('🛡️', style: TextStyle(fontSize: 18.sp)),
                     ),
-                    SizedBox(width: 3.w),
+                    SizedBox(width: 4.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,7 +712,7 @@ class _AdminNotificationsViewState
                               Text(
                                 'NEXUS Super Admin',
                                 style: TextStyle(
-                                  fontSize: 10.sp,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF5BA8FF),
                                 ),
@@ -730,38 +730,38 @@ class _AdminNotificationsViewState
                               ],
                             ],
                           ),
-                          SizedBox(height: 0.4.h),
+                          SizedBox(height: 0.7.h),
                           Text(
                             msg['title'] ?? '',
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               fontWeight: isUnread
                                   ? FontWeight.w700
                                   : FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(height: 0.3.h),
+                          SizedBox(height: 0.5.h),
                           Text(
                             msg['body'] ?? '',
                             style: TextStyle(
-                                fontSize: 10.sp,
+                                fontSize: 12.sp,
                                 color: Colors.white.withOpacity(0.45)),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          SizedBox(height: 0.5.h),
+                          SizedBox(height: 0.8.h),
                           Text(
                             dateStr,
                             style: TextStyle(
-                                fontSize: 9.sp,
+                                fontSize: 11.sp,
                                 color: Colors.white.withOpacity(0.25)),
                           ),
                         ],
                       ),
                     ),
                     Icon(Icons.chevron_right_rounded,
-                        color: Colors.white30, size: 14.sp),
+                        color: Colors.white30, size: 16.sp),
                   ],
                 ),
               ),

@@ -14,6 +14,7 @@ import '../../../coach/data/coach_repository.dart';
 import '../../../user/models/user_model.dart';
 import '../../data/admin_repository.dart';
 import '../screens/admin_dashboard_screen.dart';
+import '../screens/import_players_screen.dart';
 
 final adminPlayerFilterProvider = StateProvider<String>((ref) => 'all');
 final adminPlayerTabProvider = StateProvider<int>((ref) => 0);
@@ -154,6 +155,36 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
           ),
           Row(
             children: [
+              // Import players button
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ImportPlayersScreen(),
+                  ),
+                ),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 3.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5BA8FF).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(2.w),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.upload_file_rounded,
+                          color: const Color(0xFF5BA8FF), size: 11.sp),
+                      SizedBox(width: 1.w),
+                      Text('استيراد',
+                          style: TextStyle(
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF5BA8FF))),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: 2.w),
               _buildTopBtn(
                 icon: Icons.person_add_rounded,
                 onTap: () => _showAddPlayerSheet(context, ref, gymId),

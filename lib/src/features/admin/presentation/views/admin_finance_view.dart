@@ -1258,8 +1258,10 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.grey600)),
             pw.SizedBox(height: 8),
-            pw.Table.fromTextArray(
-              headers: ['Player', 'Plan', 'Amount', 'Method', 'Date'],
+            pw.Directionality(
+            textDirection: pw.TextDirection.rtl,
+            child: pw.Table.fromTextArray(
+              headers: ['اللاعب', 'الخطة', 'المبلغ', 'طريقة الدفع', 'التاريخ'],
               data: monthPayments
                   .map((p) => [
                         p.playerName.isEmpty ? 'N/A' : p.playerName,
@@ -1269,15 +1271,13 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                         DateFormat('MMM d').format(p.date),
                       ])
                   .toList(),
-              headerStyle: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 9,
-                  color: PdfColors.white),
+              headerStyle: ar(size: 9, bold: true, color: PdfColors.white),
               headerDecoration:
                   const pw.BoxDecoration(color: PdfColors.grey800),
-              cellStyle: const pw.TextStyle(fontSize: 9),
-              cellHeight: 20,
+              cellStyle: ar(size: 9),
+              cellHeight: 22,
             ),
+          ),
             pw.SizedBox(height: 20),
           ],
           if (monthExpenses.isNotEmpty) ...[
@@ -1319,24 +1319,35 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.grey600)),
           pw.SizedBox(height: 8),
-          pw.Table.fromTextArray(
-            headers: ['Player', 'Plan', 'Total', 'Paid', 'Remaining'],
-            data: players.map((p) {
-              final name =
-                  '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
-              return [
-                name.isEmpty ? p.email : name,
-                p.subscriptionPlan ?? '-',
-                '${(p.totalAmount ?? 0).toStringAsFixed(0)} JD',
-                '${(p.amountPaid ?? 0).toStringAsFixed(0)} JD',
-                '${(p.amountRemaining ?? 0).toStringAsFixed(0)} JD',
-              ];
-            }).toList(),
-            headerStyle: ar(size: 9, bold: true, color: PdfColors.white),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.grey800),
-            cellStyle: ar(size: 9),
-            cellHeight: 20,
+          pw.Directionality(
+            textDirection: pw.TextDirection.rtl,
+            child: pw.Table.fromTextArray(
+              headers: ['اللاعب', 'الخطة', 'بداية الاشتراك', 'نهاية الاشتراك', 'الإجمالي', 'المدفوع', 'المتبقي'],
+              data: players.map((p) {
+                final name =
+                    '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
+                final startStr = p.subscriptionStart != null
+                    ? DateFormat('dd/MM/yyyy').format(p.subscriptionStart!)
+                    : '-';
+                final endStr = p.subscriptionEnd != null
+                    ? DateFormat('dd/MM/yyyy').format(p.subscriptionEnd!)
+                    : '-';
+                return [
+                  name.isEmpty ? p.email : name,
+                  p.subscriptionPlan ?? '-',
+                  startStr,
+                  endStr,
+                  '${(p.totalAmount ?? 0).toStringAsFixed(0)} JD',
+                  '${(p.amountPaid ?? 0).toStringAsFixed(0)} JD',
+                  '${(p.amountRemaining ?? 0).toStringAsFixed(0)} JD',
+                ];
+              }).toList(),
+              headerStyle: ar(size: 8, bold: true, color: PdfColors.white),
+              headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.grey800),
+              cellStyle: ar(size: 8),
+              cellHeight: 22,
+            ),
           ),
           pw.SizedBox(height: 24),
           pw.Divider(),

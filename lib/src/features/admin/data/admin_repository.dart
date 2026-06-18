@@ -901,6 +901,126 @@ class AdminRepository {
     return newUid;
   }
 
+  // ── Import Player ─────────────────────────────────────────────────────────
+  /// Creates a Firebase Auth account + all Firestore docs for one imported player.
+  /// Returns a map with {uid, email, password}.
+  Future<Map<String, String>> importPlayer({
+    required String gymId,
+    required String addedByUid,
+    required String firstName,
+    required String lastName,
+    String? email,
+    String? phone,
+    String? subscriptionPlan,
+    DateTime? subscriptionStart,
+    DateTime? subscriptionEnd,
+    double? totalAmount,
+    double? amountPaid,
+  }) async {
+    final first = firstName.trim();
+    final last  = lastName.trim();
+    final now   = DateTime.now();
+
+    // Generate email if missing
+    final normalizedEmail = email != null && email.trim().isNotEmpty
+        ? email.trim().toLowerCase()
+        : '${first.toLowerCase().replaceAll(' ', '.')}.${last.toLowerCase().replaceAll(' ', '.')}@$gymId.nexus';
+
+    // Generate random 8-char password
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    final rng = List.generate(8, (_) {
+      final idx = DateTime.now().microsecondsSinceEpoch % chars.length;
+      return chars[idx];
+    });
+    // Use a simple but varied approach
+    final password = List.generate(8, (i) {
+      final seed = DateTime.now().microsecondsSinceEpoch + i * 7919;
+      return chars[seed % chars.length];
+    }).join();
+
+    // Create Auth account via secondary app (admin stays signed in)
+    final secondaryApp = await Firebase.initializeApp(
+      name: 'ImportPlayer_${DateTime.now().microsecondsSinceEpoch}',
+      options: Firebase.app().options,
+    );
+    late String uid;
+    try {
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      final cred = await secondaryAuth.createUserWithEmailAndPassword(
+        email: normalizedEmail,
+        password: password,
+      );
+      uid = cred.user!.uid;
+    } finally {
+      await secondaryApp.delete();
+    }
+
+    final batch = _firestore.batch();
+    final remaining = (totalAmount ?? 0) - (amountPaid ?? 0);
+
+    // users/{uid}
+    batch.set(_firestore.collection('users').doc(uid), {
+      'uid':              uid,
+      'email':            normalizedEmail,
+      'firstName':        first,
+      'lastName':         last,
+      'phone':            phone?.trim() ?? '',
+      'role':             'player',
+      'gymId':            gymId,
+      'gymCode':          gymId,
+      'isActive':         true,
+      'emailVerified':    true,
+      'temporaryPasswordSet': true,
+      'authProvider':     'password',
+      'subscriptionPlan': subscriptionPlan?.trim() ?? 'standard',
+      'subscriptionStart': subscriptionStart != null
+          ? Timestamp.fromDate(subscriptionStart)
+          : null,
+      'subscriptionEnd':  subscriptionEnd != null
+          ? Timestamp.fromDate(subscriptionEnd)
+          : null,
+      'totalAmount':      totalAmount ?? 0.0,
+      'amountPaid':       amountPaid ?? 0.0,
+      'amountRemaining':  remaining < 0 ? 0.0 : remaining,
+      'createdAt':        Timestamp.fromDate(now),
+      'updatedAt':        Timestamp.fromDate(now),
+    });
+
+    // gyms/{gymId}/members/{uid}
+    batch.set(
+      _firestore.collection('gyms').doc(gymId).collection('members').doc(uid),
+      {
+        'uid':        uid,
+        'email':      normalizedEmail,
+        'role':       'player',
+        'gymId':      gymId,
+        'firstName':  first,
+        'lastName':   last,
+        'phone':      phone?.trim() ?? '',
+        'status':     'active',
+        'joinedAt':   Timestamp.fromDate(now),
+      },
+    );
+
+    // gyms/{gymId}/memberEmails/{email}
+    batch.set(
+      _firestore.collection('gyms').doc(gymId).collection('memberEmails').doc(normalizedEmail),
+      {
+        'role':       'player',
+        'status':     'active',
+        'firstName':  first,
+        'lastName':   last,
+        'phone':      phone?.trim() ?? '',
+        'addedBy':    addedByUid,
+        'addedAt':    Timestamp.fromDate(now),
+      },
+      SetOptions(merge: true),
+    );
+
+    await batch.commit();
+    return {'uid': uid, 'email': normalizedEmail, 'password': password};
+  }
+
   String _normalizePhone(String input) {
     var value = input.trim().replaceAll(RegExp(r'[\s()-]'), '');
     if (value.startsWith('00')) value = '+${value.substring(2)}';

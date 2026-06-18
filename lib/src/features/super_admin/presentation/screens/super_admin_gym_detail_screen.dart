@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../data/super_admin_service.dart';
+import '../../../admin/presentation/screens/import_players_screen.dart';
 
 /// Super Admin → Gym Detail
 /// Shows coaches + players for a specific gym.
@@ -106,10 +107,44 @@ class SuperAdminGymDetailScreen extends ConsumerWidget {
             SizedBox(height: 2.5.h),
 
             // ── Players section ──────────────────────────────────────
-            _SectionHeader(
-              icon: Icons.fitness_center_rounded,
-              label: 'اللاعبون',
-              count: playersAsync.asData?.value.length,
+            Row(
+              children: [
+                Expanded(
+                  child: _SectionHeader(
+                    icon: Icons.fitness_center_rounded,
+                    label: 'اللاعبون',
+                    count: playersAsync.asData?.value.length,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ImportPlayersScreen(overrideGymId: gymId),
+                    ),
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.8.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5BA8FF).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(2.w),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.upload_file_rounded,
+                            color: const Color(0xFF5BA8FF), size: 11.sp),
+                        SizedBox(width: 1.w),
+                        Text('استيراد',
+                            style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF5BA8FF))),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 1.h),
             playersAsync.when(
