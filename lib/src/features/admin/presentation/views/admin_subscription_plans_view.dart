@@ -159,16 +159,16 @@ class _AdminSubscriptionPlansViewState
                 child: Row(
                   children: [
                     Container(
-                      width: 12.w,
-                      height: 12.w,
+                      width: 16.w,
+                      height: 16.w,
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF3B30).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(3.w),
+                        borderRadius: BorderRadius.circular(4.w),
                       ),
                       child: const Icon(Icons.card_membership_rounded,
-                          color: Color(0xFFFF3B30), size: 22),
+                          color: Color(0xFFFF3B30), size: 30),
                     ),
-                    SizedBox(width: 3.w),
+                    SizedBox(width: 4.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +176,7 @@ class _AdminSubscriptionPlansViewState
                           Text(name,
                               style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 13.sp,
+                                  fontSize: 17.sp,
                                   fontWeight: FontWeight.w700)),
                           SizedBox(height: 0.4.h),
                           Row(
@@ -198,12 +198,12 @@ class _AdminSubscriptionPlansViewState
                           onPressed: () =>
                               _showAddPlanSheet(existing: plan),
                           icon: const Icon(Icons.edit_rounded,
-                              color: Colors.white38, size: 20),
+                              color: Colors.white38, size: 26),
                         ),
                         IconButton(
                           onPressed: () => _deletePlan(planId, name),
                           icon: const Icon(Icons.delete_outline_rounded,
-                              color: Color(0xFFFF3B30), size: 20),
+                              color: Color(0xFFFF3B30), size: 26),
                         ),
                       ],
                     ),
@@ -230,10 +230,10 @@ class _AdminSubscriptionPlansViewState
   Widget _chip(IconData icon, String label, Color color) {
     return Row(
       children: [
-        Icon(icon, color: color, size: 10.sp),
-        SizedBox(width: 1.w),
+        Icon(icon, color: color, size: 14.sp),
+        SizedBox(width: 1.5.w),
         Text(label,
-            style: TextStyle(color: color, fontSize: 10.sp)),
+            style: TextStyle(color: color, fontSize: 13.sp)),
       ],
     );
   }

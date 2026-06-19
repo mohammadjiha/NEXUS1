@@ -8,8 +8,10 @@ import '../../../user/models/user_model.dart';
 class AdminCheckinView extends ConsumerStatefulWidget {
   final String gymId;
   final String adminUid;
+  /// When set, only players assigned to this coach are shown.
+  final String? coachUid;
   const AdminCheckinView(
-      {super.key, required this.gymId, required this.adminUid});
+      {super.key, required this.gymId, required this.adminUid, this.coachUid});
 
   @override
   ConsumerState<AdminCheckinView> createState() => _AdminCheckinViewState();
@@ -78,7 +80,10 @@ class _AdminCheckinViewState extends ConsumerState<AdminCheckinView> {
               color: Colors.white70),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Attendance / Check-in',
+        title: Text(
+            widget.coachUid != null
+                ? 'My Players Check-in'
+                : 'Attendance / Check-in',
             style: TextStyle(
                 color: Colors.white,
                 fontSize: 16.sp,
@@ -184,6 +189,8 @@ class _AdminCheckinViewState extends ConsumerState<AdminCheckinView> {
                     .where((p) =>
                         p.isActive &&
                         !p.isSubscriptionExpired &&
+                        (widget.coachUid == null ||
+                            p.assignedCoachUid == widget.coachUid) &&
                         (_query.isEmpty ||
                             '${p.firstName} ${p.lastName} ${p.email}'
                                 .toLowerCase()
@@ -351,7 +358,7 @@ class _PlayerCheckinTile extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 5.w,
+            radius: 7.w,
             backgroundColor: isCheckedIn
                 ? const Color(0xFF34C759).withOpacity(0.2)
                 : const Color(0xFFFF3B30).withOpacity(0.15),
@@ -361,11 +368,11 @@ class _PlayerCheckinTile extends StatelessWidget {
                   color: isCheckedIn
                       ? const Color(0xFF34C759)
                       : const Color(0xFFFF3B30),
-                  fontSize: 11.sp,
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w700),
             ),
           ),
-          SizedBox(width: 3.w),
+          SizedBox(width: 4.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,12 +380,12 @@ class _PlayerCheckinTile extends StatelessWidget {
                 Text(name.isNotEmpty ? name : player.email,
                     style: TextStyle(
                         color: Colors.white,
-                        fontSize: 12.sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w600)),
                 if (player.subscriptionPlan != null)
                   Text(player.subscriptionPlan!,
                       style: TextStyle(
-                          color: Colors.white38, fontSize: 9.sp)),
+                          color: Colors.white38, fontSize: 13.sp)),
               ],
             ),
           ),

@@ -508,6 +508,7 @@ class AdminRepository {
       'body': body,
       'type': type,
       'read': false,
+      'senderId': senderUid,
       'sentBy': senderUid,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -1019,6 +1020,191 @@ class AdminRepository {
 
     await batch.commit();
     return {'uid': uid, 'email': normalizedEmail, 'password': password};
+  }
+
+  /// Smart upsert from a CSV row:
+  /// – If a player with this email/phone exists in the gym → update only the
+  ///   non-null fields (never clears existing data).
+  /// – If no match is found → create a brand-new player account.
+  /// Returns a record: (name, wasCreated).
+  Future<({String name, bool wasCreated})> upsertPlayerFromCsv({
+    required String gymId,
+    required String addedByUid,
+    // Identifiers
+    String? email,
+    String? phone,
+    // New-player fields (needed only when creating)
+    String? firstName,
+    String? lastName,
+    // Subscription / payment
+    String? subscriptionPlan,
+    DateTime? subscriptionStart,
+    DateTime? subscriptionEnd,
+    double? totalAmount,
+    double? amountPaid,
+    double? discount,
+    String? paymentMethod,
+    // Physical / extra
+    double? weight,
+    double? height,
+    double? muscleMass,
+    double? fatPercentage,
+  }) async {
+    // ── 1. Try to find existing player ──────────────────────────────────────
+    QuerySnapshot? snap;
+
+    if (email != null && email.trim().isNotEmpty) {
+      snap = await _firestore
+          .collection('users')
+          .where('gymId', isEqualTo: gymId)
+          .where('email', isEqualTo: email.trim().toLowerCase())
+          .limit(1)
+          .get();
+    }
+
+    if ((snap == null || snap.docs.isEmpty) &&
+        phone != null && phone.trim().isNotEmpty) {
+      snap = await _firestore
+          .collection('users')
+          .where('gymId', isEqualTo: gymId)
+          .where('phone', isEqualTo: phone.trim())
+          .limit(1)
+          .get();
+    }
+
+    // ── 2. Player exists → merge non-null fields ──────────────────────────
+    if (snap != null && snap.docs.isNotEmpty) {
+      final doc  = snap.docs.first;
+      final uid  = doc.id;
+      final data = doc.data() as Map<String, dynamic>;
+      final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+
+      final updates = <String, dynamic>{'updatedAt': FieldValue.serverTimestamp()};
+
+      void maybeSet(String key, dynamic value) {
+        if (value != null) updates[key] = value;
+      }
+
+      maybeSet('subscriptionPlan', subscriptionPlan?.trim().isNotEmpty == true ? subscriptionPlan!.trim() : null);
+      if (subscriptionStart != null) updates['subscriptionStart'] = Timestamp.fromDate(subscriptionStart);
+      if (subscriptionEnd   != null) updates['subscriptionEnd']   = Timestamp.fromDate(subscriptionEnd);
+      maybeSet('totalAmount',     totalAmount);
+      maybeSet('discountAmount',  discount);
+      maybeSet('paymentMethod',   paymentMethod?.trim().isNotEmpty == true ? paymentMethod!.trim() : null);
+      maybeSet('weight',          weight);
+      maybeSet('height',          height);
+      maybeSet('muscleMass',      muscleMass);
+      maybeSet('fatPercentage',   fatPercentage);
+
+      if (amountPaid != null) {
+        updates['amountPaid'] = amountPaid;
+        final total = totalAmount ?? (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+        final disc  = discount    ?? (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
+        final remaining = total - disc - amountPaid;
+        updates['amountRemaining'] = remaining < 0 ? 0.0 : remaining;
+      }
+
+      if (updates.length > 1) { // more than just updatedAt
+        await _firestore.collection('users').doc(uid).update(updates);
+      }
+      return (name: name.isEmpty ? (email ?? phone ?? '?') : name, wasCreated: false);
+    }
+
+    // ── 3. Player not found → create new ─────────────────────────────────
+    final first = (firstName ?? '').trim();
+    final last  = (lastName  ?? '').trim();
+    if (first.isEmpty) {
+      throw Exception('لاعب غير موجود ولا يوجد اسم لإضافته (email: $email)');
+    }
+
+    final res = await importPlayer(
+      gymId: gymId,
+      addedByUid: addedByUid,
+      firstName: first,
+      lastName:  last,
+      email:     email,
+      phone:     phone,
+      subscriptionPlan:  subscriptionPlan,
+      subscriptionStart: subscriptionStart,
+      subscriptionEnd:   subscriptionEnd,
+      totalAmount: totalAmount ?? 0,
+      amountPaid:  amountPaid  ?? 0,
+    );
+    return (name: '$first $last'.trim(), wasCreated: true);
+  }
+
+  /// Update an existing player's subscription/payment data from a CSV row.
+  /// Looks up the player by email (falls back to phone).
+  /// Returns the player's name if found, throws if not found.
+  Future<String> updatePlayerFromCsv({
+    required String gymId,
+    required String email,
+    String? phone,
+    String? subscriptionPlan,
+    DateTime? subscriptionStart,
+    DateTime? subscriptionEnd,
+    double? totalAmount,
+    double? amountPaid,
+    double? discount,
+    String? paymentMethod,
+  }) async {
+    // Find player by email in this gym
+    QuerySnapshot snap = await _firestore
+        .collection('users')
+        .where('gymId', isEqualTo: gymId)
+        .where('email', isEqualTo: email.trim().toLowerCase())
+        .limit(1)
+        .get();
+
+    // Fallback: search by phone
+    if (snap.docs.isEmpty && phone != null && phone.trim().isNotEmpty) {
+      snap = await _firestore
+          .collection('users')
+          .where('gymId', isEqualTo: gymId)
+          .where('phone', isEqualTo: phone.trim())
+          .limit(1)
+          .get();
+    }
+
+    if (snap.docs.isEmpty) {
+      throw Exception('لم يُعثر على لاعب بهذا الإيميل أو الرقم');
+    }
+
+    final doc  = snap.docs.first;
+    final uid  = doc.id;
+    final data = doc.data() as Map<String, dynamic>;
+    final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+
+    final updates = <String, dynamic>{'updatedAt': FieldValue.serverTimestamp()};
+
+    if (subscriptionPlan != null && subscriptionPlan.trim().isNotEmpty) {
+      updates['subscriptionPlan'] = subscriptionPlan.trim();
+    }
+    if (subscriptionStart != null) {
+      updates['subscriptionStart'] = Timestamp.fromDate(subscriptionStart);
+    }
+    if (subscriptionEnd != null) {
+      updates['subscriptionEnd'] = Timestamp.fromDate(subscriptionEnd);
+    }
+    if (totalAmount != null) {
+      updates['totalAmount'] = totalAmount;
+    }
+    if (amountPaid != null) {
+      updates['amountPaid'] = amountPaid;
+      final total = totalAmount ?? (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+      final disc  = discount   ?? (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
+      final remaining = total - disc - amountPaid;
+      updates['amountRemaining'] = remaining < 0 ? 0.0 : remaining;
+    }
+    if (discount != null) {
+      updates['discountAmount'] = discount;
+    }
+    if (paymentMethod != null && paymentMethod.trim().isNotEmpty) {
+      updates['paymentMethod'] = paymentMethod.trim();
+    }
+
+    await _firestore.collection('users').doc(uid).update(updates);
+    return name;
   }
 
   String _normalizePhone(String input) {

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../auth/data/auth_repository.dart';
+import '../../../user/models/user_model.dart';
 import '../../data/admin_repository.dart';
 import '../screens/admin_dashboard_screen.dart';
 
@@ -32,6 +33,11 @@ class _AdminNotificationsViewState
   String _selectedType = 'general';
   bool _isSending = false;
 
+  // ── Specific recipients ───────────────────────────────────────────────────
+  final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  final List<Map<String, String>> _specificUsers = []; // {uid, name, role}
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +48,7 @@ class _AdminNotificationsViewState
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
+    _searchCtrl.dispose();
     _tab.dispose();
     super.dispose();
   }
@@ -62,6 +69,11 @@ class _AdminNotificationsViewState
         _selectedGroups.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please fill all fields and select a group.')));
+      return;
+    }
+    if (_selectedGroups.contains('specific') && _specificUsers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('اختر شخصاً واحداً على الأقل من البحث.')));
       return;
     }
     setState(() => _isSending = true);
@@ -107,6 +119,9 @@ class _AdminNotificationsViewState
         }
         if (_selectedGroups.contains('all_coaches')) {
           targets.addAll(coachesAsync.map((c) => c.uid));
+        }
+        if (_selectedGroups.contains('specific')) {
+          targets.addAll(_specificUsers.map((u) => u['uid']!));
         }
 
         for (final uid in targets.toSet()) {
@@ -333,8 +348,13 @@ class _AdminNotificationsViewState
                     _buildGroupChip('active', 'Active'),
                     _buildGroupChip('expiring', 'Expiring Soon'),
                     _buildGroupChip('all_coaches', 'All Coaches'),
+                    _buildGroupChip('specific', '🔍 محددين'),
                   ],
                 ),
+                if (_selectedGroups.contains('specific')) ...[
+                  SizedBox(height: 1.5.h),
+                  _buildSpecificPicker(),
+                ],
                 SizedBox(height: 2.h),
                 _buildLabel('MESSAGE TYPE'),
                 Wrap(
@@ -414,6 +434,176 @@ class _AdminNotificationsViewState
           )
         ],
       ),
+    );
+  }
+
+  Widget _buildSpecificPicker() {
+    final user = ref.read(currentUserModelProvider).asData?.value;
+    final gymId = user?.gymId ?? '';
+    final allPlayers = ref.watch(adminPlayersProvider(gymId)).asData?.value ?? [];
+    final allCoaches = ref.watch(adminCoachesProvider(gymId)).asData?.value ?? [];
+
+    final everyone = [
+      ...allPlayers.map((p) => {
+        'uid': p.uid,
+        'name': '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim(),
+        'role': 'لاعب',
+      }),
+      ...allCoaches.map((c) => {
+        'uid': c.uid,
+        'name': '${c.firstName ?? ''} ${c.lastName ?? ''}'.trim(),
+        'role': 'كوتش',
+      }),
+    ];
+
+    final q = _searchQuery.toLowerCase();
+    final filtered = q.isEmpty
+        ? <Map<String, String>>[]
+        : everyone
+            .where((u) =>
+                (u['name'] ?? '').toLowerCase().contains(q) &&
+                !_specificUsers.any((s) => s['uid'] == u['uid']))
+            .cast<Map<String, String>>()
+            .take(8)
+            .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Selected chips
+        if (_specificUsers.isNotEmpty) ...[
+          Wrap(
+            spacing: 2.w,
+            runSpacing: 0.8.h,
+            children: _specificUsers.map((u) {
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 0.6.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF3B30).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFFF3B30).withOpacity(0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(u['name'] ?? '',
+                        style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w600)),
+                    SizedBox(width: 1.w),
+                    Text('(${u['role']})',
+                        style: TextStyle(color: Colors.white38, fontSize: 9.sp)),
+                    SizedBox(width: 1.5.w),
+                    GestureDetector(
+                      onTap: () => setState(() => _specificUsers.removeWhere((s) => s['uid'] == u['uid'])),
+                      child: const Icon(Icons.close_rounded, color: Colors.white54, size: 14),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: 1.h),
+        ],
+
+        // Search field
+        TextField(
+          controller: _searchCtrl,
+          style: TextStyle(color: Colors.white, fontSize: 12.sp),
+          onChanged: (v) => setState(() => _searchQuery = v),
+          decoration: InputDecoration(
+            hintText: 'ابحث باسم اللاعب أو الكوتش...',
+            hintStyle: TextStyle(color: Colors.white30, fontSize: 11.sp),
+            prefixIcon: const Icon(Icons.search_rounded, color: Colors.white30, size: 18),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.07),
+            contentPadding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.2.h),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(2.5.w),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+
+        // Results
+        if (filtered.isNotEmpty) ...[
+          SizedBox(height: 0.5.h),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            child: Column(
+              children: filtered.asMap().entries.map((e) {
+                final u = e.value;
+                final isLast = e.key == filtered.length - 1;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _specificUsers.add(u);
+                      _searchQuery = '';
+                      _searchCtrl.clear();
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.2.h),
+                    decoration: BoxDecoration(
+                      border: isLast ? null : Border(
+                        bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8.w, height: 8.w,
+                          decoration: BoxDecoration(
+                            color: u['role'] == 'كوتش'
+                                ? const Color(0xFFFF9500).withOpacity(0.15)
+                                : const Color(0xFF5BA8FF).withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            (u['name']?.isNotEmpty == true) ? u['name']![0].toUpperCase() : '?',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700,
+                              color: u['role'] == 'كوتش'
+                                  ? const Color(0xFFFF9500)
+                                  : const Color(0xFF5BA8FF),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 3.w),
+                        Expanded(
+                          child: Text(u['name'] ?? '',
+                              style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w600)),
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.3.h),
+                          decoration: BoxDecoration(
+                            color: u['role'] == 'كوتش'
+                                ? const Color(0xFFFF9500).withOpacity(0.15)
+                                : const Color(0xFF5BA8FF).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(u['role'] ?? '',
+                              style: TextStyle(
+                                color: u['role'] == 'كوتش'
+                                    ? const Color(0xFFFF9500)
+                                    : const Color(0xFF5BA8FF),
+                                fontSize: 8.sp,
+                                fontWeight: FontWeight.w700,
+                              )),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -541,17 +731,17 @@ class _AdminNotificationsViewState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 8.w,
-                        height: 8.w,
+                        width: 12.w,
+                        height: 12.w,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(2.w),
+                          borderRadius: BorderRadius.circular(3.w),
                         ),
                         alignment: Alignment.center,
                         child:
-                            Text('📣', style: TextStyle(fontSize: 12.sp)),
+                            Text('📣', style: TextStyle(fontSize: 18.sp)),
                       ),
-                      SizedBox(width: 3.w),
+                      SizedBox(width: 4.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,15 +749,15 @@ class _AdminNotificationsViewState
                             Text(
                               doc['title'] ?? '',
                               style: TextStyle(
-                                  fontSize: 11.sp,
+                                  fontSize: 15.sp,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white),
                             ),
-                            SizedBox(height: 0.3.h),
+                            SizedBox(height: 0.5.h),
                             Text(
                               doc['body'] ?? '',
                               style: TextStyle(
-                                  fontSize: 9.sp,
+                                  fontSize: 12.sp,
                                   color: Colors.white.withOpacity(0.35)),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -580,21 +770,21 @@ class _AdminNotificationsViewState
                         children: [
                           Text(dateStr,
                               style: TextStyle(
-                                  fontSize: 8.sp,
+                                  fontSize: 11.sp,
                                   color: Colors.white.withOpacity(0.2))),
-                          SizedBox(height: 0.5.h),
+                          SizedBox(height: 1.h),
                           Container(
                             padding: EdgeInsets.symmetric(
-                                horizontal: 2.w, vertical: 0.3.h),
+                                horizontal: 3.w, vertical: 0.6.h),
                             decoration: BoxDecoration(
                               color: const Color(0xFF34C759)
                                   .withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(1.w),
+                              borderRadius: BorderRadius.circular(3.w),
                             ),
                             child: Text(
                               targets,
                               style: TextStyle(
-                                  fontSize: 7.sp,
+                                  fontSize: 10.sp,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF34C759)),
                             ),

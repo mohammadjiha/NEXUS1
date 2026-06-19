@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:math';
+
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -165,19 +169,19 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                 ),
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                      horizontal: 3.w, vertical: 1.h),
+                      horizontal: 4.w, vertical: 1.2.h),
                   decoration: BoxDecoration(
                     color: const Color(0xFF5BA8FF).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(2.w),
+                    borderRadius: BorderRadius.circular(3.w),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.upload_file_rounded,
-                          color: const Color(0xFF5BA8FF), size: 11.sp),
-                      SizedBox(width: 1.w),
+                          color: const Color(0xFF5BA8FF), size: 15.sp),
+                      SizedBox(width: 2.w),
                       Text('استيراد',
                           style: TextStyle(
-                              fontSize: 9.sp,
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF5BA8FF))),
                     ],
@@ -1433,6 +1437,32 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
           // Info grid
           _buildInfoGrid(p, isExpired),
 
+          SizedBox(height: 1.5.h),
+          Builder(builder: (_) {
+            final total = p.totalAmount ?? 0.0;
+            final paid = p.amountPaid ?? 0.0;
+            final remaining = p.amountRemaining ?? 0.0;
+            final bool noData = total <= 0;
+            final double pct =
+                noData ? 0.0 : (paid / total).clamp(0.0, 1.0);
+            final Color barColor = noData
+                ? Colors.white24
+                : remaining <= 0
+                    ? const Color(0xFF34C759)
+                    : paid <= 0
+                        ? const Color(0xFFFF3B30)
+                        : const Color(0xFFFF9500);
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(1.w),
+              child: LinearProgressIndicator(
+                value: pct,
+                backgroundColor: Colors.white.withOpacity(0.08),
+                valueColor: AlwaysStoppedAnimation(barColor),
+                minHeight: 6,
+              ),
+            );
+          }),
+
           SizedBox(height: 3.h),
 
           // Action buttons
@@ -1979,6 +2009,23 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
   // Coach picker — null means "no coach assigned"
   UserModel? _selectedCoach;
 
+  // ── Phone OTP state ───────────────────────────────────────────────────────────
+  final _otpCtrl        = TextEditingController();
+  String? _verificationId;
+  int?    _resendToken;
+  bool    _phoneChecking = false;
+  bool    _otpSent       = false;
+  bool    _otpVerifying  = false;
+  bool    _phoneVerified = false;
+  String? _phoneError;
+  Timer?  _resendTimer;
+  int     _resendSeconds = 0;
+
+  // ── Subscription plan picker ──────────────────────────────────────────────────
+  Map<String, dynamic>? _selectedPlan; // null = custom
+  bool _useCustomPlan = false;
+  DateTime? _endDate; // auto-set when plan selected; manual when custom
+
   @override
   void initState() {
     super.initState();
@@ -2012,6 +2059,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _phoneCtrl.dispose();
+    _otpCtrl.dispose();
     _weightCtrl.dispose();
     _heightCtrl.dispose();
     _bodyFatCtrl.dispose();
@@ -2021,7 +2069,570 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
     _totalCtrl.dispose();
     _discountCtrl.dispose();
     _paidCtrl.dispose();
+    _resendTimer?.cancel();
     super.dispose();
+  }
+
+  // ── Phone OTP helpers ─────────────────────────────────────────────────────────
+
+  String _normalizePhone(String input) {
+    var v = input.trim().replaceAll(RegExp(r'[\s()-]'), '');
+    if (v.startsWith('00')) v = '+${v.substring(2)}';
+    if (v.startsWith('+')) return v;
+    if (v.startsWith('962')) return '+$v';
+    if (v.startsWith('0')) return '+962${v.substring(1)}';
+    return '+962$v';
+  }
+
+  void _startOtpCountdown() {
+    _resendTimer?.cancel();
+    setState(() => _resendSeconds = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _resendSeconds--;
+        if (_resendSeconds <= 0) t.cancel();
+      });
+    });
+  }
+
+  Future<void> _sendPhoneOtp({bool isResend = false}) async {
+    final raw = _phoneCtrl.text.trim();
+    if (raw.isEmpty) {
+      setState(() => _phoneError = 'أدخل رقم الهاتف أولاً');
+      return;
+    }
+    setState(() { _phoneChecking = true; _phoneVerified = false; _phoneError = null; });
+
+    try {
+      final normalized = _normalizePhone(raw);
+      _phoneCtrl.text = normalized;
+
+      if (kDebugMode) {
+        await FirebaseAuth.instance.setSettings(
+          appVerificationDisabledForTesting: true,
+        );
+      }
+
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: normalized,
+        forceResendingToken: isResend ? _resendToken : null,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (credential) async {
+          await _verifyPhoneCredential(credential);
+        },
+        verificationFailed: (e) {
+          if (!mounted) return;
+          setState(() { _phoneChecking = false; _phoneError = e.message ?? 'فشل إرسال الرمز'; });
+        },
+        codeSent: (verificationId, resendToken) {
+          if (!mounted) return;
+          setState(() {
+            _verificationId = verificationId;
+            _resendToken    = resendToken;
+            _otpSent        = true;
+            _phoneChecking  = false;
+            _phoneError     = null;
+          });
+          _startOtpCountdown();
+        },
+        codeAutoRetrievalTimeout: (verificationId) {
+          _verificationId = verificationId;
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _phoneChecking = false; _phoneError = '$e'; });
+    }
+  }
+
+  Future<void> _verifyOtpCode() async {
+    final vid  = _verificationId;
+    final code = _otpCtrl.text.trim();
+    if (vid == null || code.length < 4) {
+      setState(() => _phoneError = 'أدخل رمز التحقق');
+      return;
+    }
+    await _verifyPhoneCredential(
+      PhoneAuthProvider.credential(verificationId: vid, smsCode: code),
+    );
+  }
+
+  Future<void> _verifyPhoneCredential(PhoneAuthCredential credential) async {
+    setState(() { _otpVerifying = true; _phoneError = null; });
+    FirebaseApp? secondaryApp;
+    try {
+      secondaryApp = await Firebase.initializeApp(
+        name: 'PhoneVerifyAdmin_${DateTime.now().microsecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      await secondaryAuth.signInWithCredential(credential);
+      await secondaryAuth.signOut();
+      if (!mounted) return;
+      setState(() { _otpVerifying = false; _phoneVerified = true; _phoneError = null; });
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'provider-already-linked' || e.code == 'credential-already-in-use') {
+        setState(() { _otpVerifying = false; _phoneVerified = true; _phoneError = null; });
+        return;
+      }
+      setState(() { _otpVerifying = false; _phoneError = e.message ?? 'رمز غير صحيح'; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _otpVerifying = false; _phoneError = '$e'; });
+    } finally {
+      secondaryApp?.delete().catchError((_) {});
+    }
+  }
+
+  Widget _buildPhoneOtpWidget() {
+    // Web doesn't support Firebase Phone Auth without reCAPTCHA setup —
+    // just show the plain phone field and mark as verified automatically.
+    if (kIsWeb) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _field(_phoneCtrl, 'Phone *', type: TextInputType.phone),
+          SizedBox(height: 0.4.h),
+          Text('التحقق عبر OTP غير متاح على الويب',
+              style: TextStyle(color: Colors.white38, fontSize: 9.sp)),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Phone input row
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                onChanged: (_) {
+                  if (_phoneVerified) setState(() { _phoneVerified = false; _otpSent = false; });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Phone *',
+                  labelStyle: TextStyle(color: Colors.white54, fontSize: 10.sp),
+                  filled: true,
+                  fillColor: _phoneVerified
+                      ? const Color(0xFF34C759).withOpacity(0.12)
+                      : Colors.white.withOpacity(0.07),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.5.h),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(2.5.w),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(2.5.w),
+                    borderSide: _phoneVerified
+                        ? const BorderSide(color: Color(0xFF34C759), width: 1.5)
+                        : BorderSide.none,
+                  ),
+                  suffixIcon: _phoneVerified
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF34C759))
+                      : null,
+                ),
+              ),
+            ),
+            SizedBox(width: 2.w),
+            GestureDetector(
+              onTap: _phoneChecking ? null : () => _sendPhoneOtp(isResend: _otpSent),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.5.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF007AFF).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(2.5.w),
+                  border: Border.all(color: const Color(0xFF007AFF).withOpacity(0.4)),
+                ),
+                child: _phoneChecking
+                    ? SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(
+                          color: const Color(0xFF007AFF), strokeWidth: 2))
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.send_rounded, color: const Color(0xFF007AFF), size: 13.sp),
+                          SizedBox(width: 1.w),
+                          Text(
+                            _otpSent ? 'إعادة إرسال' : 'إرسال كود',
+                            style: TextStyle(
+                                color: const Color(0xFF007AFF),
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ],
+        ),
+
+        // OTP input — shown after code is sent
+        if (_otpSent && !_phoneVerified) ...[
+          SizedBox(height: 1.h),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _otpCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: 6,
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 18.sp,
+                      fontWeight: FontWeight.w700, letterSpacing: 8),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: '- - - - - -',
+                    hintStyle: TextStyle(
+                        color: Colors.white24, fontSize: 16.sp, letterSpacing: 8),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.07),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.5.h),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(2.5.w),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 2.w),
+              GestureDetector(
+                onTap: _otpVerifying ? null : _verifyOtpCode,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.5.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF34C759).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(2.5.w),
+                    border: Border.all(color: const Color(0xFF34C759).withOpacity(0.4)),
+                  ),
+                  child: _otpVerifying
+                      ? SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(
+                              color: const Color(0xFF34C759), strokeWidth: 2))
+                      : Text('تحقق',
+                          style: TextStyle(
+                              color: const Color(0xFF34C759),
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+          if (_resendSeconds > 0)
+            Padding(
+              padding: EdgeInsets.only(top: 0.5.h),
+              child: Text(
+                'إعادة الإرسال بعد $_resendSeconds ثانية',
+                style: TextStyle(color: Colors.white38, fontSize: 9.sp),
+              ),
+            ),
+        ],
+
+        // Error
+        if (_phoneError != null)
+          Padding(
+            padding: EdgeInsets.only(top: 0.5.h),
+            child: Text(_phoneError!,
+                style: TextStyle(color: const Color(0xFFFF3B30), fontSize: 9.sp)),
+          ),
+
+        // Verified badge
+        if (_phoneVerified)
+          Padding(
+            padding: EdgeInsets.only(top: 0.5.h),
+            child: Row(children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF34C759), size: 14),
+              SizedBox(width: 1.w),
+              Text('تم التحقق من الرقم',
+                  style: TextStyle(color: const Color(0xFF34C759), fontSize: 9.sp, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+      ],
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  /// Recalculates _endDate from _startDate + selected plan's durationDays.
+  void _recalcEndDate() {
+    if (_selectedPlan != null && !_useCustomPlan) {
+      final days = _selectedPlan!['durationDays'] as int? ?? 30;
+      setState(() {
+        _endDate = _startDate.add(Duration(days: days));
+      });
+    }
+  }
+
+  // ── Plan picker widget ────────────────────────────────────────────────────────
+  Widget _buildPlanPicker() {
+    final plansAsync = ref.watch(subscriptionPlansProvider(widget.gymId));
+    final plans = plansAsync.asData?.value ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Plan chips row ────────────────────────────────────────────────
+        Wrap(
+          spacing: 2.w,
+          runSpacing: 1.h,
+          children: [
+            ...plans.map((plan) {
+              final isSelected = !_useCustomPlan &&
+                  _selectedPlan != null &&
+                  _selectedPlan!['id'] == plan['id'];
+              final name  = plan['name'] as String? ?? '';
+              final days  = plan['durationDays'] as int? ?? 30;
+              final price = (plan['price'] as num?)?.toDouble() ?? 0.0;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedPlan  = plan;
+                    _useCustomPlan = false;
+                    _planCtrl.text = name;
+                    _durationCtrl.text = (days / 30).round().clamp(1, 999).toString();
+                    _totalCtrl.text = price.toStringAsFixed(0);
+                    _endDate = _startDate.add(Duration(days: days));
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFFF3B30)
+                        : Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFF3B30)
+                          : Colors.white.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(name,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700)),
+                      Text(
+                        '$days يوم · ${price.toStringAsFixed(0)} JD',
+                        style: TextStyle(
+                            color: isSelected ? Colors.white70 : Colors.white38,
+                            fontSize: 9.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            // Custom option
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _useCustomPlan = true;
+                  _selectedPlan  = null;
+                  _planCtrl.text = '';
+                  _durationCtrl.text = '1';
+                  _totalCtrl.text = '';
+                  _endDate = null;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                decoration: BoxDecoration(
+                  color: _useCustomPlan
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _useCustomPlan
+                        ? Colors.white54
+                        : Colors.white.withOpacity(0.1),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_rounded,
+                        color: _useCustomPlan ? Colors.white : Colors.white38,
+                        size: 12.sp),
+                    SizedBox(width: 1.w),
+                    Text('مخصص',
+                        style: TextStyle(
+                            color: _useCustomPlan ? Colors.white : Colors.white38,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        if (plansAsync.isLoading) ...[
+          SizedBox(height: 1.h),
+          const Center(child: SizedBox(width: 16, height: 16,
+              child: CircularProgressIndicator(color: Color(0xFFFF3B30), strokeWidth: 2))),
+        ],
+
+        // ── Custom plan name field ────────────────────────────────────────
+        if (_useCustomPlan) ...[
+          SizedBox(height: 1.5.h),
+          _field(_planCtrl, 'اسم الخطة'),
+        ],
+
+        // ── End date display ──────────────────────────────────────────────
+        SizedBox(height: 1.5.h),
+        if (_selectedPlan != null && !_useCustomPlan && _endDate != null) ...[
+          // Auto-calculated end date — read-only pill
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF34C759).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: const Color(0xFF34C759).withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.event_available_rounded,
+                    color: const Color(0xFF34C759), size: 18.sp),
+                SizedBox(width: 3.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('تاريخ انتهاء الاشتراك',
+                        style: TextStyle(fontSize: 9.sp, color: Colors.white38)),
+                    Text(
+                      DateFormat('dd MMM yyyy').format(_endDate!),
+                      style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF34C759)),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text('تلقائي',
+                    style: TextStyle(fontSize: 9.sp, color: Colors.white30)),
+              ],
+            ),
+          ),
+        ] else if (_useCustomPlan) ...[
+          // Manual end date picker
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _endDate ?? _startDate.add(const Duration(days: 30)),
+                firstDate: _startDate,
+                lastDate: DateTime(2100),
+                builder: (ctx, child) => Theme(
+                  data: ThemeData.dark().copyWith(
+                    colorScheme: const ColorScheme.dark(
+                      primary: Color(0xFFFF3B30),
+                      surface: Color(0xFF1C1C1E),
+                    ),
+                  ),
+                  child: child!,
+                ),
+              );
+              if (picked != null) setState(() => _endDate = picked);
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
+              decoration: BoxDecoration(
+                color: _endDate != null
+                    ? const Color(0xFFFF3B30).withOpacity(0.08)
+                    : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(2.5.w),
+                border: Border.all(
+                  color: _endDate != null
+                      ? const Color(0xFFFF3B30).withOpacity(0.4)
+                      : Colors.white.withOpacity(0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_month_rounded,
+                      color: _endDate != null
+                          ? const Color(0xFFFF3B30)
+                          : Colors.white38,
+                      size: 18.sp),
+                  SizedBox(width: 3.w),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('تاريخ انتهاء الاشتراك *',
+                          style: TextStyle(fontSize: 9.sp, color: Colors.white38)),
+                      Text(
+                        _endDate != null
+                            ? DateFormat('dd MMM yyyy').format(_endDate!)
+                            : 'اختر تاريخ الانتهاء',
+                        style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color: _endDate != null
+                                ? const Color(0xFFFF3B30)
+                                : Colors.white54),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      color: Colors.white24, size: 10.sp),
+                ],
+              ),
+            ),
+          ),
+        ],
+
+        // ── Plan summary card ─────────────────────────────────────────────
+        if (_selectedPlan != null && !_useCustomPlan) ...[
+          SizedBox(height: 1.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF3B30).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: const Color(0xFFFF3B30).withOpacity(0.25)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.card_membership_rounded,
+                    color: const Color(0xFFFF3B30), size: 24.sp),
+                SizedBox(width: 3.w),
+                Expanded(
+                  child: Text(
+                    '${_selectedPlan!['name']} · '
+                    '${_selectedPlan!['durationDays']} يوم · '
+                    '${(_selectedPlan!['price'] as num?)?.toStringAsFixed(0) ?? '0'} JD',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Text('تعبئة تلقائية',
+                    style: TextStyle(
+                        color: const Color(0xFF34C759), fontSize: 13.sp)),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Future<void> _save() async {
@@ -2038,6 +2649,26 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
     final discount    = double.tryParse(_discountCtrl.text.trim()) ?? 0.0;
     final paid        = double.tryParse(_paidCtrl.text.trim()) ?? 0.0;
 
+    if (_selectedPlan == null && !_useCustomPlan) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('اختر خطة اشتراك أو اختر "مخصص"'),
+          backgroundColor: Color(0xFFFF3B30),
+        ),
+      );
+      return;
+    }
+
+    if (_useCustomPlan && _endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('اختر تاريخ انتهاء الاشتراك'),
+          backgroundColor: Color(0xFFFF3B30),
+        ),
+      );
+      return;
+    }
+
     if (first.isEmpty || email.isEmpty || password.length < 6 ||
         phone.isEmpty || _birthDate == null ||
         weight == null || weight <= 0 ||
@@ -2048,6 +2679,16 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill all required fields (*)'),
+          backgroundColor: Color(0xFFFF3B30),
+        ),
+      );
+      return;
+    }
+
+    if (!kIsWeb && !_phoneVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يجب التحقق من رقم الهاتف أولاً'),
           backgroundColor: Color(0xFFFF3B30),
         ),
       );
@@ -2078,6 +2719,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
         subscriptionPlan: _planCtrl.text.trim().isEmpty ? 'Standard' : _planCtrl.text.trim(),
         subscriptionStart: _startDate,
         durationMonths:  duration,
+        subscriptionEnd: _endDate,
         totalAmount:     totalAmount,
         discountAmount:  discount,
         amountPaid:      paid,
@@ -2159,7 +2801,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                               fontWeight: FontWeight.w800)),
                       Text('Full registration — creates login account',
                           style: TextStyle(
-                              color: Colors.white38, fontSize: 9.sp)),
+                              color: Colors.white38, fontSize: 12.sp)),
                     ],
                   ),
                 ),
@@ -2188,10 +2830,10 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                   TextField(
                     controller: _passwordCtrl,
                     obscureText: _obscurePassword,
-                    style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                    style: TextStyle(color: Colors.white, fontSize: 15.sp),
                     decoration: InputDecoration(
                       labelText: 'Temporary Password *',
-                      labelStyle: TextStyle(color: Colors.white54, fontSize: 10.sp),
+                      labelStyle: TextStyle(color: Colors.white54, fontSize: 13.sp),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.07),
                       contentPadding: EdgeInsets.symmetric(
@@ -2228,11 +2870,11 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                   SizedBox(height: 0.6.h),
                   Text(
                     'Auto-generated — player must change on first login.',
-                    style: TextStyle(color: Colors.white38, fontSize: 9.sp),
+                    style: TextStyle(color: Colors.white38, fontSize: 12.sp),
                   ),
                   SizedBox(height: 1.5.h),
-                  _field(_phoneCtrl, 'Phone *',
-                      type: TextInputType.phone),
+                  // ── Phone + OTP ───────────────────────────────────────────
+                  _buildPhoneOtpWidget(),
                   SizedBox(height: 1.5.h),
                   _datePicker(
                     label: 'Date of Birth *',
@@ -2292,17 +2934,21 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
 
                   // ── Subscription & Payment ────────────────────────────────
                   _section('Subscription & Payment'),
-                  _field(_planCtrl, 'Plan Name'),
+                  _buildPlanPicker(),
                   SizedBox(height: 1.5.h),
                   _datePicker(
                     label: 'Start Date',
                     value: _startDate,
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2040),
-                    onPick: (d) => setState(() => _startDate = d),
+                    onPick: (d) {
+                      setState(() => _startDate = d);
+                      _recalcEndDate();
+                    },
                   ),
                   SizedBox(height: 1.5.h),
                   _row([
+                    // Duration field — shown always for context / fallback
                     _field(_durationCtrl, 'Duration (months) *',
                         type: TextInputType.number),
                     _field(_totalCtrl, 'Total Amount',
@@ -2334,18 +2980,35 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(3.w)),
                       ),
-                      onPressed: _saving ? null : _save,
+                      onPressed: (_saving || (!kIsWeb && !_phoneVerified)) ? null : _save,
                       child: _saving
                           ? const SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2))
-                          : Text('Register Player',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w700)),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (!kIsWeb && !_phoneVerified)
+                                  Padding(
+                                    padding: EdgeInsets.only(left: 2.w),
+                                    child: Icon(Icons.lock_rounded,
+                                        color: Colors.white54, size: 14.sp),
+                                  ),
+                                Text(
+                                  (!kIsWeb && !_phoneVerified)
+                                      ? 'تحقق من الهاتف أولاً'
+                                      : 'Register Player',
+                                  style: TextStyle(
+                                      color: (!kIsWeb && !_phoneVerified)
+                                          ? Colors.white54
+                                      : Colors.white,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                   SizedBox(height: 2.h),
@@ -2453,7 +3116,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                 color: _selectedCoach != null
                     ? const Color(0xFF5BA8FF)
                     : Colors.white38,
-                size: 16.sp),
+                size: 20.sp),
             SizedBox(width: 3.w),
             Expanded(
               child: Text(
@@ -2461,7 +3124,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                     ? selectedName!
                     : 'No coach assigned (optional)',
                 style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 14.sp,
                   color: selectedName?.isNotEmpty == true
                       ? Colors.white
                       : Colors.white38,
@@ -2484,7 +3147,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
           label,
           style: TextStyle(
               color: const Color(0xFFFF3B30),
-              fontSize: 10.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8),
         ),
@@ -2505,10 +3168,10 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
       TextField(
         controller: ctrl,
         keyboardType: type,
-        style: TextStyle(color: Colors.white, fontSize: 12.sp),
+        style: TextStyle(color: Colors.white, fontSize: 15.sp),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: Colors.white54, fontSize: 10.sp),
+          labelStyle: TextStyle(color: Colors.white54, fontSize: 13.sp),
           filled: true,
           fillColor: Colors.white.withOpacity(0.07),
           contentPadding:
@@ -2552,14 +3215,14 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: TextStyle(color: Colors.white54, fontSize: 10.sp)),
+                style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
             SizedBox(height: 0.4.h),
             Text(display,
                 style: TextStyle(
                     color: value != null
                         ? const Color(0xFF5BA8FF)
                         : Colors.white38,
-                    fontSize: 13.sp,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600)),
           ],
         ),
@@ -2584,13 +3247,13 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
             value: current,
             isExpanded: true,
             dropdownColor: const Color(0xFF2C2C2E),
-            style: TextStyle(color: Colors.white, fontSize: 12.sp),
+            style: TextStyle(color: Colors.white, fontSize: 15.sp),
             items: options.entries
                 .map((e) => DropdownMenuItem(
                     value: e.key,
                     child: Text(e.value,
                         style: TextStyle(
-                            color: Colors.white, fontSize: 12.sp))))
+                            color: Colors.white, fontSize: 15.sp))))
                 .toList(),
             onChanged: (v) {
               if (v != null) onChanged(v);

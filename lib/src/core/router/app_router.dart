@@ -287,6 +287,19 @@ final appRouter = GoRouter(
       return '/account_frozen';
     }
 
+    // ── 0c. Player was unfrozen/unsuspended — leave the block screen ───────────
+    if (isAuthenticated &&
+        !_authNotifier.userFrozen &&
+        !_authNotifier.userSuspended &&
+        (loc == '/account_frozen' || loc == '/account_suspended')) {
+      final role = _authNotifier.role?.toLowerCase();
+      if (role == null) return null;
+      if (AppRole.isSuperAdmin(role)) return '/super_admin';
+      if (role == AppRole.admin || role == AppRole.owner || role == AppRole.gymAdmin) return '/admin';
+      if (AppRole.isPrivileged(role)) return '/coach_dashboard';
+      return '/dashboard';
+    }
+
     // ── 1. Force password change — blocks all routes until completed ──────────
     // If the signed-in player still has a coach-assigned temporary password,
     // redirect every route except /change_password to that screen.
@@ -296,12 +309,14 @@ final appRouter = GoRouter(
 
     // ── 1.5. Force 2FA phone verification after login ─────────────────────────
     // Admin / owner / gymAdmin bypass 2FA — they go straight to the dashboard.
-    if (isAuthenticated && _authNotifier.needsPhone2FA && loc != '/phone_2fa') {
+    if (isAuthenticated &&
+        _authNotifier.needsPhone2FA &&
+        loc != '/phone_2fa' &&
+        loc != '/account_frozen' &&
+        loc != '/account_suspended') {
       final role2fa = _authNotifier.role?.toLowerCase();
-      final isAdminRole = role2fa == AppRole.admin ||
-          role2fa == AppRole.owner ||
-          role2fa == AppRole.gymAdmin;
-      if (!isAdminRole) return '/phone_2fa';
+      // Only players go through phone 2FA — all other roles bypass it.
+      if (role2fa == AppRole.player) return '/phone_2fa';
     }
 
     // ── 2. Unauthenticated trying to access a protected path ─────────────────

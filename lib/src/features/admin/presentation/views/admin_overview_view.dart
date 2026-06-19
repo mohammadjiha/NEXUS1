@@ -23,11 +23,13 @@ class AdminOverviewView extends ConsumerWidget {
     final coachesAsync = ref.watch(adminCoachesProvider(gymId));
     final paymentsAsync = ref.watch(adminPaymentsProvider(gymId));
     final gymAsync = ref.watch(gymInfoProvider(gymId));
+    final checkinsAsync = ref.watch(todayCheckInsProvider(gymId));
 
     final players = playersAsync.asData?.value ?? [];
     final coaches = coachesAsync.asData?.value ?? [];
     final payments = paymentsAsync.asData?.value ?? [];
     final gymInfo = gymAsync.asData?.value ?? {};
+    final checkins = checkinsAsync.asData?.value ?? [];
 
     // ── Derived real stats ─────────────────────────────────────────────────
     final now = DateTime.now();
@@ -131,8 +133,10 @@ class AdminOverviewView extends ConsumerWidget {
                     avgAdherence,
                   ),
                   _buildStatGrid(
+                    context,
                     ref,
-                    players.length,
+                    players,
+                    checkins,
                     coaches.length,
                     thisMonthRevenue,
                     numLive,
@@ -434,8 +438,10 @@ class AdminOverviewView extends ConsumerWidget {
   // ── Stat grid ─────────────────────────────────────────────────────────────
 
   Widget _buildStatGrid(
+    BuildContext context,
     WidgetRef ref,
-    int numPlayers,
+    List<UserModel> players,
+    List<Map<String, dynamic>> checkins,
     int numCoaches,
     double revenue,
     int numLive,
@@ -446,6 +452,7 @@ class AdminOverviewView extends ConsumerWidget {
     String revenueTrend,
     Color revenueTrendColor,
   ) {
+    final numPlayers = players.length;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 4.w),
       child: GridView.count(
@@ -499,19 +506,15 @@ class AdminOverviewView extends ConsumerWidget {
             () => ref.read(adminBottomNavProvider.notifier).setIndex(1),
           ),
           _buildStatCard(
-            '✅',
-            avgAdherence != null
-                ? (avgAdherence >= 70 ? '▲ Good' : '▼ Low')
-                : '—',
-            avgAdherence != null ? '${avgAdherence.toInt()}%' : '—',
-            'AVG ADHERENCE',
-            avgAdherence != null
-                ? (avgAdherence >= 70
-                    ? const Color(0xFF34C759)
-                    : const Color(0xFFFF9500))
+            '📋',
+            checkins.isNotEmpty ? '▲ اضغط للتفاصيل' : '○ لا يوجد',
+            '${checkins.length}',
+            'حضور اليوم',
+            checkins.isNotEmpty
+                ? const Color(0xFF34C759)
                 : Colors.white30,
-            null,
-            () => ref.read(adminBottomNavProvider.notifier).setIndex(1),
+            checkins.isNotEmpty ? const Color(0xFF34C759) : null,
+            () => _showTodayAttendanceSheet(context, checkins, players),
           ),
           _buildStatCard(
             '👤',
@@ -572,29 +575,248 @@ class AdminOverviewView extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  val,
-                  style: TextStyle(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w900,
-                    color: valColor ?? Colors.white,
-                    letterSpacing: -0.5,
-                    height: 1,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    val,
+                    style: TextStyle(
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w900,
+                      color: valColor ?? Colors.white,
+                      letterSpacing: -0.5,
+                      height: 1,
+                    ),
                   ),
                 ),
                 SizedBox(height: 0.5.h),
                 Text(
                   lbl,
                   style: TextStyle(
-                    fontSize: 10.sp,
+                    fontSize: 9.sp,
                     fontWeight: FontWeight.w600,
                     color: Colors.white30,
                     letterSpacing: 0.3,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ── Today's attendance sheet ─────────────────────────────────────────────
+
+  void _showTodayAttendanceSheet(
+    BuildContext context,
+    List<Map<String, dynamic>> checkins,
+    List<UserModel> players,
+  ) {
+    // Map uid → player for quick lookup
+    final playerMap = {for (final p in players) p.uid: p};
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        builder: (_, scrollCtrl) => Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(5.w)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 12.w, height: 4,
+                  margin: EdgeInsets.only(top: 1.5.h, bottom: 1.h),
+                  decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: EdgeInsets.fromLTRB(4.w, 0, 4.w, 1.5.h),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(2.w),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF34C759).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(2.w),
+                      ),
+                      child: Icon(Icons.how_to_reg_rounded,
+                          color: const Color(0xFF34C759), size: 16.sp),
+                    ),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('حضور اليوم',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w800)),
+                          Text('${checkins.length} لاعب حضر اليوم',
+                              style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 10.sp)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 3.w, vertical: 0.8.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF34C759).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(2.w),
+                      ),
+                      child: Text('${checkins.length}',
+                          style: TextStyle(
+                              color: const Color(0xFF34C759),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900)),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(color: Colors.white.withOpacity(0.07), height: 1),
+              // Table header
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                child: Row(
+                  children: [
+                    Expanded(flex: 3,
+                        child: Text('اللاعب', style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w700))),
+                    Expanded(flex: 2,
+                        child: Text('الخطة', style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w700))),
+                    Expanded(flex: 2,
+                        child: Text('وقت الحضور', style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.end)),
+                  ],
+                ),
+              ),
+              Divider(color: Colors.white.withOpacity(0.05), height: 1),
+              // List
+              Expanded(
+                child: checkins.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('📋', style: TextStyle(fontSize: 28.sp)),
+                            SizedBox(height: 1.h),
+                            Text('لا يوجد حضور اليوم',
+                                style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12.sp)),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollCtrl,
+                        itemCount: checkins.length,
+                        padding: EdgeInsets.symmetric(vertical: 0.5.h),
+                        itemBuilder: (_, i) {
+                          final c = checkins[i];
+                          final uid = c['playerUid'] as String? ?? '';
+                          final player = playerMap[uid];
+                          final name = c['playerName'] as String? ??
+                              '${player?.firstName ?? ''} ${player?.lastName ?? ''}'.trim();
+                          final plan = player?.subscriptionPlan ?? '—';
+                          final rawTime = c['checkedInAt'];
+                          String timeStr = '—';
+                          if (rawTime is String && rawTime.isNotEmpty) {
+                            timeStr = rawTime;
+                          }
+
+                          final initials = name.isNotEmpty
+                              ? name.trim().split(' ').take(2)
+                                  .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
+                                  .join()
+                              : '?';
+
+                          return Container(
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 4.w, vertical: 0.4.h),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 3.w, vertical: 1.2.h),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(2.5.w),
+                              border: Border.all(
+                                  color: const Color(0xFF34C759)
+                                      .withOpacity(0.1)),
+                            ),
+                            child: Row(
+                              children: [
+                                // Avatar
+                                Container(
+                                  width: 8.w, height: 8.w,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF34C759)
+                                        .withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(initials,
+                                        style: TextStyle(
+                                            color: const Color(0xFF34C759),
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w800)),
+                                  ),
+                                ),
+                                SizedBox(width: 2.w),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    name.isEmpty ? uid : name,
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w700),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    plan,
+                                    style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 10.sp),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    timeStr,
+                                    style: TextStyle(
+                                        color: const Color(0xFF34C759),
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w600),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -51,6 +51,7 @@ dependencies:
   firebase_app_check: ^0.4.4+2
   cloud_functions: ^6.3.2
 
+  excel: ^4.0.6
   uuid: any
 dev_dependencies:
   flutter_test:

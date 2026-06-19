@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../../../core/localization/app_localizations.dart';
+import '../../../admin/data/admin_repository.dart';
+import '../../../admin/presentation/views/admin_checkin_view.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../user/models/user_model.dart';
 import '../../data/coach_repository.dart';
@@ -49,6 +51,7 @@ class _CoachHomeViewState extends ConsumerState<CoachHomeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHero(firstName, context),
+                  _buildCheckinCard(context, userModel),
                   _buildSectionHeader(
                     '⚠ Needs Attention',
                     color: const Color(0xFFFF3B30),
@@ -156,6 +159,80 @@ class _CoachHomeViewState extends ConsumerState<CoachHomeView> {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckinCard(BuildContext context, UserModel? userModel) {
+    final gymId  = userModel?.gymId  ?? '';
+    final coachUid = userModel?.uid ?? '';
+
+    final checkinsAsync = ref.watch(todayCheckInsProvider(gymId));
+    final allCheckins = checkinsAsync.asData?.value ?? [];
+
+    final coachPlayerUids = (ref.watch(coachMembersProvider).asData?.value ?? [])
+        .map((p) => p.uid)
+        .toSet();
+
+    final myCheckins = allCheckins
+        .where((c) => coachPlayerUids.contains(c['playerUid'] as String? ?? ''))
+        .length;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminCheckinView(
+            gymId: gymId,
+            adminUid: coachUid,
+            coachUid: coachUid,
+          ),
+        ),
+      ),
+      child: Container(
+        margin: EdgeInsets.fromLTRB(4.w, 0, 4.w, 2.h),
+        padding: EdgeInsets.all(4.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFF34C759).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(4.w),
+          border: Border.all(color: const Color(0xFF34C759).withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF34C759).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.how_to_reg_rounded,
+                  color: Color(0xFF34C759), size: 22),
+            ),
+            SizedBox(width: 3.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Today's Check-in",
+                    style: TextStyle(
+                        color: const Color(0xFF1C1C1E),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    '$myCheckins of ${coachPlayerUids.length} players checked in',
+                    style: TextStyle(
+                        color: const Color(0xFF1C1C1E).withOpacity(0.5),
+                        fontSize: 11.sp),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded,
+                color: const Color(0xFF34C759), size: 14.sp),
           ],
         ),
       ),

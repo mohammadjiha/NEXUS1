@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../../../core/localization/app_localizations.dart';
+import '../../../admin/data/admin_repository.dart';
+import '../../../auth/data/auth_repository.dart';
 import '../../../user/models/user_model.dart';
 import '../../data/coach_repository.dart';
 
@@ -188,14 +191,14 @@ class _MembersManagementScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${'coach_total'.tr(context)}: ${member.totalAmount} ${'coach_jd'.tr(context)}',
+                    '${'coach_total'.tr(context)}: ${(member.totalAmount ?? 0).toStringAsFixed(0)} ${'coach_jd'.tr(context)}',
                     style: TextStyle(
                       fontSize: 13.sp,
                       color: const Color(0xFF6E6E73),
                     ),
                   ),
                   Text(
-                    '${'coach_paid'.tr(context)}: ${member.amountPaid} ${'coach_jd'.tr(context)}',
+                    '${'coach_paid'.tr(context)}: ${(member.amountPaid ?? 0).toStringAsFixed(0)} ${'coach_jd'.tr(context)}',
                     style: TextStyle(
                       fontSize: 13.sp,
                       color: const Color(0xFF6E6E73),
@@ -214,7 +217,7 @@ class _MembersManagementScreenState
                     borderRadius: BorderRadius.circular(2.w),
                   ),
                   child: Text(
-                    '${'coach_owes'.tr(context)} $owes ${'coach_jd'.tr(context)}',
+                    '${'coach_owes'.tr(context)} ${owes.toStringAsFixed(0)} ${'coach_jd'.tr(context)}',
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
@@ -243,6 +246,30 @@ class _MembersManagementScreenState
                 ),
             ],
           ),
+          SizedBox(height: 1.h),
+          Builder(builder: (_) {
+            final total = member.totalAmount ?? 0.0;
+            final paid = member.amountPaid ?? 0.0;
+            final bool noData = total <= 0;
+            final double pct =
+                noData ? 0.0 : (paid / total).clamp(0.0, 1.0);
+            final Color barColor = noData
+                ? const Color(0xFFE5E5EA)
+                : owes <= 0
+                    ? const Color(0xFF34C759)
+                    : paid <= 0
+                        ? const Color(0xFFFF3B30)
+                        : const Color(0xFFFF9500);
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(1.w),
+              child: LinearProgressIndicator(
+                value: pct,
+                backgroundColor: const Color(0xFFE5E5EA),
+                valueColor: AlwaysStoppedAnimation(barColor),
+                minHeight: 5,
+              ),
+            );
+          }),
           SizedBox(height: 1.5.h),
           Row(
             children: [
@@ -376,6 +403,11 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
   final _durationCtrl = TextEditingController(text: '1');
   final _planCtrl = TextEditingController(text: 'Standard');
   final _totalCtrl = TextEditingController();
+
+  // ── Plan picker ───────────────────────────────────────────────────────────
+  Map<String, dynamic>? _selectedPlan;
+  bool _useCustomPlan = false;
+  DateTime? _endDate;
   final _discountCtrl = TextEditingController(text: '0');
   final _paidCtrl = TextEditingController();
   DateTime? _birthDate;
@@ -680,6 +712,255 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
     }
   }
 
+  // ── Plan picker ───────────────────────────────────────────────────────────
+  Widget _buildPlanPicker() {
+    final gymId = ref.watch(currentUserModelProvider).asData?.value?.gymId ?? '';
+    final plansAsync = ref.watch(subscriptionPlansProvider(gymId));
+    final plans = plansAsync.asData?.value ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 2.w,
+          runSpacing: 1.h,
+          children: [
+            ...plans.map((plan) {
+              final isSelected = !_useCustomPlan &&
+                  _selectedPlan != null &&
+                  _selectedPlan!['id'] == plan['id'];
+              final name  = plan['name'] as String? ?? '';
+              final days  = plan['durationDays'] as int? ?? 30;
+              final price = (plan['price'] as num?)?.toDouble() ?? 0.0;
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedPlan  = plan;
+                  _useCustomPlan = false;
+                  _planCtrl.text = name;
+                  _durationCtrl.text = (days / 30).round().clamp(1, 999).toString();
+                  _totalCtrl.text = price.toStringAsFixed(0);
+                  _endDate = _startDate.add(Duration(days: days));
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF007AFF)
+                        : Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF007AFF)
+                          : Colors.grey.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(name,
+                          style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFF1C1C1E),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700)),
+                      Text(
+                        '$days يوم · ${price.toStringAsFixed(0)} JD',
+                        style: TextStyle(
+                            color: isSelected ? Colors.white70 : Colors.grey,
+                            fontSize: 9.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            // Custom option
+            GestureDetector(
+              onTap: () => setState(() {
+                _useCustomPlan = true;
+                _selectedPlan  = null;
+                _planCtrl.text = '';
+                _durationCtrl.text = '1';
+                _totalCtrl.text = '';
+                _endDate = null;
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                decoration: BoxDecoration(
+                  color: _useCustomPlan
+                      ? const Color(0xFF1C1C1E)
+                      : Colors.grey.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _useCustomPlan
+                        ? const Color(0xFF1C1C1E)
+                        : Colors.grey.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_rounded,
+                        color: _useCustomPlan ? Colors.white : Colors.grey,
+                        size: 12.sp),
+                    SizedBox(width: 1.w),
+                    Text('مخصص',
+                        style: TextStyle(
+                            color: _useCustomPlan ? Colors.white : Colors.grey,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        if (plansAsync.isLoading) ...[
+          SizedBox(height: 1.h),
+          const Center(child: SizedBox(width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))),
+        ],
+
+        // Custom plan name field
+        if (_useCustomPlan) ...[
+          SizedBox(height: 1.2.h),
+          TextField(
+            controller: _planCtrl,
+            decoration: _inputDec('coach_subscription_plan'.tr(context)),
+          ),
+        ],
+
+        // ── End date display ────────────────────────────────────────────
+        SizedBox(height: 1.2.h),
+        if (_selectedPlan != null && !_useCustomPlan && _endDate != null) ...[
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.event_available_rounded,
+                    color: Colors.green, size: 18),
+                SizedBox(width: 2.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('تاريخ انتهاء الاشتراك',
+                        style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+                    Text(
+                      DateFormat('dd MMM yyyy').format(_endDate!),
+                      style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.green.shade700),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text('تلقائي',
+                    style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ] else if (_useCustomPlan) ...[
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _endDate ?? _startDate.add(const Duration(days: 30)),
+                firstDate: _startDate,
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) setState(() => _endDate = picked);
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+              decoration: BoxDecoration(
+                color: _endDate != null
+                    ? const Color(0xFF007AFF).withOpacity(0.07)
+                    : Colors.grey.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(2.5.w),
+                border: Border.all(
+                  color: _endDate != null
+                      ? const Color(0xFF007AFF).withOpacity(0.4)
+                      : Colors.grey.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_month_rounded,
+                      color: _endDate != null ? const Color(0xFF007AFF) : Colors.grey,
+                      size: 18),
+                  SizedBox(width: 2.w),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('تاريخ انتهاء الاشتراك *',
+                          style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+                      Text(
+                        _endDate != null
+                            ? DateFormat('dd MMM yyyy').format(_endDate!)
+                            : 'اختر تاريخ الانتهاء',
+                        style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: _endDate != null
+                                ? const Color(0xFF007AFF)
+                                : Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.arrow_forward_ios_rounded,
+                      color: Colors.grey, size: 12),
+                ],
+              ),
+            ),
+          ),
+        ],
+
+        // Plan summary card
+        if (_selectedPlan != null && !_useCustomPlan) ...[
+          SizedBox(height: 1.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF007AFF).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: const Color(0xFF007AFF).withOpacity(0.25)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.card_membership_rounded,
+                    color: Color(0xFF007AFF), size: 16),
+                SizedBox(width: 2.w),
+                Expanded(
+                  child: Text(
+                    '${_selectedPlan!['name']} · '
+                    '${_selectedPlan!['durationDays']} يوم · '
+                    '${(_selectedPlan!['price'] as num?)?.toStringAsFixed(0) ?? '0'} JD',
+                    style: TextStyle(
+                        color: const Color(0xFF007AFF),
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Text('تعبئة تلقائية ✓',
+                    style: TextStyle(color: Colors.green, fontSize: 9.sp)),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   void _submit(BuildContext context) async {
     final weight = double.tryParse(_weightCtrl.text.trim());
     final height = double.tryParse(_heightCtrl.text.trim());
@@ -689,6 +970,20 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
     final totalAmount = double.tryParse(_totalCtrl.text.trim()) ?? 0.0;
     final discountAmount = double.tryParse(_discountCtrl.text.trim()) ?? 0.0;
     final amountPaid = double.tryParse(_paidCtrl.text.trim()) ?? 0.0;
+
+    if (_selectedPlan == null && !_useCustomPlan) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اختر خطة اشتراك أو اختر "مخصص"')),
+      );
+      return;
+    }
+
+    if (_useCustomPlan && _endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اختر تاريخ انتهاء الاشتراك')),
+      );
+      return;
+    }
 
     if (_firstNameCtrl.text.trim().isEmpty ||
         _emailCtrl.text.trim().isEmpty ||
@@ -739,7 +1034,8 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
             ? 'Standard'
             : _planCtrl.text.trim(),
         subscriptionStart: _startDate,
-        durationMonths: durationMonths,
+        durationMonths: durationMonths ?? 1,
+        subscriptionEnd: _endDate,
         totalAmount: totalAmount,
         discountAmount: discountAmount,
         amountPaid: amountPaid,
@@ -1006,15 +1302,19 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
               ),
               SizedBox(height: 2.h),
               _section('coach_subscription_payment'.tr(context)),
-              TextField(
-                controller: _planCtrl,
-                decoration: _inputDec('coach_subscription_plan'.tr(context)),
-              ),
+              _buildPlanPicker(),
               SizedBox(height: 1.2.h),
               _dateTile(
                 label: 'coach_start_date'.tr(context),
                 value: _startDate,
-                onPick: (date) => setState(() => _startDate = date),
+                onPick: (date) {
+                  setState(() => _startDate = date);
+                  // Recalc end date if a plan is selected
+                  if (_selectedPlan != null && !_useCustomPlan) {
+                    final days = _selectedPlan!['durationDays'] as int? ?? 30;
+                    setState(() => _endDate = date.add(Duration(days: days)));
+                  }
+                },
               ),
               SizedBox(height: 1.2.h),
               Row(

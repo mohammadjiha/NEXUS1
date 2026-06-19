@@ -27,6 +27,7 @@ class AddPlayerInput {
   final String subscriptionPlan;
   final DateTime subscriptionStart;
   final int durationMonths;
+  final DateTime? subscriptionEnd; // if set, overrides the months-based calculation
   final double totalAmount;
   final double discountAmount;
   final double amountPaid;
@@ -53,6 +54,7 @@ class AddPlayerInput {
     required this.subscriptionPlan,
     required this.subscriptionStart,
     required this.durationMonths,
+    this.subscriptionEnd,
     required this.totalAmount,
     required this.discountAmount,
     required this.amountPaid,
@@ -246,7 +248,7 @@ class CoachRepository {
       await userCredential.user!.updateDisplayName(
         '${input.firstName.trim()} ${input.lastName.trim()}'.trim(),
       );
-      final end = DateTime(
+      final end = input.subscriptionEnd ?? DateTime(
         input.subscriptionStart.year,
         input.subscriptionStart.month + input.durationMonths,
         input.subscriptionStart.day,

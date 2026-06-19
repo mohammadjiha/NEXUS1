@@ -172,9 +172,7 @@ service cloud.firestore {
     }
 
     match /accountRecovery/{phoneKey} {
-      allow read: if signedIn() &&
-        request.auth.token.phone_number is string &&
-        resource.data.phone == request.auth.token.phone_number;
+      allow read: if signedIn();
       allow write: if canManageGym();
     }
 
@@ -222,6 +220,13 @@ service cloud.firestore {
 
       // Subscription plans — only admin/owner can create or modify plans.
       match /subscriptionPlans/{planId} {
+        allow read, write: if isSuperAdmin();
+        allow read: if signedIn() && gymId == currentUserGymId();
+        allow write: if canAdminGym() && gymId == currentUserGymId();
+      }
+
+      // Alias: Dart code writes to /plans (same semantics as subscriptionPlans).
+      match /plans/{planId} {
         allow read, write: if isSuperAdmin();
         allow read: if signedIn() && gymId == currentUserGymId();
         allow write: if canAdminGym() && gymId == currentUserGymId();
