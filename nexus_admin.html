@@ -907,7 +907,7 @@ function loadGyms() {
 
 function loadUsers() {
   unsubUsers=onSnapshot(collection(db,'users'),snap=>{
-    allUsers=snap.docs.map(d=>({uid:d.id,...d.data()}));
+    allUsers=snap.docs.filter(d=>!d.data().deleted).map(d=>({...d.data(),uid:d.id})); // uid always = document ID
     accessDenied=false;
     document.getElementById('access-warning').style.display='none';
     updateStats();
@@ -1102,7 +1102,7 @@ function renderPaymentsPage() {
 async function openUserDetail(uid) {
   currentDetailUid=uid;
   const user=allUsers.find(u=>u.uid===uid);
-  if(!user) return;
+  if(!user){showToast('⚠️ المستخدم غير موجود أو تم حذفه','error');return;}
   const name=fullName(user);
   document.getElementById('ud-title').textContent=`تفاصيل: ${name}`;
   document.getElementById('ud-avatar').textContent=(user.firstName||user.email||'?')[0]?.toUpperCase();
@@ -1667,11 +1667,27 @@ function confirmDelete(type, id, name) {
       if(type==='gym'){
         await updateDoc(doc(db,'gyms',id),{deleted:true,deletedAt:serverTimestamp(),isActive:false});
         closeModal('gym-members-modal');
-        showToast('🗑️ تم حذف النادي (soft-delete)','success');
+        showToast('🗑️ تم حذف النادي','success');
       } else if(type==='user'){
-        await updateDoc(doc(db,'users',id),{deleted:true,deletedAt:serverTimestamp(),isActive:false});
+        // Get user data before deleting to clean up related collections
+        const userSnap = await getDoc(doc(db,'users',id));
+        const userData = userSnap.data() || {};
+        const gymId    = userData.gymId || '';
+        const email    = (userData.email || '').trim().toLowerCase();
+        const batch    = writeBatch(db);
+        // Remove from memberEmails allowlist
+        if(gymId && email){
+          batch.delete(doc(db,'gyms',gymId,'memberEmails',email));
+        }
+        // Remove from gym members sub-collection
+        if(gymId){
+          batch.delete(doc(db,'gyms',gymId,'members',id));
+        }
+        // Hard-delete the user document
+        batch.delete(doc(db,'users',id));
+        await batch.commit();
         closeModal('user-detail-modal');
-        showToast('🗑️ تم حذف المستخدم (soft-delete)','success');
+        showToast('🗑️ تم حذف المستخدم نهائياً','success');
       }
     } catch(e){showToast('❌ '+e.message,'error');}
   };
@@ -2042,7 +2058,7 @@ function tsToDate(ts) {
   if(isNaN(ms)) return '';
   return new Date(ms).toISOString().split('T')[0];
 }
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function permRow(cols){return `<tr><td colspan="${cols}" class="no-data">🔒 قم بتحديث Firestore Rules</td></tr>`;}
 function genPassword(){
   const c='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
@@ -2068,23 +2084,4 @@ function mapAuthError(c){
 }
 
 document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
-document.querySelectorAll('.modal-overlay').forEach(el=>{
-  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
-});
-genId();
-document.getElementById('auth-screen').dataset.ready='1';
-</script>
-
-<script>
-// Fallback: if module failed to load, show error
-setTimeout(()=>{
-  if(!document.getElementById('auth-screen').dataset.ready){
-    document.getElementById('auth-error').textContent='خطأ في تحميل التطبيق — تأكد من الاتصال بالإنترنت وأعد تحميل الصفحة';
-    document.getElementById('auth-error').style.display='block';
-  }
-},3000);
-</script>
-</body>
-</html>
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}
