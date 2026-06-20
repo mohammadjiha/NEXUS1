@@ -197,10 +197,19 @@ class SuperAdminService {
   Stream<List<Map<String, dynamic>>> getSentMessagesStream() {
     return _db
         .collectionGroup('super_admin_messages')
-        .orderBy('sentAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+        .map((snap) {
+          final docs = snap.docs
+              .map((d) => {'id': d.id, ...d.data()})
+              .toList();
+          // Sort in-memory (avoids needing a Firestore composite index)
+          docs.sort((a, b) {
+            final ta = (a['sentAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            final tb = (b['sentAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            return tb.compareTo(ta);
+          });
+          return docs;
+        });
   }
 
   // ── Send message to a gym owner ─────────────────────────────────────────────

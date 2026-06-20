@@ -28,6 +28,7 @@ class UserModel {
   final double? discountAmount;
   final String? paymentMethod;
   final bool temporaryPasswordSet;
+  final String? temporaryPassword;
   final bool emailVerified;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -86,6 +87,7 @@ class UserModel {
     this.discountAmount = 0.0,
     this.paymentMethod,
     this.temporaryPasswordSet = false,
+    this.temporaryPassword,
     this.emailVerified = false,
     required this.createdAt,
     this.updatedAt,
@@ -138,6 +140,7 @@ class UserModel {
     'discountAmount': discountAmount,
     'paymentMethod': paymentMethod,
     'temporaryPasswordSet': temporaryPasswordSet,
+    'temporaryPassword':    temporaryPassword,
     'emailVerified': emailVerified,
     'createdAt': Timestamp.fromDate(createdAt),
     'updatedAt': updatedAt == null ? null : Timestamp.fromDate(updatedAt!),
@@ -195,7 +198,8 @@ class UserModel {
         discountAmount: (map['discountAmount'] as num?)?.toDouble() ?? 0.0,
         paymentMethod: map['paymentMethod'] as String?,
         temporaryPasswordSet: map['temporaryPasswordSet'] as bool? ?? false,
-        emailVerified: map['emailVerified'] as bool? ?? false,
+        temporaryPassword:    map['temporaryPassword']    as String?,
+        emailVerified:        map['emailVerified']        as bool? ?? false,
         createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
         updatedAt: _parseDate(map['updatedAt']),
         subscriptionStart: _parseDate(map['subscriptionStart']),

@@ -212,6 +212,12 @@ service cloud.firestore {
         allow read, update: if canAdminGym() && gymId == currentUserGymId();
       }
 
+      // Import history — admin/owner only.
+      match /importHistory/{entryId} {
+        allow read, write: if isSuperAdmin();
+        allow read, write: if canAdminGym() && gymId == currentUserGymId();
+      }
+
       // Check-in records — coaches can check members in/out.
       match /checkins/{checkinId} {
         allow read, write: if isSuperAdmin();

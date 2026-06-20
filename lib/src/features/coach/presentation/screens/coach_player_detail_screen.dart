@@ -906,7 +906,7 @@ class _CoachPlayerDetailScreenState
         Expanded(
           child: _buildSummaryBox(
             'Total Paid',
-            '\$${player.amountPaid ?? 0}',
+            '${(player.amountPaid ?? 0).toStringAsFixed(0)} JD',
             Colors.green,
           ),
         ),
@@ -914,7 +914,7 @@ class _CoachPlayerDetailScreenState
         Expanded(
           child: _buildSummaryBox(
             'Remaining',
-            '\$${player.amountRemaining ?? 0}',
+            '${(player.amountRemaining ?? 0).toStringAsFixed(0)} JD',
             Colors.orange,
           ),
         ),
@@ -1043,8 +1043,8 @@ class _CoachPlayerDetailScreenState
               ),
               Text(
                 isFallback
-                    ? '-\$${p.amountRemaining.toStringAsFixed(2)}'
-                    : '+\$${p.amount.toStringAsFixed(2)}',
+                    ? '-${p.amountRemaining.toStringAsFixed(0)} JD'
+                    : '+${p.amount.toStringAsFixed(0)} JD',
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
@@ -1108,7 +1108,7 @@ class _CoachPlayerDetailScreenState
         ),
         SizedBox(height: 0.3.h),
         Text(
-          '\$${value.toStringAsFixed(2)}',
+          '${value.toStringAsFixed(0)} JD',
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.w800,
@@ -1568,7 +1568,7 @@ class _RenewSubscriptionSheetState
                               ),
                             ),
                             Text(
-                              '\$${_remainingAmount.toStringAsFixed(2)}',
+                              '${_remainingAmount.toStringAsFixed(0)} JD',
                               style: TextStyle(
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.w900,

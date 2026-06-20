@@ -917,15 +917,22 @@ class AdminRepository {
     DateTime? subscriptionEnd,
     double? totalAmount,
     double? amountPaid,
+    double? discount,
+    String? paymentMethod,
+    double? weight,
+    double? height,
+    double? muscleMass,
+    double? fatPercentage,
   }) async {
     final first = firstName.trim();
     final last  = lastName.trim();
     final now   = DateTime.now();
 
-    // Generate email if missing
-    final normalizedEmail = email != null && email.trim().isNotEmpty
+    // Generate email if missing.
+    // Format: firstname.lastname.XXXXXX@gmail.com (all ASCII, readable)
+    final normalizedEmail = (email != null && email.trim().isNotEmpty)
         ? email.trim().toLowerCase()
-        : '${first.toLowerCase().replaceAll(' ', '.')}.${last.toLowerCase().replaceAll(' ', '.')}@$gymId.nexus';
+        : _generatePlayerEmail(first, last);
 
     // Generate random 8-char password
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -956,11 +963,10 @@ class AdminRepository {
       await secondaryApp.delete();
     }
 
-    final batch = _firestore.batch();
     final remaining = (totalAmount ?? 0) - (amountPaid ?? 0);
 
-    // users/{uid}
-    batch.set(_firestore.collection('users').doc(uid), {
+    // ── 1. Critical: write the user document (must succeed) ───────────────
+    await _firestore.collection('users').doc(uid).set({
       'uid':              uid,
       'email':            normalizedEmail,
       'firstName':        first,
@@ -972,7 +978,8 @@ class AdminRepository {
       'isActive':         true,
       'emailVerified':    true,
       'temporaryPasswordSet': true,
-      'authProvider':     'password',
+      'temporaryPassword':    password,
+      'authProvider':         'password',
       'subscriptionPlan': subscriptionPlan?.trim() ?? 'standard',
       'subscriptionStart': subscriptionStart != null
           ? Timestamp.fromDate(subscriptionStart)
@@ -983,14 +990,45 @@ class AdminRepository {
       'totalAmount':      totalAmount ?? 0.0,
       'amountPaid':       amountPaid ?? 0.0,
       'amountRemaining':  remaining < 0 ? 0.0 : remaining,
+      if (discount      != null) 'discountAmount': discount,
+      if (paymentMethod != null && paymentMethod.trim().isNotEmpty) 'paymentMethod': paymentMethod.trim(),
+      if (weight        != null) 'weight':        weight,
+      if (height        != null) 'height':        height,
+      if (muscleMass    != null) 'muscleMass':    muscleMass,
+      if (fatPercentage != null) 'fatPercentage': fatPercentage,
       'createdAt':        Timestamp.fromDate(now),
       'updatedAt':        Timestamp.fromDate(now),
     });
 
-    // gyms/{gymId}/members/{uid}
-    batch.set(
-      _firestore.collection('gyms').doc(gymId).collection('members').doc(uid),
-      {
+    // ── 1b. Payment record (best-effort) — shows up in finance stream ────
+    if ((amountPaid ?? 0) > 0) {
+      try {
+        await _firestore
+            .collection('users').doc(uid)
+            .collection('payments').doc()
+            .set({
+          'type':         'subscription',
+          'planName':     subscriptionPlan?.trim().isNotEmpty == true
+                              ? subscriptionPlan!.trim() : 'standard',
+          'amount':       amountPaid,
+          'paymentMethod': paymentMethod?.trim().isNotEmpty == true
+                              ? paymentMethod!.trim() : 'cash',
+          'paymentDate':  Timestamp.fromDate(now),
+          'createdAt':    Timestamp.fromDate(now),
+          'gymId':        gymId,
+          'playerUid':    uid,
+          'playerName':   '$first $last'.trim(),
+          'registeredBy': addedByUid,
+        });
+      } catch (_) { /* non-critical */ }
+    }
+
+    // ── 2. Secondary: gym member record (best-effort) ─────────────────────
+    try {
+      await _firestore
+          .collection('gyms').doc(gymId)
+          .collection('members').doc(uid)
+          .set({
         'uid':        uid,
         'email':      normalizedEmail,
         'role':       'player',
@@ -1000,13 +1038,15 @@ class AdminRepository {
         'phone':      phone?.trim() ?? '',
         'status':     'active',
         'joinedAt':   Timestamp.fromDate(now),
-      },
-    );
+      });
+    } catch (_) { /* non-critical — user doc already saved */ }
 
-    // gyms/{gymId}/memberEmails/{email}
-    batch.set(
-      _firestore.collection('gyms').doc(gymId).collection('memberEmails').doc(normalizedEmail),
-      {
+    // ── 3. Secondary: invite allowlist entry (best-effort) ────────────────
+    try {
+      await _firestore
+          .collection('gyms').doc(gymId)
+          .collection('memberEmails').doc(normalizedEmail)
+          .set({
         'role':       'player',
         'status':     'active',
         'firstName':  first,
@@ -1014,11 +1054,9 @@ class AdminRepository {
         'phone':      phone?.trim() ?? '',
         'addedBy':    addedByUid,
         'addedAt':    Timestamp.fromDate(now),
-      },
-      SetOptions(merge: true),
-    );
+      }, SetOptions(merge: true));
+    } catch (_) { /* non-critical */ }
 
-    await batch.commit();
     return {'uid': uid, 'email': normalizedEmail, 'password': password};
   }
 
@@ -1027,7 +1065,7 @@ class AdminRepository {
   ///   non-null fields (never clears existing data).
   /// – If no match is found → create a brand-new player account.
   /// Returns a record: (name, wasCreated).
-  Future<({String name, bool wasCreated})> upsertPlayerFromCsv({
+  Future<({String name, bool wasCreated, bool wasUpdated, String uid})> upsertPlayerFromCsv({
     required String gymId,
     required String addedByUid,
     // Identifiers
@@ -1064,12 +1102,87 @@ class AdminRepository {
 
     if ((snap == null || snap.docs.isEmpty) &&
         phone != null && phone.trim().isNotEmpty) {
-      snap = await _firestore
+      // Normalize: digits only, and try with/without leading zero
+      final rawPhone    = phone.trim();
+      final digitsOnly  = rawPhone.replaceAll(RegExp(r'\D'), '');
+      final withZero    = digitsOnly.startsWith('0') ? digitsOnly : '0$digitsOnly';
+      final withoutZero = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+
+      for (final candidate in {rawPhone, digitsOnly, withZero, withoutZero}) {
+        snap = await _firestore
+            .collection('users')
+            .where('gymId', isEqualTo: gymId)
+            .where('phone', isEqualTo: candidate)
+            .limit(1)
+            .get();
+        if (snap.docs.isNotEmpty) break;
+      }
+    }
+
+    // ── Fallback: lookup by full name (covers players with no phone/email) ──
+    // Two equality filters (gymId + firstName) — no composite index required.
+    // lastName is filtered client-side to avoid a third equality field.
+    if ((snap == null || snap.docs.isEmpty) &&
+        firstName != null && firstName.trim().isNotEmpty) {
+      final first = firstName.trim();
+      final last  = (lastName ?? '').trim().toLowerCase();
+      final nameSnap = await _firestore
           .collection('users')
-          .where('gymId', isEqualTo: gymId)
-          .where('phone', isEqualTo: phone.trim())
-          .limit(1)
+          .where('gymId',     isEqualTo: gymId)
+          .where('firstName', isEqualTo: first)
           .get();
+      final match = nameSnap.docs.where((doc) {
+        final d  = doc.data() as Map<String, dynamic>;
+        final lg = (d['lastName'] as String? ?? '').trim().toLowerCase();
+        return lg == last;
+      }).toList();
+      if (match.isNotEmpty) {
+        snap = nameSnap; // reuse the QuerySnapshot type
+        // Replace docs with single match by re-querying by uid
+        final uid = match.first.id;
+        final docSnap = await _firestore.collection('users').doc(uid).get();
+        if (docSnap.exists) {
+          // Wrap in a minimal-work approach: just use match.first directly
+          final doc  = match.first;
+          final data = doc.data() as Map<String, dynamic>;
+          final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+          final updates = <String, dynamic>{'updatedAt': FieldValue.serverTimestamp()};
+          void maybeSet(String key, dynamic value) { if (value != null) updates[key] = value; }
+          maybeSet('subscriptionPlan', subscriptionPlan?.trim().isNotEmpty == true ? subscriptionPlan!.trim() : null);
+          if (subscriptionStart != null) updates['subscriptionStart'] = Timestamp.fromDate(subscriptionStart);
+          if (subscriptionEnd   != null) updates['subscriptionEnd']   = Timestamp.fromDate(subscriptionEnd);
+          maybeSet('totalAmount',     totalAmount);
+          maybeSet('discountAmount',  discount);
+          maybeSet('paymentMethod',   paymentMethod?.trim().isNotEmpty == true ? paymentMethod!.trim() : null);
+          maybeSet('weight',          weight);
+          maybeSet('height',          height);
+          maybeSet('muscleMass',      muscleMass);
+          maybeSet('fatPercentage',   fatPercentage);
+          if (amountPaid != null) {
+            updates['amountPaid'] = amountPaid;
+            final total = totalAmount ?? (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+            final disc  = discount    ?? (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
+            final remaining = total - disc - amountPaid;
+            updates['amountRemaining'] = remaining < 0 ? 0.0 : remaining;
+          }
+          final wasUpdated =
+            _fieldChanged(subscriptionPlan?.trim().isNotEmpty == true ? subscriptionPlan!.trim() : null, data['subscriptionPlan']) ||
+            _fieldChanged(subscriptionStart, data['subscriptionStart']) ||
+            _fieldChanged(subscriptionEnd,   data['subscriptionEnd']) ||
+            _fieldChanged(totalAmount,       data['totalAmount']) ||
+            _fieldChanged(amountPaid,        data['amountPaid']) ||
+            _fieldChanged(discount,          data['discountAmount']) ||
+            _fieldChanged(paymentMethod?.trim().isNotEmpty == true ? paymentMethod!.trim() : null, data['paymentMethod']) ||
+            _fieldChanged(weight,            data['weight']) ||
+            _fieldChanged(height,            data['height']) ||
+            _fieldChanged(muscleMass,        data['muscleMass']) ||
+            _fieldChanged(fatPercentage,     data['fatPercentage']);
+          if (wasUpdated && updates.length > 1) {
+            await _firestore.collection('users').doc(doc.id).update(updates);
+          }
+          return (name: name.isEmpty ? first : name, wasCreated: false, wasUpdated: wasUpdated, uid: doc.id);
+        }
+      }
     }
 
     // ── 2. Player exists → merge non-null fields ──────────────────────────
@@ -1104,10 +1217,22 @@ class AdminRepository {
         updates['amountRemaining'] = remaining < 0 ? 0.0 : remaining;
       }
 
-      if (updates.length > 1) { // more than just updatedAt
+      final wasUpdated =
+        _fieldChanged(subscriptionPlan?.trim().isNotEmpty == true ? subscriptionPlan!.trim() : null, data['subscriptionPlan']) ||
+        _fieldChanged(subscriptionStart, data['subscriptionStart']) ||
+        _fieldChanged(subscriptionEnd,   data['subscriptionEnd']) ||
+        _fieldChanged(totalAmount,       data['totalAmount']) ||
+        _fieldChanged(amountPaid,        data['amountPaid']) ||
+        _fieldChanged(discount,          data['discountAmount']) ||
+        _fieldChanged(paymentMethod?.trim().isNotEmpty == true ? paymentMethod!.trim() : null, data['paymentMethod']) ||
+        _fieldChanged(weight,            data['weight']) ||
+        _fieldChanged(height,            data['height']) ||
+        _fieldChanged(muscleMass,        data['muscleMass']) ||
+        _fieldChanged(fatPercentage,     data['fatPercentage']);
+      if (wasUpdated && updates.length > 1) {
         await _firestore.collection('users').doc(uid).update(updates);
       }
-      return (name: name.isEmpty ? (email ?? phone ?? '?') : name, wasCreated: false);
+      return (name: name.isEmpty ? (email ?? phone ?? '?') : name, wasCreated: false, wasUpdated: wasUpdated, uid: uid);
     }
 
     // ── 3. Player not found → create new ─────────────────────────────────
@@ -1127,10 +1252,221 @@ class AdminRepository {
       subscriptionPlan:  subscriptionPlan,
       subscriptionStart: subscriptionStart,
       subscriptionEnd:   subscriptionEnd,
-      totalAmount: totalAmount ?? 0,
-      amountPaid:  amountPaid  ?? 0,
+      totalAmount:   totalAmount ?? 0,
+      amountPaid:    amountPaid  ?? 0,
+      discount:      discount,
+      paymentMethod: paymentMethod,
+      weight:        weight,
+      height:        height,
+      muscleMass:    muscleMass,
+      fatPercentage: fatPercentage,
     );
-    return (name: '$first $last'.trim(), wasCreated: true);
+    return (name: '$first $last'.trim(), wasCreated: true, wasUpdated: true, uid: res['uid'] ?? '');
+  }
+
+  /// Read-only lookup — checks if a player exists without writing anything.
+  /// Returns (exists, uid, existingName).
+  Future<({bool exists, String uid, String existingName})> checkPlayerExists({
+    required String gymId,
+    String? email,
+    String? phone,
+    String? firstName,
+    String? lastName,
+  }) async {
+    QuerySnapshot? snap;
+
+    if (email != null && email.trim().isNotEmpty) {
+      snap = await _firestore
+          .collection('users')
+          .where('gymId',  isEqualTo: gymId)
+          .where('email',  isEqualTo: email.trim().toLowerCase())
+          .limit(1).get();
+    }
+
+    if ((snap == null || snap.docs.isEmpty) &&
+        phone != null && phone.trim().isNotEmpty) {
+      final raw     = phone.trim();
+      final digits  = raw.replaceAll(RegExp(r'\D'), '');
+      final withZ   = digits.startsWith('0') ? digits : '0$digits';
+      final withoutZ = digits.startsWith('0') ? digits.substring(1) : digits;
+      for (final c in {raw, digits, withZ, withoutZ}) {
+        snap = await _firestore.collection('users')
+            .where('gymId',  isEqualTo: gymId)
+            .where('phone',  isEqualTo: c)
+            .limit(1).get();
+        if (snap.docs.isNotEmpty) break;
+      }
+    }
+
+    // Name fallback: gymId + firstName (two equality filters, no composite index).
+    // lastName is filtered client-side.
+    if ((snap == null || snap.docs.isEmpty) &&
+        firstName != null && firstName.trim().isNotEmpty) {
+      final first  = firstName.trim();
+      final last   = (lastName ?? '').trim().toLowerCase();
+      final nSnap  = await _firestore.collection('users')
+          .where('gymId',     isEqualTo: gymId)
+          .where('firstName', isEqualTo: first)
+          .get();
+      final match = nSnap.docs.where((doc) {
+        final d = doc.data() as Map<String, dynamic>;
+        return (d['lastName'] as String? ?? '').trim().toLowerCase() == last;
+      }).toList();
+      if (match.isNotEmpty) {
+        final doc = match.first;
+        final d   = doc.data() as Map<String, dynamic>;
+        return (
+          exists:       true,
+          uid:          doc.id,
+          existingName: '${d['firstName'] ?? ''} ${d['lastName'] ?? ''}'.trim(),
+        );
+      }
+    }
+
+    if (snap != null && snap.docs.isNotEmpty) {
+      final doc = snap.docs.first;
+      final d   = doc.data() as Map<String, dynamic>;
+      return (
+        exists:       true,
+        uid:          doc.id,
+        existingName: '${d['firstName'] ?? ''} ${d['lastName'] ?? ''}'.trim(),
+      );
+    }
+    return (exists: false, uid: '', existingName: '');
+  }
+
+  /// Manually update arbitrary fields on a player document.
+  Future<void> updatePlayerFields(String uid, Map<String, dynamic> fields) async {
+    await _firestore.collection('users').doc(uid).update({
+      ...fields,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Returns duplicate groups (same full name, ≥2 records) without deleting.
+  /// Each entry: { 'name': String, 'docs': List<Map> } where each doc map has
+  /// id, firstName, lastName, phone, email, subscriptionPlan, updatedAt.
+  Future<List<Map<String, dynamic>>> getDuplicateGroups(String gymId) async {
+    final snap = await _firestore
+        .collection('users')
+        .where('gymId', isEqualTo: gymId)
+        .where('role',  isEqualTo: 'player')
+        .get();
+
+    final byName = <String, List<QueryDocumentSnapshot>>{};
+    for (final doc in snap.docs) {
+      final d     = doc.data() as Map<String, dynamic>;
+      final first = (d['firstName'] ?? '').toString().trim();
+      final last  = (d['lastName']  ?? '').toString().trim();
+      final key   = '$first $last'.trim().toLowerCase();
+      if (key.isEmpty) continue;
+      byName.putIfAbsent(key, () => []).add(doc);
+    }
+
+    final groups = <Map<String, dynamic>>[];
+    for (final entry in byName.entries) {
+      if (entry.value.length < 2) continue;
+      // Sort newest first
+      int ts(QueryDocumentSnapshot d) {
+        final m = d.data() as Map<String, dynamic>;
+        return ((m['updatedAt'] ?? m['createdAt']) as Timestamp?)
+                ?.millisecondsSinceEpoch ?? 0;
+      }
+      entry.value.sort((a, b) => ts(b).compareTo(ts(a)));
+
+      final docs = entry.value.map((doc) {
+        final d = doc.data() as Map<String, dynamic>;
+        return {
+          'id':               doc.id,
+          'firstName':        d['firstName'] ?? '',
+          'lastName':         d['lastName']  ?? '',
+          'phone':            d['phone']     ?? '',
+          'email':            d['email']     ?? '',
+          'subscriptionPlan': d['subscriptionPlan'] ?? '',
+          'updatedAt':        d['updatedAt'] ?? d['createdAt'],
+        };
+      }).toList();
+
+      groups.add({
+        'name': '${entry.value.first.get('firstName')} ${entry.value.first.get('lastName')}'.trim(),
+        'count': entry.value.length,
+        'docs':  docs,
+      });
+    }
+    return groups;
+  }
+
+  /// Deduplicates players by name: keeps the newest record (most recently
+  /// created/updated) and merges any non-null fields from the older duplicates
+  /// into it, then deletes the older duplicates.
+  /// Returns the number of documents deleted.
+  Future<int> deduplicatePlayers(String gymId) async {
+    final snap = await _firestore
+        .collection('users')
+        .where('gymId', isEqualTo: gymId)
+        .where('role',  isEqualTo: 'player')
+        .get();
+
+    // Group docs by normalised full name
+    final byName = <String, List<QueryDocumentSnapshot>>{};
+    for (final doc in snap.docs) {
+      final d     = doc.data() as Map<String, dynamic>;
+      final first = (d['firstName'] ?? '').toString().trim();
+      final last  = (d['lastName']  ?? '').toString().trim();
+      final key   = '$first $last'.trim().toLowerCase();
+      if (key.isEmpty) continue;
+      byName.putIfAbsent(key, () => []).add(doc);
+    }
+
+    int deleted = 0;
+
+    for (final group in byName.values) {
+      if (group.length < 2) continue;
+
+      // Sort newest first (by updatedAt, then createdAt)
+      int ts(QueryDocumentSnapshot d) {
+        final m = d.data() as Map<String, dynamic>;
+        return ((m['updatedAt'] ?? m['createdAt']) as Timestamp?)
+                ?.millisecondsSinceEpoch ??
+            0;
+      }
+      group.sort((a, b) => ts(b).compareTo(ts(a)));
+
+      final keeper     = group.first;
+      final keeperData = Map<String, dynamic>.from(
+          keeper.data() as Map<String, dynamic>);
+
+      // Merge non-null fields from older records that the keeper is missing
+      for (final old in group.skip(1)) {
+        final oldData = old.data() as Map<String, dynamic>;
+        for (final e in oldData.entries) {
+          final v = e.value;
+          if (v == null) continue;
+          if (v is String && v.isEmpty) continue;
+          // Only fill in fields the keeper doesn't have
+          if (keeperData[e.key] == null ||
+              (keeperData[e.key] is String &&
+                  (keeperData[e.key] as String).isEmpty)) {
+            keeperData[e.key] = v;
+          }
+        }
+      }
+
+      // Persist merged data
+      keeperData['uid'] = keeper.id;
+      await _firestore
+          .collection('users')
+          .doc(keeper.id)
+          .set(keeperData);
+
+      // Delete older duplicates
+      for (final old in group.skip(1)) {
+        await _firestore.collection('users').doc(old.id).delete();
+        deleted++;
+      }
+    }
+
+    return deleted;
   }
 
   /// Update an existing player's subscription/payment data from a CSV row.
@@ -1207,6 +1543,76 @@ class AdminRepository {
     return name;
   }
 
+  /// Returns true if the CSV [csv] value meaningfully differs from [stored].
+  /// Returns false when [csv] is null (field not in CSV → don't touch it).
+  bool _fieldChanged(dynamic csv, dynamic stored) {
+    if (csv == null) return false;
+    if (stored == null) return true;
+    if (csv is double && stored is num) return (csv - stored.toDouble()).abs() > 0.01;
+    if (csv is DateTime && stored is Timestamp) {
+      final d = stored.toDate();
+      return csv.year != d.year || csv.month != d.month || csv.day != d.day;
+    }
+    if (csv is String && stored is String) return csv.trim() != stored.trim();
+    return csv != stored;
+  }
+
+  // ── Email generation ─────────────────────────────────────────────────────
+  static const _arabicMap = {
+    'ا': 'a', 'أ': 'a', 'إ': 'a', 'آ': 'a',
+    'ب': 'b', 'ت': 't', 'ث': 'th',
+    'ج': 'j', 'ح': 'h', 'خ': 'kh',
+    'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z',
+    'س': 's', 'ش': 'sh', 'ص': 's', 'ض': 'd',
+    'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh',
+    'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l',
+    'م': 'm', 'ن': 'n', 'ه': 'h', 'و': 'w',
+    'ي': 'y', 'ى': 'a', 'ة': 'h', 'ئ': 'y',
+    'ء': '', 'ؤ': 'w', 'لا': 'la', 'ال': 'al',
+  };
+
+  /// Converts Arabic (or mixed) name part to lowercase ASCII letters only.
+  String _transliterate(String input) {
+    // Strip Arabic diacritics (tashkeel) and tatweel before processing
+    final stripped = input.replaceAll(
+      RegExp(r'[ؐ-ًؚ-ٰٟـ]'),
+      '',
+    );
+
+    final buf = StringBuffer();
+    for (var i = 0; i < stripped.length; i++) {
+      final ch = stripped[i];
+      // Check two-char sequence first (لا, ال)
+      if (i + 1 < stripped.length) {
+        final two = stripped.substring(i, i + 2);
+        if (_arabicMap.containsKey(two)) {
+          buf.write(_arabicMap[two]);
+          i++;
+          continue;
+        }
+      }
+      if (_arabicMap.containsKey(ch)) {
+        buf.write(_arabicMap[ch]);
+      } else if (RegExp(r'[a-zA-Z]').hasMatch(ch)) {
+        buf.write(ch.toLowerCase());
+      }
+      // skip spaces, digits, symbols, unknown chars
+    }
+    final result = buf.toString().replaceAll(RegExp(r'[^a-z]'), '');
+    return result.isEmpty ? 'player' : result;
+  }
+
+  /// Generates a unique-ish email: firstname.lastname.XXXXXX@gmail.com
+  String _generatePlayerEmail(String firstName, String lastName) {
+    final f    = _transliterate(firstName);
+    final l    = _transliterate(lastName);
+    const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+    final seed  = DateTime.now().microsecondsSinceEpoch;
+    final rand  = List.generate(6, (i) => chars[(seed + i * 7919) % chars.length]).join();
+    final local = [f, l, rand].where((s) => s.isNotEmpty).join('.');
+    return '$local@gmail.com';
+  }
+
   String _normalizePhone(String input) {
     var value = input.trim().replaceAll(RegExp(r'[\s()-]'), '');
     if (value.startsWith('00')) value = '+${value.substring(2)}';
@@ -1217,6 +1623,211 @@ class AdminRepository {
   }
 
   String _phoneKey(String phone) => phone.replaceAll(RegExp(r'\D'), '');
+
+  // ── Backfill payment records for existing players ─────────────────────────
+  /// For every player who has amountPaid > 0 but no payment record yet,
+  /// creates a single payment record so the finance view shows correct revenue.
+  Future<Map<String, int>> backfillPaymentRecords(String gymId) async {
+    // 1. Get all players
+    final playersSnap = await _firestore
+        .collection('users')
+        .where('gymId', isEqualTo: gymId)
+        .where('role',  isEqualTo: 'player')
+        .get();
+
+    int created = 0, skipped = 0;
+
+    for (final playerDoc in playersSnap.docs) {
+      final data      = playerDoc.data() as Map<String, dynamic>;
+      final amountPaid = (data['amountPaid'] as num?)?.toDouble() ?? 0;
+      if (amountPaid <= 0) { skipped++; continue; }
+
+      // 2. Check if payment record already exists
+      final existing = await _firestore
+          .collection('users')
+          .doc(playerDoc.id)
+          .collection('payments')
+          .limit(1)
+          .get();
+
+      if (existing.docs.isNotEmpty) { skipped++; continue; }
+
+      // 3. Create backfill record
+      final createdAt = (data['createdAt'] as Timestamp?) ?? Timestamp.now();
+      final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+      try {
+        await _firestore
+            .collection('users')
+            .doc(playerDoc.id)
+            .collection('payments')
+            .doc()
+            .set({
+          'type':         'subscription',
+          'planName':     data['subscriptionPlan'] ?? 'standard',
+          'amount':       amountPaid,
+          'paymentMethod': data['paymentMethod'] ?? 'cash',
+          'paymentDate':  createdAt,
+          'createdAt':    createdAt,
+          'gymId':        gymId,
+          'playerUid':    playerDoc.id,
+          'playerName':   name,
+          'registeredBy': data['addedBy'] ?? '',
+          'isBackfill':   true,
+        });
+        created++;
+      } catch (_) { skipped++; }
+    }
+
+    return {'created': created, 'skipped': skipped};
+  }
+
+  // ── Migrate old .nexus emails → firstname.lastname.XXXX@gmail.com ─────────
+  /// Returns a summary: { migrated, skipped, failed }
+  Future<Map<String, int>> migratePlayerEmails(String gymId) async {
+    final snap = await _firestore
+        .collection('users')
+        .where('gymId', isEqualTo: gymId)
+        .where('role',  isEqualTo: 'player')
+        .get();
+
+    int migrated = 0, skipped = 0, failed = 0;
+
+    for (final doc in snap.docs) {
+      final data       = doc.data() as Map<String, dynamic>;
+      final oldEmail   = (data['email'] as String? ?? '').trim().toLowerCase();
+      final firstName  = (data['firstName'] as String? ?? '').trim();
+      final lastName   = (data['lastName']  as String? ?? '').trim();
+
+      // Migrate if: .nexus domain, timestamp-based, or contains non-ASCII (Arabic) chars
+      final hasArabic = RegExp(r'[؀-ۿ]').hasMatch(oldEmail);
+      final isAutoGenerated = oldEmail.contains('.nexus') ||
+          RegExp(r'^u\d{10,}@').hasMatch(oldEmail) ||
+          RegExp(r'^p09\d+@').hasMatch(oldEmail) ||
+          hasArabic;
+      if (!isAutoGenerated) {
+        skipped++;
+        continue;
+      }
+
+      final newEmail = _generatePlayerEmail(firstName, lastName);
+
+      try {
+        // Update Firestore display email only.
+        // Firebase Auth email stays the same (login still works with old email).
+        await _firestore.collection('users').doc(doc.id).update({
+          'email':     newEmail,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Update memberEmails allowlist
+        try {
+          final gymRef = _firestore.collection('gyms').doc(gymId);
+          await gymRef.collection('memberEmails').doc(oldEmail).delete();
+          await gymRef.collection('memberEmails').doc(newEmail).set({
+            'role':      'player',
+            'status':    'active',
+            'firstName': firstName,
+            'lastName':  lastName,
+            'phone':     data['phone'] ?? '',
+            'addedAt':   FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          await gymRef.collection('members').doc(doc.id)
+              .update({'email': newEmail});
+        } catch (_) { /* best-effort */ }
+
+        migrated++;
+      } catch (e) {
+        failed++;
+      }
+    }
+
+    return {'migrated': migrated, 'skipped': skipped, 'failed': failed};
+  }
+
+  // ── Import History ───────────────────────────────────────────────────────────
+
+  /// Saves a summary record after each CSV/Excel import.
+  Future<void> saveImportHistory({
+    required String gymId,
+    required String addedByUid,
+    required String fileName,
+    required int newCount,
+    required int updatedCount,
+    required int existingCount,
+    required int failedCount,
+  }) async {
+    await _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('importHistory')
+        .add({
+      'gymId':        gymId,
+      'addedByUid':   addedByUid,
+      'fileName':     fileName,
+      'uploadedAt':   FieldValue.serverTimestamp(),
+      'newCount':     newCount,
+      'updatedCount': updatedCount,
+      'existingCount':existingCount,
+      'failedCount':  failedCount,
+      'totalCount':   newCount + updatedCount + existingCount + failedCount,
+    });
+  }
+
+  /// Streams the 20 most recent import history records for this gym.
+  Stream<List<ImportHistoryEntry>> getImportHistoryStream(String gymId) {
+    return _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('importHistory')
+        .orderBy('uploadedAt', descending: true)
+        .limit(20)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => ImportHistoryEntry.fromFirestore(d))
+            .toList());
+  }
+}
+
+// ─── Import History Model ─────────────────────────────────────────────────────
+
+class ImportHistoryEntry {
+  final String id;
+  final String fileName;
+  final DateTime uploadedAt;
+  final String addedByUid;
+  final int newCount;
+  final int updatedCount;
+  final int existingCount;
+  final int failedCount;
+  final int totalCount;
+
+  const ImportHistoryEntry({
+    required this.id,
+    required this.fileName,
+    required this.uploadedAt,
+    required this.addedByUid,
+    required this.newCount,
+    required this.updatedCount,
+    required this.existingCount,
+    required this.failedCount,
+    required this.totalCount,
+  });
+
+  factory ImportHistoryEntry.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    final ts = d['uploadedAt'] as Timestamp?;
+    return ImportHistoryEntry(
+      id:            doc.id,
+      fileName:      d['fileName']      as String? ?? '—',
+      uploadedAt:    ts?.toDate()       ?? DateTime.now(),
+      addedByUid:    d['addedByUid']    as String? ?? '',
+      newCount:      (d['newCount']     as num?)?.toInt() ?? 0,
+      updatedCount:  (d['updatedCount'] as num?)?.toInt() ?? 0,
+      existingCount: (d['existingCount'] as num?)?.toInt() ?? 0,
+      failedCount:   (d['failedCount']  as num?)?.toInt() ?? 0,
+      totalCount:    (d['totalCount']   as num?)?.toInt() ?? 0,
+    );
+  }
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
@@ -1256,6 +1867,11 @@ final adminExpensesProvider =
 final subscriptionPlansProvider =
     StreamProvider.family<List<Map<String, dynamic>>, String>((ref, gymId) {
   return ref.watch(adminRepositoryProvider).getSubscriptionPlansStream(gymId);
+});
+
+final importHistoryProvider =
+    StreamProvider.family<List<ImportHistoryEntry>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getImportHistoryStream(gymId);
 });
 
 final todayCheckInsProvider =

@@ -107,14 +107,10 @@ class _AuthChangeNotifier extends ChangeNotifier {
                 changed = true;
               }
 
-              // ── 2FA: check for phone on first Firestore snapshot after login
+              // ── 2FA disabled for all roles ─────────────────────────────────
               if (_freshLoginPending) {
                 _freshLoginPending = false;
-                final phone = data?['phone'] as String?;
-                if (phone != null && phone.trim().isNotEmpty) {
-                  _needsPhone2FA = true;
-                  changed = true;
-                }
+                // OTP verification removed — skip 2FA for players and coaches
               }
 
               // ── Suspend / Freeze — only apply to player role ──────────────
@@ -307,17 +303,7 @@ final appRouter = GoRouter(
       return '/change_password';
     }
 
-    // ── 1.5. Force 2FA phone verification after login ─────────────────────────
-    // Admin / owner / gymAdmin bypass 2FA — they go straight to the dashboard.
-    if (isAuthenticated &&
-        _authNotifier.needsPhone2FA &&
-        loc != '/phone_2fa' &&
-        loc != '/account_frozen' &&
-        loc != '/account_suspended') {
-      final role2fa = _authNotifier.role?.toLowerCase();
-      // Only players go through phone 2FA — all other roles bypass it.
-      if (role2fa == AppRole.player) return '/phone_2fa';
-    }
+    // ── 1.5. 2FA disabled — all roles go directly to dashboard after login ──────
 
     // ── 2. Unauthenticated trying to access a protected path ─────────────────
     if (!isAuthenticated && _protectedPaths.contains(loc)) {

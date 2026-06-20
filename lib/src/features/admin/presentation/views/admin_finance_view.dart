@@ -1,10 +1,10 @@
-import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -68,15 +68,42 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
   DateTime?  _customFrom;
   DateTime?  _customTo;
 
+  // ── Infinite scroll for payments list ────────────────────────────────────
+  int _visibleCount = 10;
+  bool _loadingMore = false;
+  final ScrollController _paymentsScroll = ScrollController();
+
+  // ── Players search ────────────────────────────────────────────────────────
+  final TextEditingController _playerSearchCtrl = TextEditingController();
+  String _playerQuery = '';
+
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 3, vsync: this);
+    _paymentsScroll.addListener(_onPaymentsScroll);
+  }
+
+  void _onPaymentsScroll() {
+    if (_loadingMore) return;
+    if (_paymentsScroll.position.pixels >=
+        _paymentsScroll.position.maxScrollExtent - 200) {
+      _loadingMore = true;
+      setState(() => _visibleCount += 10);
+      // Reset flag after frame so list can grow first
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _loadingMore = false);
+      });
+    }
   }
 
   @override
   void dispose() {
     _tab.dispose();
+    _paymentsScroll
+      ..removeListener(_onPaymentsScroll)
+      ..dispose();
+    _playerSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -132,7 +159,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
 
     final filteredProfit = filteredRevenue - filteredExpenses;
 
-    // ── Monthly chart (last 6 months) ─────────────────────────────────────
+    // monthly kept for PDF export only
     final monthlyRevenue  = _computeMonthly(payments, now);
     final monthlyExpenses = _computeMonthlyExpenses(expenses, now);
 
@@ -155,7 +182,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
               controller: _tab,
               children: [
                 _buildRevenueTab(
-                    payments, players, monthlyRevenue, monthlyExpenses, now),
+                    payments, players, monthlyRevenue, monthlyExpenses, expenses, now),
                 _buildExpensesTab(expenses, gymId, user?.uid ?? ''),
                 _buildPlayersTab(players, gymId, user?.uid ?? ''),
               ],
@@ -210,7 +237,11 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             ],
           ),
           GestureDetector(
-            onTap: () => _showExportSheet(context, user, players, payments, expenses, filterFrom, filterTo),
+            onTap: () {
+              final now = DateTime.now();
+              final (from, to) = _pFilter.range(now, _customFrom, _customTo);
+              _showExportSheet(context, user, players, payments, expenses, from, to);
+            },
             child: Container(
               padding:
                   EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
@@ -254,12 +285,12 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             children: _PFilter.values.map((f) {
               final sel = _pFilter == f;
               return GestureDetector(
-                onTap: () => setState(() => _pFilter = f),
+                onTap: () => setState(() { _pFilter = f; _visibleCount = 10; }),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   margin: EdgeInsets.only(right: 2.w),
                   padding: EdgeInsets.symmetric(
-                      horizontal: 3.5.w, vertical: 0.7.h),
+                      horizontal: 5.w, vertical: 1.h),
                   decoration: BoxDecoration(
                     color: sel
                         ? const Color(0xFF34C759)
@@ -274,7 +305,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                   child: Text(
                     f.label,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 14.sp,
                       fontWeight:
                           sel ? FontWeight.w800 : FontWeight.w500,
                       color: sel ? Colors.white : Colors.white54,
@@ -526,6 +557,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
     List<UserModel> players,
     List<_MonthStat> monthlyRevenue,
     List<_MonthStat> monthlyExpenses,
+    List<Map<String, dynamic>> expenses,
     DateTime now,
   ) {
     final planMap = <String, double>{};
@@ -535,10 +567,14 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
 
     // Use the global filter range
     final (filterFrom, filterTo) = _pFilter.range(now, _customFrom, _customTo);
-    final filtered = payments
+    final allFiltered = payments
         .where((p) => !p.date.isBefore(filterFrom) && !p.date.isAfter(filterTo))
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
+
+    // Paginate — show only first _visibleCount items
+    final filtered = allFiltered.take(_visibleCount).toList();
+    final hasMore = allFiltered.length > _visibleCount;
 
     // Group by calendar day
     final Map<String, List<PaymentRecord>> byDay = {};
@@ -553,36 +589,36 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
       return d >= 0 && d <= 7;
     }).toList();
 
-    final chartMax = [...monthlyRevenue, ...monthlyExpenses]
-        .fold(0.0, (m, s) => s.amount > m ? s.amount : m);
+    // ── Weekly chart (last 7 days) ────────────────────────────────────────
+    final dailyRevenue  = _computeWeekly(payments, now);
+    final dailyExpenses = _computeWeeklyExpenses(expenses, now);
+    final chartMax = [...dailyRevenue, ...dailyExpenses]
+        .fold(0.0, (m, s) => s > m ? s : m);
 
     return ListView(
+      controller: _paymentsScroll,
       padding: EdgeInsets.only(bottom: 12.h, top: 1.h),
       children: [
         // Chart
         _sectionCard(
           icon: '📊',
-          title: 'Revenue vs Expenses — 6 Months',
+          title: 'الإيرادات والمصاريف — هذا الأسبوع',
           trailing: _legendRow(),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(4.w, 0, 4.w, 2.h),
+            padding: EdgeInsets.fromLTRB(2.w, 0, 2.w, 2.h),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(monthlyRevenue.length, (i) {
-                final r = monthlyRevenue[i];
-                final e = monthlyExpenses[i];
-                final isNow = r.month.year == now.year &&
-                    r.month.month == now.month;
-                final rRatio = chartMax == 0
-                    ? 0.05
-                    : (r.amount / chartMax).clamp(0.05, 1.0);
-                final eRatio = chartMax == 0
-                    ? 0.0
-                    : (e.amount / chartMax).clamp(0.0, 1.0);
-                return _buildDoubleBar(
-                    _monthLabel(r.month), rRatio, eRatio,
-                    isNow: isNow);
+              children: List.generate(7, (i) {
+                final day = now.subtract(Duration(days: 6 - i));
+                final isToday = day.year == now.year &&
+                    day.month == now.month && day.day == now.day;
+                final rev = dailyRevenue[i];
+                final exp = dailyExpenses[i];
+                final rRatio = chartMax == 0 ? 0.0 : (rev / chartMax).clamp(0.0, 1.0);
+                final eRatio = chartMax == 0 ? 0.0 : (exp / chartMax).clamp(0.0, 1.0);
+                return Expanded(
+                  child: _buildWeekBar(_arabicDay(day), rRatio, eRatio, rev, exp, isNow: isToday),
+                );
               }),
             ),
           ),
@@ -622,6 +658,16 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
               else
                 ...byDay.entries.map((entry) =>
                     _buildDayGroup(entry.key, entry.value)),
+              if (hasMore)
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 2.h),
+                  child: Center(
+                    child: Text(
+                      '↓ اسحب للمزيد',
+                      style: TextStyle(color: Colors.white24, fontSize: 11.sp),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -680,10 +726,12 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
 
   Widget _buildDoubleBar(String label, double rRatio, double eRatio,
       {bool isNow = false}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        SizedBox(
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 1.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          SizedBox(
           height: 9.h,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -724,6 +772,87 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
           ),
         ),
       ],
+    ),
+  );
+}
+
+  Widget _buildWeekBar(
+    String label, double rRatio, double eRatio,
+    double revAmount, double expAmount,
+    {bool isNow = false}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // Revenue amount label on top if > 0
+        if (revAmount > 0)
+          Text(
+            '${revAmount.toStringAsFixed(0)} JD',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: const Color(0xFF34C759).withOpacity(isNow ? 1.0 : 0.6),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        SizedBox(height: 0.8.h),
+        SizedBox(
+          height: 11.h,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Revenue bar
+              Container(
+                width: 5.w,
+                height: rRatio == 0 ? 2 : 11.h * rRatio,
+                decoration: BoxDecoration(
+                  color: rRatio == 0
+                      ? Colors.white.withOpacity(0.08)
+                      : isNow
+                          ? const Color(0xFF34C759)
+                          : const Color(0xFF34C759).withOpacity(0.5),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(1.w)),
+                ),
+              ),
+              SizedBox(width: 1.2.w),
+              // Expenses bar
+              Container(
+                width: 5.w,
+                height: eRatio == 0 ? 2 : 11.h * eRatio,
+                decoration: BoxDecoration(
+                  color: eRatio == 0
+                      ? Colors.white.withOpacity(0.08)
+                      : isNow
+                          ? const Color(0xFFFF3B30)
+                          : const Color(0xFFFF3B30).withOpacity(0.5),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(1.w)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 0.8.h),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isNow ? 12.sp : 11.sp,
+            fontWeight: isNow ? FontWeight.w800 : FontWeight.w500,
+            color: isNow ? Colors.white : Colors.white38,
+          ),
+        ),
+        if (isNow)
+          Container(
+            margin: EdgeInsets.only(top: 0.5.h),
+            width: 2.5.w,
+            height: 2.5.w,
+            decoration: const BoxDecoration(
+              color: Color(0xFF34C759),
+              shape: BoxShape.circle,
+            ),
+          ),
+      ],
     );
   }
 
@@ -742,18 +871,18 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             children: [
               Text(plan,
                   style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white)),
               Row(
                 children: [
                   Text('${pct.toStringAsFixed(0)}%',
                       style: TextStyle(
-                          fontSize: 10.sp, color: Colors.white38)),
+                          fontSize: 13.sp, color: Colors.white38)),
                   SizedBox(width: 2.w),
                   Text('${amount.toStringAsFixed(0)} JD',
                       style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF34C759))),
                 ],
@@ -768,7 +897,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
               backgroundColor: Colors.white.withOpacity(0.08),
               valueColor:
                   const AlwaysStoppedAnimation(Color(0xFF34C759)),
-              minHeight: 4,
+              minHeight: 6,
             ),
           ),
         ],
@@ -782,7 +911,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.06),
           borderRadius: BorderRadius.circular(2.w),
@@ -791,14 +920,14 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
         child: Row(
           children: [
             Icon(Icons.calendar_today_rounded,
-                color: const Color(0xFF34C759), size: 11.sp),
-            SizedBox(width: 1.5.w),
+                color: const Color(0xFF34C759), size: 15.sp),
+            SizedBox(width: 3.w),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(label,
-                  style: TextStyle(fontSize: 8.sp, color: Colors.white38)),
+                  style: TextStyle(fontSize: 11.sp, color: Colors.white38)),
               Text(value,
                   style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white70)),
             ]),
@@ -841,12 +970,12 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             children: [
               Text(dayLabel,
                   style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white54)),
               Text('${dayTotal.toStringAsFixed(0)} JD',
                   style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF34C759))),
             ],
@@ -869,15 +998,15 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
       child: Row(
         children: [
           Container(
-            width: 9.w,
-            height: 9.w,
+            width: 12.w,
+            height: 12.w,
             decoration: BoxDecoration(
               color: const Color(0xFF34C759).withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
             child: Icon(Icons.payments_rounded,
-                color: const Color(0xFF34C759), size: 12.sp),
+                color: const Color(0xFF34C759), size: 16.sp),
           ),
           SizedBox(width: 3.w),
           Expanded(
@@ -886,14 +1015,14 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
               children: [
                 Text(p.playerName.isEmpty ? 'Player' : p.playerName,
                     style: TextStyle(
-                        fontSize: 11.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
                 SizedBox(height: 0.2.h),
                 Text(
                   '${p.planName} · ${p.paymentMethod}',
                   style: TextStyle(
-                      fontSize: 9.sp,
+                      fontSize: 11.sp,
                       color: Colors.white.withOpacity(0.35)),
                 ),
               ],
@@ -904,13 +1033,13 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             children: [
               Text('+${p.amount.toStringAsFixed(0)} JD',
                   style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF34C759))),
               SizedBox(height: 0.2.h),
               Text(DateFormat('MMM d').format(p.date),
                   style: TextStyle(
-                      fontSize: 9.sp,
+                      fontSize: 11.sp,
                       color: Colors.white.withOpacity(0.25))),
             ],
           ),
@@ -936,7 +1065,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
         children: [
           Container(
             padding:
-                EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
+                EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.8.h),
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(2.w),
@@ -944,7 +1073,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             child: Text(
               days == 0 ? 'TODAY' : '${days}d',
               style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w800,
                   color: color),
             ),
@@ -953,7 +1082,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
           Expanded(
             child: Text(name,
                 style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w800,
                     color: Colors.white)),
           ),
@@ -961,7 +1090,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
             Text(
               '${remaining.toStringAsFixed(0)} JD due',
               style: TextStyle(
-                  fontSize: 10.sp,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFFFF9500)),
             ),
@@ -1173,21 +1302,66 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
       ..sort((a, b) =>
           (b.amountRemaining ?? 0).compareTo(a.amountRemaining ?? 0));
 
+    final q = _playerQuery.trim().toLowerCase();
+    final displayed = q.isEmpty
+        ? sorted
+        : sorted.where((p) {
+            final name =
+                '${p.firstName ?? ''} ${p.lastName ?? ''}'.toLowerCase();
+            final phone = (p.phone ?? '').toLowerCase();
+            return name.contains(q) || phone.contains(q);
+          }).toList();
+
     return ListView(
       padding: EdgeInsets.only(bottom: 12.h, top: 1.h),
       children: [
+        // ── Search bar ──────────────────────────────────────────────────────
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+          child: TextField(
+            controller: _playerSearchCtrl,
+            style: TextStyle(fontSize: 13.sp, color: Colors.white),
+            onChanged: (v) => setState(() => _playerQuery = v),
+            decoration: InputDecoration(
+              hintText: 'ابحث عن لاعب...',
+              hintStyle: TextStyle(color: Colors.white38, fontSize: 13.sp),
+              prefixIcon:
+                  Icon(Icons.search, color: Colors.white38, size: 18.sp),
+              suffixIcon: _playerQuery.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _playerSearchCtrl.clear();
+                        setState(() => _playerQuery = '');
+                      },
+                      child: Icon(Icons.close,
+                          color: Colors.white38, size: 16.sp),
+                    )
+                  : null,
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.07),
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 1.2.h, horizontal: 3.w),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(3.w),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+
         _sectionCard(
           icon: '👥',
-          title: 'Player Payment Status (${players.length})',
-          child: sorted.isEmpty
+          title: 'Player Payment Status (${displayed.length}/${players.length})',
+          child: displayed.isEmpty
               ? Padding(
                   padding: EdgeInsets.all(4.w),
-                  child: Text('No players.',
-                      style: TextStyle(
-                          color: Colors.white38, fontSize: 11.sp)),
+                  child: Text(
+                    q.isEmpty ? 'No players.' : 'لا يوجد نتائج لـ "$q"',
+                    style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+                  ),
                 )
               : Column(
-                  children: sorted
+                  children: displayed
                       .map((p) => _buildPlayerFinanceRow(p, gymId, adminUid))
                       .toList(),
                 ),
@@ -1251,6 +1425,62 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                       Text(p.subscriptionPlan ?? 'No plan',
                           style: TextStyle(
                               fontSize: 11.sp, color: Colors.white60)),
+                      SizedBox(height: 0.3.h),
+                      // Email row
+                      GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: p.email));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('تم نسخ الإيميل',
+                                  style: TextStyle(fontSize: 12.sp)),
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: Colors.blueGrey[800],
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.email_outlined,
+                                size: 11.sp, color: Colors.blueAccent.withOpacity(0.7)),
+                            SizedBox(width: 1.w),
+                            Flexible(
+                              child: Text(p.email,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: Colors.blueAccent.withOpacity(0.8))),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Password row
+                      if (p.temporaryPassword != null && p.temporaryPassword!.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: p.temporaryPassword!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('تم نسخ كلمة المرور',
+                                    style: TextStyle(fontSize: 12.sp)),
+                                duration: const Duration(seconds: 1),
+                                backgroundColor: Colors.blueGrey[800],
+                              ),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              Icon(Icons.lock_outline,
+                                  size: 11.sp, color: Colors.amber.withOpacity(0.7)),
+                              SizedBox(width: 1.w),
+                              Text(p.temporaryPassword!,
+                                  style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: Colors.amber.withOpacity(0.8),
+                                      fontFamily: 'monospace')),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -1332,14 +1562,16 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                 4.w, trailing != null ? 0 : 3.h, 4.w, 2.h),
             child: Row(
               children: [
-                Text(icon, style: TextStyle(fontSize: 16.sp)),
-                SizedBox(width: 2.w),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white.withOpacity(0.9),
+                Text(icon, style: TextStyle(fontSize: 18.sp)),
+                SizedBox(width: 3.w),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
                   ),
                 ),
               ],
@@ -1628,7 +1860,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
 
     // ── Player Status ────────────────────────────────────────────────────────
     buf.writeln('Player Payment Status');
-    buf.writeln('Name,Plan,Total (JD),Paid (JD),Remaining (JD),Subscription End');
+    buf.writeln('Name,Email,Password,Phone,Plan,Total (JD),Paid (JD),Remaining (JD),Subscription End');
     for (final p in players) {
       final name = '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
       final end = p.subscriptionEnd != null
@@ -1636,6 +1868,9 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
           : '';
       buf.writeln(
           '"$name",'
+          '"${p.email}",'
+          '"${p.temporaryPassword ?? ''}",'
+          '"${p.phone ?? ''}",'
           '"${p.subscriptionPlan ?? ''}",'
           '${(p.totalAmount ?? 0).toStringAsFixed(2)},'
           '${(p.amountPaid ?? 0).toStringAsFixed(2)},'
@@ -1644,12 +1879,10 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
     }
 
     try {
-      final dir = await getTemporaryDirectory();
       final safeTitle = periodTitle.replaceAll(RegExp(r'[^\w]'), '_');
-      final file = File('${dir.path}/NEXUS_Finance_$safeTitle.csv');
-      await file.writeAsString(buf.toString(), encoding: const SystemEncoding());
+      final bytes     = Uint8List.fromList(utf8.encode(buf.toString()));
       await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'text/csv')],
+        [XFile.fromData(bytes, name: 'NEXUS_Finance_$safeTitle.csv', mimeType: 'text/csv')],
         subject: 'NEXUS Finance — $periodTitle',
       );
     } catch (e) {
@@ -1826,35 +2059,40 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.grey600)),
           pw.SizedBox(height: 8),
-          pw.Directionality(
-            textDirection: pw.TextDirection.rtl,
-            child: pw.Table.fromTextArray(
-              headers: ['اللاعب', 'الخطة', 'بداية الاشتراك', 'نهاية الاشتراك', 'الإجمالي', 'المدفوع', 'المتبقي'],
-              data: players.map((p) {
-                final name =
-                    '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
-                final startStr = p.subscriptionStart != null
-                    ? DateFormat('dd/MM/yyyy').format(p.subscriptionStart!)
-                    : '-';
-                final endStr = p.subscriptionEnd != null
-                    ? DateFormat('dd/MM/yyyy').format(p.subscriptionEnd!)
-                    : '-';
-                return [
-                  name.isEmpty ? p.email : name,
-                  p.subscriptionPlan ?? '-',
-                  startStr,
-                  endStr,
-                  '${(p.totalAmount ?? 0).toStringAsFixed(0)} JD',
-                  '${(p.amountPaid ?? 0).toStringAsFixed(0)} JD',
-                  '${(p.amountRemaining ?? 0).toStringAsFixed(0)} JD',
-                ];
-              }).toList(),
-              headerStyle: ar(size: 8, bold: true, color: PdfColors.white),
-              headerDecoration:
-                  const pw.BoxDecoration(color: PdfColors.grey800),
-              cellStyle: ar(size: 8),
-              cellHeight: 22,
-            ),
+          pw.Table.fromTextArray(
+            headers: ['Name', 'Email', 'Password', 'Phone', 'Plan', 'Total', 'Paid', 'Remaining', 'End Date'],
+            data: players.map((p) {
+              final name = '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
+              final endStr = p.subscriptionEnd != null
+                  ? DateFormat('dd/MM/yyyy').format(p.subscriptionEnd!)
+                  : '-';
+              return [
+                name.isEmpty ? p.email : name,
+                p.email,
+                p.temporaryPassword ?? '-',
+                p.phone ?? '-',
+                p.subscriptionPlan ?? '-',
+                '${(p.totalAmount ?? 0).toStringAsFixed(0)} JD',
+                '${(p.amountPaid ?? 0).toStringAsFixed(0)} JD',
+                '${(p.amountRemaining ?? 0).toStringAsFixed(0)} JD',
+                endStr,
+              ];
+            }).toList(),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7, color: PdfColors.white),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey800),
+            cellStyle: const pw.TextStyle(fontSize: 7),
+            cellHeight: 20,
+            columnWidths: {
+              0: const pw.FlexColumnWidth(2.0),
+              1: const pw.FlexColumnWidth(2.5),
+              2: const pw.FlexColumnWidth(1.5),
+              3: const pw.FlexColumnWidth(1.5),
+              4: const pw.FlexColumnWidth(1.5),
+              5: const pw.FlexColumnWidth(1.0),
+              6: const pw.FlexColumnWidth(1.0),
+              7: const pw.FlexColumnWidth(1.0),
+              8: const pw.FlexColumnWidth(1.5),
+            },
           ),
           pw.SizedBox(height: 24),
           pw.Divider(),
@@ -1916,9 +2154,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
       for (var e in expenses) {
         final ts = e['date'];
         DateTime? d;
-        try {
-          d = (ts as dynamic).toDate() as DateTime;
-        } catch (_) {}
+        try { d = (ts as dynamic).toDate() as DateTime; } catch (_) {}
         if (d != null && d.year == month.year && d.month == month.month) {
           total += (e['amount'] as num?)?.toDouble() ?? 0;
         }
@@ -1926,6 +2162,44 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
       return _MonthStat(month: month, amount: total);
     });
   }
+
+  /// Returns 7 daily revenue totals for the current week (index 0 = 6 days ago, 6 = today)
+  static List<double> _computeWeekly(List<PaymentRecord> payments, DateTime now) {
+    return List.generate(7, (i) {
+      final day = now.subtract(Duration(days: 6 - i));
+      return payments
+          .where((p) =>
+              p.date.year == day.year &&
+              p.date.month == day.month &&
+              p.date.day == day.day)
+          .fold(0.0, (s, p) => s + p.amount);
+    });
+  }
+
+  /// Returns 7 daily expense totals for the current week
+  static List<double> _computeWeeklyExpenses(
+      List<Map<String, dynamic>> expenses, DateTime now) {
+    return List.generate(7, (i) {
+      final day = now.subtract(Duration(days: 6 - i));
+      double total = 0;
+      for (var e in expenses) {
+        final ts = e['date'];
+        DateTime? d;
+        try { d = (ts as dynamic).toDate() as DateTime; } catch (_) {}
+        if (d != null &&
+            d.year == day.year &&
+            d.month == day.month &&
+            d.day == day.day) {
+          total += (e['amount'] as num?)?.toDouble() ?? 0;
+        }
+      }
+      return total;
+    });
+  }
+
+  /// Arabic short day names
+  static const _arDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  static String _arabicDay(DateTime d) => _arDays[d.weekday % 7];
 
   static String _monthLabel(DateTime d) {
     const months = [
