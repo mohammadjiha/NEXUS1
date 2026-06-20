@@ -1,4 +1,4 @@
-﻿name: Build iOS IPA
+name: Build iOS IPA
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -18,12 +18,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          
+
+      - name: Disable Swift Package Manager (must run before pub get)
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Install Dependencies
         run: flutter pub get
-
-      - name: Disable Swift Package Manager (experimental, causes build failures)
-        run: flutter config --no-enable-swift-package-manager
 
       - name: Build iOS App (Unsigned)
         run: |
@@ -38,10 +38,9 @@ jobs:
           mkdir Payload
           mv Runner.app Payload/
           zip -qq -r NEXUS.ipa Payload
-          
+
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NEXUS-IPA
           path: build/ios/iphoneos/NEXUS.ipa
-
