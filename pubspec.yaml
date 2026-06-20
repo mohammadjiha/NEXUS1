@@ -33,7 +33,6 @@ dependencies:
   google_generative_ai: ^0.4.7
   image_picker: ^1.2.2
   file_picker: ^11.0.2
-  alarm: ^5.4.1
   flutter_local_notifications: ^21.0.0
   timezone: ^0.11.0
   share_plus: ^12.0.2
