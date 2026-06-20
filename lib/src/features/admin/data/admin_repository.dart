@@ -205,7 +205,9 @@ class AdminRepository {
         .where('gymId', isEqualTo: gymId)
         .where('role', isEqualTo: 'player')
         .snapshots()
-        .map((snap) => snap.docs.map((doc) {
+        .map((snap) => snap.docs
+            .where((doc) => doc.data()['deleted'] != true) // filter soft-deleted
+            .map((doc) {
               final data = doc.data();
               data['uid'] = doc.id;
               return UserModel.fromMap(data);
@@ -604,6 +606,53 @@ class AdminRepository {
         .collection('expenses')
         .doc(expenseId)
         .delete();
+  }
+
+  // ── Delete Player ──────────────────────────────────────────────────────────
+
+  /// Permanently deletes a player from Firestore and removes them from the
+  /// gym's memberEmails allowlist.
+  /// Also sets deleted:true as a soft-delete marker so any cached/stream
+  /// queries that filter by that field also stop showing the player.
+  Future<void> deletePlayer({
+    required String gymId,
+    required String playerUid,
+    required String playerEmail,
+  }) async {
+    final batch = _firestore.batch();
+    final userRef = _firestore.collection('users').doc(playerUid);
+
+    // 1. Mark as deleted first (handles soft-delete case and stream filters)
+    batch.update(userRef, {
+      'deleted': true,
+      'deletedAt': FieldValue.serverTimestamp(),
+    });
+
+    // 2. Remove from gym memberEmails allowlist
+    final normalizedEmail = playerEmail.trim().toLowerCase();
+    if (normalizedEmail.isNotEmpty) {
+      batch.delete(
+        _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('memberEmails')
+            .doc(normalizedEmail),
+      );
+    }
+
+    // 3. Remove from gym members sub-collection (if present)
+    batch.delete(
+      _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('members')
+          .doc(playerUid),
+    );
+
+    await batch.commit();
+
+    // 4. Hard delete the user document after marking
+    await userRef.delete();
   }
 
   // ── Subscription Plans ─────────────────────────────────────────────────────

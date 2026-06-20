@@ -1552,11 +1552,91 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
                     ),
                   ),
                 ),
+                SizedBox(height: 2.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 6.h,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF3B30).withOpacity(0.12),
+                      side: BorderSide(
+                          color: const Color(0xFFFF3B30).withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(3.w)),
+                    ),
+                    onPressed: _deletePlayer,
+                    icon: const Icon(Icons.delete_forever_rounded,
+                        color: Color(0xFFFF3B30)),
+                    label: Text('حذف المستخدم',
+                        style: TextStyle(
+                            color: const Color(0xFFFF3B30),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ),
               ],
             ),
         ],
       ),
     );
+  }
+
+  Future<void> _deletePlayer() async {
+    final p = widget.player;
+    final name = '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        title: Text('حذف المستخدم',
+            style: TextStyle(
+                color: const Color(0xFFFF3B30),
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700)),
+        content: Text(
+          'هل أنت متأكد من حذف "${name.isEmpty ? p.email : name}" نهائياً؟\n\nسيتم حذف بيانات اللاعب من النظام ولا يمكن التراجع عن هذا الإجراء.',
+          style: TextStyle(color: Colors.white70, fontSize: 11.sp),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حذف نهائياً',
+                  style: TextStyle(
+                      color: Color(0xFFFF3B30),
+                      fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    setState(() => _loading = true);
+    try {
+      await widget.adminRepo.deletePlayer(
+        gymId: widget.gymId,
+        playerUid: p.uid,
+        playerEmail: p.email,
+      );
+      widget.onRefresh();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم حذف ${name.isEmpty ? p.email : name} بنجاح'),
+            backgroundColor: const Color(0xFFFF3B30),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('خطأ: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Widget _buildInfoGrid(UserModel p, bool isExpired) {
