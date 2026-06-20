@@ -22,6 +22,9 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Disable Swift Package Manager (experimental, causes build failures)
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Build iOS App (Unsigned)
         run: |
           mkdir -p build/ios/SourcePackages
