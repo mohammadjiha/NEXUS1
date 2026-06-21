@@ -19,25 +19,21 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Disable Swift Package Manager (must run before pub get)
+      - name: Disable Swift Package Manager
         run: flutter config --no-enable-swift-package-manager
 
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Build iOS App (Unsigned)
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build ios --release --no-codesign || true
-          cd ios
-          xcodebuild build -workspace Runner.xcworkspace -scheme Runner -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" 2>&1 | tail -100
+        run: flutter build ios --release --no-codesign
 
       - name: Package into IPA
         run: |
           cd build/ios/iphoneos
           mkdir Payload
-          mv Runner.app Payload/
-          zip -qq -r NEXUS.ipa Payload
+          cp -r Runner.app Payload/
+          zip -qr NEXUS.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
