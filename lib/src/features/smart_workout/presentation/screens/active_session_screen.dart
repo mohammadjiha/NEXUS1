@@ -994,7 +994,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                 decoration: BoxDecoration(
                                   color: isDone
                                       ? const Color(0xFFE8FFF0)
-                                      : const Color(0xFFF5F5F7),
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(2.w),
                                   border: Border.all(
                                     color: isDone
@@ -1013,7 +1013,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                     fontWeight: FontWeight.w700,
                                     color: isDone
                                         ? const Color(0xFF1A7A30)
-                                        : const Color(0xFF1C1C1E),
+                                        : Colors.black,
                                   ),
                                   decoration: const InputDecoration(
                                     border: InputBorder.none,
@@ -1031,7 +1031,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                 decoration: BoxDecoration(
                                   color: isDone
                                       ? const Color(0xFFE8FFF0)
-                                      : const Color(0xFFF5F5F7),
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(2.w),
                                   border: Border.all(
                                     color: isDone
@@ -1050,7 +1050,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                     fontWeight: FontWeight.w700,
                                     color: isDone
                                         ? const Color(0xFF1A7A30)
-                                        : const Color(0xFF1C1C1E),
+                                        : Colors.black,
                                   ),
                                   decoration: const InputDecoration(
                                     border: InputBorder.none,
@@ -1068,7 +1068,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                 decoration: BoxDecoration(
                                   color: isDone
                                       ? const Color(0xFFE8FFF0)
-                                      : const Color(0xFFF5F5F7),
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(2.w),
                                   border: Border.all(
                                     color: isDone
@@ -1087,7 +1087,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                                     fontWeight: FontWeight.w700,
                                     color: isDone
                                         ? const Color(0xFF1A7A30)
-                                        : const Color(0xFF1C1C1E),
+                                        : Colors.black,
                                   ),
                                   decoration: const InputDecoration(
                                     border: InputBorder.none,

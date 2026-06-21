@@ -1,18 +1,18 @@
 /**
- * functions/src/index.ts - Nexus Firebase Cloud Functions
+ * NEXUS Firebase Cloud Functions
  *
- * Deploy: cd functions && npm run build && firebase deploy --only functions
+ * Deploy: firebase deploy --only functions
  *
  * Exports:
- *   onNotificationCreated    - Firestore trigger, sends FCM push
- *   resetPasswordViaPhone    - Callable, resets password after OTP verification
- *   sendSubscriptionReminders - Scheduled daily at 08:00 Asia/Amman
- *                               Sends expiry warnings at 3d / 2d / 1d / 0d
- *                               and a payment-due reminder when balance > 0
+ *   onUserDeleted             - Deletes Auth account when user doc is soft-deleted
+ *   onNotificationCreated     - Firestore trigger → sends FCM push
+ *   resetPasswordViaPhone     - Callable: reset password after OTP verification
+ *   sendSubscriptionReminders - Scheduled daily 08:00 Asia/Amman: expiry + payment reminders
+ *   broadcastToAllUsers       - Callable: super-admin sends notification to all users
  */
 
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
+const functions = require('firebase-functions');
+const admin     = require('firebase-admin');
 
 admin.initializeApp();
 
@@ -20,20 +20,43 @@ const db        = admin.firestore();
 const messaging = admin.messaging();
 
 // ---------------------------------------------------------------------------
-// onNotificationCreated
+// onUserDeleted — delete Auth account when isDeleted flips to true
 // ---------------------------------------------------------------------------
 
-export const onNotificationCreated = functions
+exports.onUserDeleted = functions
+  .region('us-central1')
+  .firestore.document('users/{uid}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after  = change.after.data();
+    const uid    = context.params.uid;
+
+    if (after.deleted === true && before.deleted !== true) {
+      try {
+        await admin.auth().deleteUser(uid);
+        functions.logger.info(`✅ Auth account deleted for uid: ${uid}`);
+      } catch (err) {
+        functions.logger.warn(`⚠️ Could not delete Auth user ${uid}: ${err.message}`);
+      }
+    }
+    return null;
+  });
+
+// ---------------------------------------------------------------------------
+// onNotificationCreated — send FCM push when notification doc is created
+// ---------------------------------------------------------------------------
+
+exports.onNotificationCreated = functions
   .region('us-central1')
   .firestore.document('users/{uid}/notifications/{notificationId}')
   .onCreate(async (snap, context) => {
     const data = snap.data();
-    const uid  = context.params.uid as string;
+    const uid  = context.params.uid;
 
-    let fcmToken: string | undefined;
+    let fcmToken;
     try {
       const userSnap = await db.collection('users').doc(uid).get();
-      fcmToken = userSnap.data()?.fcmToken as string | undefined;
+      fcmToken = userSnap.data() && userSnap.data().fcmToken;
     } catch (err) {
       functions.logger.error('Failed to fetch user ' + uid, err);
       return;
@@ -44,10 +67,10 @@ export const onNotificationCreated = functions
       return;
     }
 
-    const title: string = data.title ?? 'Nexus';
-    const body: string  = data.body  ?? '';
-    const type: string  = data.type  ?? 'general';
-    const route: string = data.route ?? '/dashboard';
+    const title = data.title || 'Nexus';
+    const body  = data.body  || '';
+    const type  = data.type  || 'general';
+    const route = data.route || '/dashboard';
 
     try {
       await messaging.send({
@@ -74,30 +97,22 @@ export const onNotificationCreated = functions
   });
 
 // ---------------------------------------------------------------------------
-// resetPasswordViaPhone
-//
-// Security:
-//   - context.auth enforced (unauthenticated callers rejected)
-//   - context.auth.token.phone_number set by Firebase after OTP (not forgeable)
-//   - accountRecovery queried server-side via Admin SDK
-//   - admin.auth().updateUser() updates the email/password account UID
+// resetPasswordViaPhone — callable: reset password after OTP verification
 // ---------------------------------------------------------------------------
 
-export const resetPasswordViaPhone = functions
+exports.resetPasswordViaPhone = functions
   .region('us-central1')
   .https.onCall(async (data, context) => {
-
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Phone OTP required.');
     }
 
-    const verifiedPhone = context.auth.token.phone_number as string | undefined;
+    const verifiedPhone = context.auth.token.phone_number;
     if (!verifiedPhone) {
       throw new functions.https.HttpsError('failed-precondition', 'No verified phone number.');
     }
 
-    const payload     = data as Record<string, unknown>;
-    const newPassword = ((payload.newPassword as string) ?? '').trim();
+    const newPassword = ((data.newPassword) || '').trim();
     if (newPassword.length < 6) {
       throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 6 characters.');
     }
@@ -109,8 +124,8 @@ export const resetPasswordViaPhone = functions
       throw new functions.https.HttpsError('not-found', 'No account linked to this phone number.');
     }
 
-    const recoveryData = recoverySnap.data() as Record<string, unknown>;
-    const uid          = recoveryData.uid as string | undefined;
+    const recoveryData = recoverySnap.data();
+    const uid          = recoveryData.uid;
     if (!uid) {
       throw new functions.https.HttpsError('internal', 'Incomplete account data.');
     }
@@ -118,43 +133,33 @@ export const resetPasswordViaPhone = functions
     await admin.auth().updateUser(uid, { password: newPassword });
     functions.logger.info('Password reset: uid=' + uid + ' phone=' + verifiedPhone);
 
-    const email = (recoveryData.email as string | undefined) ?? '';
+    const email = recoveryData.email || '';
     return { success: true, email };
   });
 
 // ---------------------------------------------------------------------------
-// sendSubscriptionReminders — runs every day at 08:00 Jordan time
-// ---------------------------------------------------------------------------
+// sendSubscriptionReminders — scheduled daily at 08:00 Asia/Amman
 //
 // For each player whose subscriptionEnd falls exactly 3, 2, 1, or 0 days
-// from today, we write a notification doc to users/{uid}/notifications/.
-// The doc ID is deterministic (e.g. "expiry_3d_2025-12-01") so:
-//   • First run  → doc doesn't exist → onCreate fires → FCM push sent
-//   • Later runs → doc already exists → onUpdate fires → no duplicate push
-//
-// A separate payment-reminder doc is written when amountRemaining > 0.
+// from today, writes a notification doc to users/{uid}/notifications/.
+// Doc ID is deterministic → onCreate fires only the first time (no duplicates).
+// Also sends a payment reminder when amountRemaining > 0.
 // ---------------------------------------------------------------------------
 
-export const sendSubscriptionReminders = functions
+exports.sendSubscriptionReminders = functions
   .region('us-central1')
   .pubsub.schedule('0 8 * * *')
   .timeZone('Asia/Amman')
   .onRun(async (_context) => {
     const now   = new Date();
-    const today = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-    );
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    // Fetch all player docs (filter in-memory to avoid compound index issues)
-    const snap = await db.collection('users')
-      .where('role', '==', 'player')
-      .get();
+    const snap = await db.collection('users').where('role', '==', 'player').get();
 
     const REMINDER_DAYS = [3, 2, 1, 0];
     const MS_PER_DAY    = 24 * 60 * 60 * 1000;
+    const BATCH_LIMIT   = 400;
 
-    // Firestore batch — max 500 ops; we flush every 400 to stay safe
-    const BATCH_LIMIT = 400;
     let batch   = db.batch();
     let opCount = 0;
 
@@ -166,53 +171,45 @@ export const sendSubscriptionReminders = functions
       }
     };
 
-    const enqueue = async (
-      ref: admin.firestore.DocumentReference,
-      data: Record<string, unknown>
-    ) => {
-      batch.set(ref, data);           // create → onCreate → FCM; update → no FCM
+    const enqueue = async (ref, data) => {
+      batch.set(ref, data);
       opCount++;
       if (opCount >= BATCH_LIMIT) await flush();
     };
 
     for (const doc of snap.docs) {
-      const data = doc.data() as Record<string, unknown>;
+      const data = doc.data();
+      if (data.isDeleted === true) continue;
 
-      // Skip deleted players
-      if (data['isDeleted'] === true) continue;
+      const subEndTs = data.subscriptionEnd;
+      if (!subEndTs || typeof subEndTs.toDate !== 'function') continue;
 
-      const subEndTs = data['subscriptionEnd'];
-      if (!subEndTs || typeof (subEndTs as admin.firestore.Timestamp).toDate !== 'function') continue;
-
-      const subEnd    = (subEndTs as admin.firestore.Timestamp).toDate();
-      const subEndDay = new Date(
-        Date.UTC(subEnd.getUTCFullYear(), subEnd.getUTCMonth(), subEnd.getUTCDate())
-      );
+      const subEnd    = subEndTs.toDate();
+      const subEndDay = new Date(Date.UTC(subEnd.getUTCFullYear(), subEnd.getUTCMonth(), subEnd.getUTCDate()));
       const daysLeft  = Math.round((subEndDay.getTime() - today.getTime()) / MS_PER_DAY);
 
       if (!REMINDER_DAYS.includes(daysLeft)) continue;
 
       const uid        = doc.id;
-      const endDateStr = subEnd.toISOString().split('T')[0];   // "2025-12-01"
+      const endDateStr = subEnd.toISOString().split('T')[0];
       const notifCol   = db.collection('users').doc(uid).collection('notifications');
 
-      // ── Expiry reminder ────────────────────────────────────────────────────
-      const firstName   = (data['firstName'] as string | undefined) ?? '';
-      const lastName    = (data['lastName']  as string | undefined) ?? '';
-      const name        = [firstName, lastName].filter(Boolean).join(' ') || 'عزيزي اللاعب';
-
-      const { title: exTitle, body: exBody } = buildExpiryMessage(daysLeft, name);
+      // Expiry reminder
+      const firstName = data.firstName || '';
+      const lastName  = data.lastName  || '';
+      const name      = [firstName, lastName].filter(Boolean).join(' ') || 'عزيزي اللاعب';
+      const { title, body } = buildExpiryMessage(daysLeft, name);
 
       await enqueue(notifCol.doc(`expiry_${daysLeft}d_${endDateStr}`), {
-        title:     exTitle,
-        body:      exBody,
+        title,
+        body,
         type:      'subscription_reminder',
         route:     '/dashboard',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // ── Payment reminder (only when balance is outstanding) ────────────────
-      const amountRemaining = Number(data['amountRemaining'] ?? 0);
+      // Payment reminder
+      const amountRemaining = Number(data.amountRemaining || 0);
       if (amountRemaining > 0) {
         await enqueue(notifCol.doc(`payment_reminder_${daysLeft}d_${endDateStr}`), {
           title:     '💰 تذكير بالمدفوعات',
@@ -230,74 +227,58 @@ export const sendSubscriptionReminders = functions
     );
   });
 
-// ── Expiry message builder ─────────────────────────────────────────────────────
-
-function buildExpiryMessage(
-  daysLeft: number,
-  name: string
-): { title: string; body: string } {
+function buildExpiryMessage(daysLeft, name) {
   switch (daysLeft) {
-    case 3:
-      return {
-        title: '⚠️ اشتراكك ينتهي بعد 3 أيام',
-        body:  `${name}، اشتراكك ينتهي بعد 3 أيام. تواصل مع المدرب لتجديده قبل فوات الأوان.`,
-      };
-    case 2:
-      return {
-        title: '⚠️ اشتراكك ينتهي بعد يومين',
-        body:  `${name}، تبقّى يومان فقط على انتهاء اشتراكك. جدّد الآن!`,
-      };
-    case 1:
-      return {
-        title: '🔔 اشتراكك ينتهي غداً!',
-        body:  `${name}، اشتراكك ينتهي غداً. تواصل مع المدرب فوراً لتجديده.`,
-      };
-    case 0:
-      return {
-        title: '❌ انتهى اشتراكك اليوم',
-        body:  `${name}، انتهى اشتراكك اليوم. تواصل مع المدرب لتجديده والاستمرار في تدريبك.`,
-      };
-    default:
-      return { title: 'تذكير الاشتراك', body: '' };
+    case 3: return {
+      title: '⚠️ اشتراكك ينتهي بعد 3 أيام',
+      body:  `${name}، اشتراكك ينتهي بعد 3 أيام. تواصل مع المدرب لتجديده قبل فوات الأوان.`,
+    };
+    case 2: return {
+      title: '⚠️ اشتراكك ينتهي بعد يومين',
+      body:  `${name}، تبقّى يومان فقط على انتهاء اشتراكك. جدّد الآن!`,
+    };
+    case 1: return {
+      title: '🔔 اشتراكك ينتهي غداً!',
+      body:  `${name}، اشتراكك ينتهي غداً. تواصل مع المدرب فوراً لتجديده.`,
+    };
+    case 0: return {
+      title: '❌ انتهى اشتراكك اليوم',
+      body:  `${name}، انتهى اشتراكك اليوم. تواصل مع المدرب لتجديده والاستمرار في تدريبك.`,
+    };
+    default: return { title: 'تذكير الاشتراك', body: '' };
   }
 }
 
 // ---------------------------------------------------------------------------
-// broadcastToAllUsers — Callable, super-admin only
-// ---------------------------------------------------------------------------
+// broadcastToAllUsers — callable, super-admin only
 //
 // Fan-out a notification to every non-deleted user in the app.
-// Also writes a record to `sa_broadcasts` for history.
-//
-// Input: { title: string, body: string, type?: string, route?: string }
+// Stores a record in `sa_broadcasts` for history.
 // ---------------------------------------------------------------------------
 
-export const broadcastToAllUsers = functions
+exports.broadcastToAllUsers = functions
   .region('us-central1')
   .https.onCall(async (data, context) => {
-
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Must be signed in.');
     }
 
-    // Verify super-admin role server-side
     const callerSnap = await db.collection('users').doc(context.auth.uid).get();
-    const callerRole = (callerSnap.data()?.role as string | undefined) ?? '';
-    if (callerRole !== 'super_admin' && callerRole !== 'superAdmin' && callerRole !== 'dev') {
+    const callerRole = (callerSnap.data() && callerSnap.data().role) || '';
+    const allowed = ['super_admin','superAdmin','SuperAdmin','dev'];
+    if (!allowed.includes(callerRole)) {
       throw new functions.https.HttpsError('permission-denied', 'Super admin only.');
     }
 
-    const payload   = data as Record<string, unknown>;
-    const title     = ((payload.title  as string) ?? '').trim();
-    const body      = ((payload.body   as string) ?? '').trim();
-    const type      = ((payload.type   as string) ?? 'broadcast').trim();
-    const route     = ((payload.route  as string) ?? '/dashboard').trim();
+    const title = ((data.title) || '').trim();
+    const body  = ((data.body)  || '').trim();
+    const type  = ((data.type)  || 'broadcast').trim();
+    const route = ((data.route) || '/dashboard').trim();
 
     if (!title || !body) {
       throw new functions.https.HttpsError('invalid-argument', 'title and body required.');
     }
 
-    // Query all non-deleted users
     const usersSnap = await db.collection('users')
       .where('isDeleted', '!=', true)
       .get();
@@ -316,8 +297,7 @@ export const broadcastToAllUsers = functions
     };
 
     for (const doc of usersSnap.docs) {
-      const uid      = doc.id;
-      const notifRef = db.collection('users').doc(uid)
+      const notifRef = db.collection('users').doc(doc.id)
         .collection('notifications').doc();
 
       batch.set(notifRef, {
@@ -338,7 +318,6 @@ export const broadcastToAllUsers = functions
 
     await flushBroadcast();
 
-    // Store broadcast record for history
     await db.collection('sa_broadcasts').add({
       title,
       body,
@@ -360,10 +339,9 @@ export const broadcastToAllUsers = functions
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isInvalidTokenError(err: unknown): boolean {
-  if (err && typeof err === 'object' && 'errorInfo' in err) {
-    const info = (err as { errorInfo?: { code?: string } }).errorInfo;
-    const code = info?.code ?? '';
+function isInvalidTokenError(err) {
+  if (err && typeof err === 'object' && err.errorInfo) {
+    const code = err.errorInfo.code || '';
     return code === 'messaging/invalid-registration-token'
         || code === 'messaging/registration-token-not-registered';
   }

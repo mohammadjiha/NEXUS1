@@ -41,24 +41,30 @@ final playerBodyMetricsProvider = StreamProvider.family<BodyMetrics, String>((re
   });
 });
 
-// Helper: Player Base + Modified Routines
-final playerRoutinesProvider = FutureProvider.family<List<RoutineModel>, String>((ref, playerId) async {
+// Helper: Player Base + Modified Routines — real-time stream
+final playerRoutinesProvider = StreamProvider.family<List<RoutineModel>, String>((ref, playerId) async* {
+  // Load base routines from JSON once (static asset)
+  List<RoutineModel> baseRoutines = [];
   try {
     final jsonString = await rootBundle.loadString('assets/data/ms_routines.json');
     final dynamic decoded = jsonDecode(jsonString);
     final List<dynamic> jsonData = decoded is Map ? decoded['routines'] : decoded;
-    final baseRoutines = jsonData.map((e) => RoutineModel.fromJson(e as Map<String, dynamic>)).toList();
+    baseRoutines = jsonData.map((e) => RoutineModel.fromJson(e as Map<String, dynamic>)).toList();
+  } catch (_) {
+    baseRoutines = [];
+  }
 
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(playerId)
-        .collection('appData')
-        .doc('modified_routines')
-        .get();
-        
+  // Stream the player's modified routines from Firestore in real-time
+  yield* FirebaseFirestore.instance
+      .collection('users')
+      .doc(playerId)
+      .collection('appData')
+      .doc('modified_routines')
+      .snapshots()
+      .map((doc) {
     final decodedMods = doc.data()?['routines'];
     if (decodedMods is Map<String, dynamic>) {
-      final newRoutines = [...baseRoutines];
+      final newRoutines = List<RoutineModel>.from(baseRoutines);
       for (var i = 0; i < newRoutines.length; i++) {
         final id = newRoutines[i].id;
         if (decodedMods.containsKey(id)) {
@@ -68,9 +74,7 @@ final playerRoutinesProvider = FutureProvider.family<List<RoutineModel>, String>
       return newRoutines;
     }
     return baseRoutines;
-  } catch (e) {
-    return [];
-  }
+  });
 });
 
 // Helper: Player Split Setup
@@ -93,17 +97,21 @@ final playerSplitSetupProvider = StreamProvider.family<SplitSetupData, String>((
   });
 });
 
-// Helper: Player Generated Plan
-final playerGeneratedPlanProvider = FutureProvider.family<List<WorkoutDay>, String>((ref, playerId) async {
-  final routines = await ref.watch(playerRoutinesProvider(playerId).future);
-  final splitSetupData = await ref.watch(playerSplitSetupProvider(playerId).future);
-  
+// Helper: Player Generated Plan — rebuilds whenever routines or split setup change
+final playerGeneratedPlanProvider = StreamProvider.family<List<WorkoutDay>, String>((ref, playerId) {
+  // Watch both streams — any change triggers a new plan
+  final routinesAsync = ref.watch(playerRoutinesProvider(playerId));
+  final splitAsync = ref.watch(playerSplitSetupProvider(playerId));
+
+  final routines = routinesAsync.value ?? [];
+  final splitSetupData = splitAsync.value ?? SplitSetupData(planStartDate: DateTime.now());
+
   final catalog = <String, List<RoutineModel>>{};
   for (var routine in routines) {
     catalog.putIfAbsent(routine.category, () => []).add(routine);
   }
 
-  return PlanGenerator.generatePlan(
+  final plan = PlanGenerator.generatePlan(
     daysPerWeek: splitSetupData.daysPerWeek,
     splitType: splitSetupData.splitType,
     trainingDays: splitSetupData.trainingDays,
@@ -111,21 +119,28 @@ final playerGeneratedPlanProvider = FutureProvider.family<List<WorkoutDay>, Stri
     startDate: splitSetupData.planStartDate ?? DateTime.now(),
     swaps: splitSetupData.swappedDates,
   );
+
+  return Stream.value(plan);
 });
 
-// 3. Routine Provider for a specific player (to fetch today's routine or active plan)
-final playerRoutineProvider = FutureProvider.family<List<RoutineModel>, String>((ref, playerId) async {
-  final plan = await ref.watch(playerGeneratedPlanProvider(playerId).future);
-  if (plan.isEmpty) return [];
-  
+// 3. Routine Provider — today's routine, updates in real-time
+final playerRoutineProvider = StreamProvider.family<List<RoutineModel>, String>((ref, playerId) {
+  final planAsync = ref.watch(playerGeneratedPlanProvider(playerId));
+  final routinesAsync = ref.watch(playerRoutinesProvider(playerId));
+
+  final plan = planAsync.value ?? [];
+  final routines = routinesAsync.value ?? [];
+
+  if (plan.isEmpty) return Stream.value([]);
+
   final today = plan.first;
-  if (today.isRest || today.assignedRoutineId == null) return [];
-  
-  final routines = await ref.watch(playerRoutinesProvider(playerId).future);
+  if (today.isRest || today.assignedRoutineId == null) return Stream.value([]);
+
   try {
-    return [routines.firstWhere((r) => r.id == today.assignedRoutineId)];
+    final match = routines.firstWhere((r) => r.id == today.assignedRoutineId);
+    return Stream.value([match]);
   } catch (_) {
-    return [routines.first];
+    return Stream.value(routines.isNotEmpty ? [routines.first] : []);
   }
 });
 

@@ -196,7 +196,8 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
   .form-row,.fields-grid{grid-template-columns:1fr}
   .field-item.full{grid-column:1}
 }
-</style>
+.row-deleting{background:rgba(255,59,48,.18)!important;transition:background .3s;}
+.row-deleting td{color:var(--red)!important;}</style>
 </head>
 <body>
 
@@ -231,6 +232,7 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
     <button class="nav-item" id="nav-payments" onclick="showPage('payments')"><span class="nav-icon">💰</span>المدفوعات</button>
     <button class="nav-item" id="nav-messages" onclick="showPage('messages')"><span class="nav-icon">📨</span>الرسائل المرسلة</button>
     <div class="sidebar-section">إدارة</div>
+    <button class="nav-item" id="nav-broadcast" onclick="openBroadcastAll()" style="color:var(--orange)"><span class="nav-icon">📢</span>إشعار عام</button>
     <button class="nav-item" id="nav-create" onclick="openCreateModal()"><span class="nav-icon">➕</span>نادي جديد</button>
     <div class="sidebar-bottom">
       <div class="user-chip">
@@ -548,6 +550,57 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
         <div class="field-wrap"><div class="field-label">مدة التجميد (أيام)</div><input class="field-input" id="eu-freezedays" type="number" min="0" placeholder="0"/></div>
       </div>
       <div class="field-wrap"><div class="field-label">سبب التجميد</div><input class="field-input" id="eu-freezereason" placeholder="سفر / إصابة..."/></div>
+      <div class="modal-section">💪 البيانات الجسمية</div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">العمر</div><input class="field-input" id="eu-age" type="number" min="0"/></div>
+        <div class="field-wrap"><div class="field-label">الجنس</div>
+          <select class="field-select" id="eu-gender">
+            <option value="">—</option>
+            <option value="male">ذكر</option>
+            <option value="female">أنثى</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الطول (cm)</div><input class="field-input" id="eu-height" type="number" min="0"/></div>
+        <div class="field-wrap"><div class="field-label">الوزن (kg)</div><input class="field-input" id="eu-weight" type="number" min="0"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">نسبة الدهون %</div><input class="field-input" id="eu-bodyfat" type="number" min="0" step="0.1"/></div>
+        <div class="field-wrap"><div class="field-label">كتلة العضلات (kg)</div><input class="field-input" id="eu-musclemass" type="number" min="0" step="0.1"/></div>
+      </div>
+      <div class="modal-section">🎯 الأهداف والمستوى</div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">الهدف (goal)</div>
+          <select class="field-select" id="eu-goal">
+            <option value="">—</option>
+            <option value="lose_weight">خسارة وزن</option>
+            <option value="gain_muscle">بناء عضلات</option>
+            <option value="get_fit">لياقة عامة</option>
+            <option value="maintain">حافظ</option>
+          </select>
+        </div>
+        <div class="field-wrap"><div class="field-label">المستوى (fitnessLevel)</div>
+          <select class="field-select" id="eu-fitnesslevel">
+            <option value="">—</option>
+            <option value="beginner">مبتدئ</option>
+            <option value="intermediate">متوسط</option>
+            <option value="advanced">متقدم</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field-wrap"><div class="field-label">نمط التمرين (trainingMode)</div>
+          <select class="field-select" id="eu-trainingmode">
+            <option value="">—</option>
+            <option value="gym_only">صالة فقط</option>
+            <option value="home_only">بيت فقط</option>
+            <option value="both">كلاهما</option>
+          </select>
+        </div>
+        <div class="field-wrap"><div class="field-label">خصم ₪</div><input class="field-input" id="eu-discount" type="number" min="0"/></div>
+      </div>
+      <div class="field-wrap"><div class="field-label">ملاحظات</div><input class="field-input" id="eu-notes" placeholder="أي ملاحظات..."/></div>
       <div id="eu-error" class="err-box"></div>
     </div>
     <div class="modal-footer">
@@ -559,35 +612,167 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
 
 <!-- ══════════ ADD USER MODAL ══════════ -->
 <div class="modal-overlay" id="add-user-modal">
-  <div class="modal">
+  <div class="modal" style="max-width:700px">
     <div class="modal-header">
       <div class="modal-title">➕ إضافة مستخدم جديد</div>
       <button class="modal-close" onclick="closeModal('add-user-modal')">✕</button>
     </div>
     <div class="modal-body">
+
+      <!-- 1. البيانات الأساسية -->
+      <div class="modal-section">👤 البيانات الأساسية</div>
       <div class="form-row">
         <div class="field-wrap"><div class="field-label">الاسم الأول *</div><input class="field-input" id="au-firstname"/></div>
         <div class="field-wrap"><div class="field-label">اسم العائلة *</div><input class="field-input" id="au-lastname"/></div>
       </div>
-      <div class="field-wrap"><div class="field-label">الإيميل *</div><input class="field-input" id="au-email" type="email" dir="ltr"/></div>
-      <div class="field-wrap"><div class="field-label">الهاتف</div><input class="field-input" id="au-phone" dir="ltr"/></div>
+      <div class="field-wrap">
+        <div class="field-label">الإيميل *</div>
+        <input class="field-input" id="au-email" type="email" dir="ltr"/>
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">كلمة المرور (مولّدة تلقائياً)</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="field-input" id="au-password" dir="ltr" style="flex:1;font-family:monospace" readonly/>
+          <button class="refresh-btn" onclick="document.getElementById('au-password').value=genPassword()" title="توليد جديد">🔄</button>
+          <button class="refresh-btn" onclick="navigator.clipboard.writeText(document.getElementById('au-password').value);showToast('📋 تم نسخ كلمة المرور','success')" title="نسخ">📋</button>
+        </div>
+      </div>
       <div class="form-row">
-        <div class="field-wrap"><div class="field-label">الدور *</div>
-          <select class="field-select" id="au-role">
+        <div class="field-wrap">
+          <div class="field-label">رقم الهاتف</div>
+          <input class="field-input" id="au-phone" dir="ltr" placeholder="+972..."/>
+        </div>
+        <div class="field-wrap">
+          <div class="field-label">تاريخ الميلاد</div>
+          <input class="field-input" id="au-dob" type="date"/>
+        </div>
+      </div>
+
+      <!-- 2. النادي والدور -->
+      <div class="modal-section">🏋️ النادي والدور</div>
+      <div class="form-row">
+        <div class="field-wrap">
+          <div class="field-label">الدور *</div>
+          <select class="field-select" id="au-role" onchange="onAddUserRoleChange()">
             <option value="player">لاعب (player)</option>
             <option value="coach">كوتش (coach)</option>
             <option value="owner">أدمن (owner)</option>
           </select>
         </div>
-        <div class="field-wrap"><div class="field-label">ID النادي *</div><input class="field-input" id="au-gymid" dir="ltr"/></div>
+        <div class="field-wrap">
+          <div class="field-label">النادي *</div>
+          <select class="field-select" id="au-gymid" onchange="onAddUserGymChange()">
+            <option value="">— اختر نادي —</option>
+          </select>
+        </div>
       </div>
-      <div class="field-wrap"><div class="field-label">خطة الاشتراك</div><input class="field-input" id="au-subplan" placeholder="Pro / Standard / Basic"/></div>
-      <div class="info-box">🔑 سيتم توليد كلمة مرور تلقائياً وتُنسخ إلى الـ clipboard</div>
+      <div class="field-wrap" id="au-coach-wrap">
+        <div class="field-label">الكوتش المسؤول</div>
+        <select class="field-select" id="au-coach">
+          <option value="">— اختر كوتش —</option>
+        </select>
+      </div>
+
+      <!-- 3. البيانات الجسدية -->
+      <div class="modal-section" id="au-physical-section">⚖️ البيانات الجسدية</div>
+      <div id="au-physical-fields">
+        <div class="form-row">
+          <div class="field-wrap">
+            <div class="field-label">الجنس</div>
+            <select class="field-select" id="au-gender">
+              <option value="">—</option>
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+          <div class="field-wrap"><div class="field-label">الطول (cm)</div><input class="field-input" id="au-height" type="number" min="0"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field-wrap"><div class="field-label">الوزن (kg)</div><input class="field-input" id="au-weight" type="number" min="0"/></div>
+          <div class="field-wrap"><div class="field-label">نسبة الدهون %</div><input class="field-input" id="au-bodyfat" type="number" min="0" step="0.1"/></div>
+        </div>
+        <div class="field-wrap"><div class="field-label">كتلة العضلات (kg)</div><input class="field-input" id="au-musclemass" type="number" min="0" step="0.1"/></div>
+      </div>
+
+      <!-- 4. الأهداف والمستوى -->
+      <div class="modal-section" id="au-goals-section">🎯 الأهداف والمستوى</div>
+      <div id="au-goals-fields">
+        <div class="form-row">
+          <div class="field-wrap">
+            <div class="field-label">الهدف</div>
+            <select class="field-select" id="au-goal">
+              <option value="">—</option>
+              <option value="lose_weight">خسارة وزن</option>
+              <option value="gain_muscle">بناء عضلات</option>
+              <option value="get_fit">لياقة عامة</option>
+              <option value="maintain">حافظ</option>
+            </select>
+          </div>
+          <div class="field-wrap">
+            <div class="field-label">مستوى اللياقة</div>
+            <select class="field-select" id="au-fitnesslevel">
+              <option value="">—</option>
+              <option value="beginner">مبتدئ</option>
+              <option value="intermediate">متوسط</option>
+              <option value="advanced">متقدم</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <div class="field-label">نمط التمرين</div>
+          <select class="field-select" id="au-trainingmode">
+            <option value="">—</option>
+            <option value="gym_only">صالة فقط</option>
+            <option value="home_only">بيت فقط</option>
+            <option value="both">كلاهما</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 5. الاشتراك والدفع -->
+      <div class="modal-section" id="au-sub-section">💳 خطة الاشتراك والدفع</div>
+      <div id="au-sub-fields">
+        <div class="field-wrap">
+          <div class="field-label">خطة الاشتراك</div>
+          <select class="field-select" id="au-plan" onchange="onAddUserPlanChange()">
+            <option value="">— بدون خطة —</option>
+            <option value="__custom__">✏️ مخصصة...</option>
+          </select>
+        </div>
+        <div id="au-custom-plan-wrap" style="display:none">
+          <div class="form-row">
+            <div class="field-wrap"><div class="field-label">اسم الخطة المخصصة</div><input class="field-input" id="au-custom-planname" placeholder="مثال: 3 أشهر بريميوم"/></div>
+            <div class="field-wrap"><div class="field-label">سعر الخطة (₪)</div><input class="field-input" id="au-custom-planprice" type="number" min="0" oninput="auCalcRemaining()"/></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-wrap"><div class="field-label">تاريخ البداية</div><input class="field-input" id="au-startdate" type="date" onchange="onAddUserStartDateChange()"/></div>
+          <div class="field-wrap"><div class="field-label">تاريخ الانتهاء</div><input class="field-input" id="au-enddate" type="date"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field-wrap"><div class="field-label">المبلغ الكلي (₪)</div><input class="field-input" id="au-totalamt" type="number" min="0" oninput="auCalcRemaining()"/></div>
+          <div class="field-wrap"><div class="field-label">المدفوع (₪)</div><input class="field-input" id="au-paidamt" type="number" min="0" value="0" oninput="auCalcRemaining()"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field-wrap"><div class="field-label">خصم (₪)</div><input class="field-input" id="au-discount" type="number" min="0" value="0" oninput="auCalcRemaining()"/></div>
+          <div class="field-wrap"><div class="field-label">المتبقي (₪)</div><input class="field-input" id="au-remaining" readonly style="opacity:.7"/></div>
+        </div>
+        <div class="field-wrap">
+          <div class="field-label">طريقة الدفع</div>
+          <select class="field-select" id="au-paymethod">
+            <option value="cash">نقدي</option>
+            <option value="transfer">تحويل</option>
+            <option value="card">بطاقة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-wrap"><div class="field-label">ملاحظات</div><input class="field-input" id="au-notes" placeholder="أي ملاحظات..."/></div>
       <div id="au-error" class="err-box"></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('add-user-modal')">إلغاء</button>
-      <button class="btn-create" id="add-user-btn" onclick="addUser()">إنشاء</button>
+      <button class="btn-create" id="add-user-btn" onclick="addUser()">➕ إنشاء المستخدم</button>
     </div>
   </div>
 </div>
@@ -713,11 +898,40 @@ tbody td{padding:10px 14px;vertical-align:middle;text-align:right}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('hard-delete-modal')">إلغاء</button>
+      <button class="btn-cancel" onclick="closeModal('hard-delete-modal');document.querySelectorAll('.row-deleting').forEach(r=>r.classList.remove('row-deleting'))">إلغاء</button>
       <button id="hd-confirm-btn" disabled onclick="doHardDelete()"
         style="padding:9px 22px;background:rgba(255,59,48,.15);border:1px solid rgba(255,59,48,.3);border-radius:10px;color:var(--red);font-size:16px;font-weight:800;cursor:not-allowed;opacity:.5">
         حذف نهائي
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BROADCAST ALL USERS MODAL ══════════ -->
+<div class="modal-overlay" id="broadcast-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📢 إشعار عام لكل المستخدمين</div>
+      <button class="modal-close" onclick="closeModal('broadcast-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(255,149,0,.1);border:1px solid rgba(255,149,0,.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:14px;color:var(--orange)">
+        ⚠️ سيصل هذا الإشعار لجميع اللاعبين والمدربين والمشرفين في كل الأندية.
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">العنوان</div>
+        <input class="field-input" id="bc-title-input" placeholder="مثال: تحديث جديد في التطبيق 🎉" maxlength="80"/>
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">النص</div>
+        <textarea class="field-input" id="bc-body-input" rows="4" placeholder="اكتب محتوى الإشعار هنا..." style="resize:vertical"></textarea>
+      </div>
+      <div class="err-box" id="bc-error"></div>
+      <div id="bc-result" style="display:none;background:rgba(52,199,89,.12);border:1px solid rgba(52,199,89,.3);border-radius:10px;padding:12px;font-size:14px;color:var(--green);margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('broadcast-modal')">إلغاء</button>
+      <button id="bc-send-btn" onclick="doBroadcast()" style="padding:10px 20px;background:var(--orange);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700">إرسال للجميع 📢</button>
     </div>
   </div>
 </div>
@@ -769,7 +983,7 @@ import { getAuth, signInWithEmailAndPassword, signOut,
                               from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, collectionGroup, getDocs, getDoc,
          doc, setDoc, updateDoc, deleteDoc, addDoc, writeBatch,
-         query, orderBy, limit,
+         query, where, orderBy, limit,
          onSnapshot, serverTimestamp, Timestamp }
                               from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
@@ -781,11 +995,11 @@ const firebaseConfig = {
   messagingSenderId:"266704213953",
   appId:"1:266704213953:web:bbd15a6df2c8fff19c8140",
 };
-const app    = initializeApp(firebaseConfig,'main');
-const auth   = getAuth(app);
-const db     = getFirestore(app);
-const appSec = initializeApp(firebaseConfig,'secondary');
-const authSec= getAuth(appSec);
+const app      = initializeApp(firebaseConfig,'main');
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const appSec   = initializeApp(firebaseConfig,'secondary');
+const authSec  = getAuth(appSec);
 
 // ── State ──
 let currentUser     = null;
@@ -969,7 +1183,7 @@ function renderUsers() {
   document.getElementById('users-count').textContent=`${u.length} مستخدم`;
   if(!u.length){tbody.innerHTML=`<tr><td colspan="8" class="no-data">لا يوجد نتائج</td></tr>`;return;}
   tbody.innerHTML=u.map(x=>`
-    <tr>
+    <tr data-uid="${x.uid}">
       <td style="cursor:pointer" onclick="openUserDetail('${x.uid}')">
         <div class="td-name">${esc(fullName(x))}</div>
         <div class="td-sub">${esc(x.uid||'').slice(0,14)}…</div>
@@ -1012,7 +1226,7 @@ function renderPlayers() {
   tbody.innerHTML=pl.map(u=>{
     const rem=Number(u.amountRemaining)||0;
     const active=isSubActive(u);
-    return `<tr>
+    return `<tr data-uid="${u.uid}">
       <td style="cursor:pointer" onclick="openUserDetail('${u.uid}')">
         <div class="td-name">${esc(fullName(u))}</div>
         <div class="td-sub">${esc(u.phone||'—')}</div>
@@ -1275,6 +1489,18 @@ function openEditUser(uid) {
   document.getElementById('eu-frozen').checked    =!!user.isFrozen;
   document.getElementById('eu-freezedays').value  =user.freezeDays||'';
   document.getElementById('eu-freezereason').value=user.freezeReason||'';
+  // Physical & goals
+  document.getElementById('eu-age').value         =user.age||'';
+  document.getElementById('eu-gender').value      =user.gender||'';
+  document.getElementById('eu-height').value      =user.height||'';
+  document.getElementById('eu-weight').value      =user.weight||'';
+  document.getElementById('eu-bodyfat').value     =user.bodyFat||'';
+  document.getElementById('eu-musclemass').value  =user.muscleMass||'';
+  document.getElementById('eu-goal').value        =user.goal||'';
+  document.getElementById('eu-fitnesslevel').value=user.fitnessLevel||'';
+  document.getElementById('eu-trainingmode').value=user.trainingMode||'';
+  document.getElementById('eu-discount').value    =user.discountAmount||'';
+  document.getElementById('eu-notes').value       =user.notes||'';
   document.getElementById('eu-error').style.display='none';
   document.getElementById('edit-user-modal').classList.add('open');
   document.getElementById('edit-user-modal').dataset.uid=uid;
@@ -1301,8 +1527,22 @@ async function saveUser() {
     isFrozen:        document.getElementById('eu-frozen')?.checked||false,
     freezeDays:      Number(document.getElementById('eu-freezedays')?.value)||0,
     freezeReason:    document.getElementById('eu-freezereason')?.value.trim()||null,
+    // Physical & goals
+    age:             Number(document.getElementById('eu-age').value)||null,
+    gender:          document.getElementById('eu-gender').value||null,
+    height:          Number(document.getElementById('eu-height').value)||null,
+    weight:          Number(document.getElementById('eu-weight').value)||null,
+    bodyFat:         Number(document.getElementById('eu-bodyfat').value)||null,
+    muscleMass:      Number(document.getElementById('eu-musclemass').value)||null,
+    goal:            document.getElementById('eu-goal').value||null,
+    fitnessLevel:    document.getElementById('eu-fitnesslevel').value||null,
+    trainingMode:    document.getElementById('eu-trainingmode').value||null,
+    discountAmount:  Number(document.getElementById('eu-discount').value)||0,
+    notes:           document.getElementById('eu-notes').value.trim()||null,
     updatedAt:       serverTimestamp(),
   };
+  // Remove null values to avoid overwriting with null unintentionally
+  Object.keys(data).forEach(k=>{ if(data[k]===null) delete data[k]; });
   if(data.isFrozen) data.frozenAt=serverTimestamp();
   const s=document.getElementById('eu-substart').value;
   const e=document.getElementById('eu-subend').value;
@@ -1310,8 +1550,23 @@ async function saveUser() {
   if(e) data.subscriptionEnd  =Timestamp.fromDate(new Date(e));
   try{
     await updateDoc(doc(db,'users',uid),data);
+    // Sync name/phone to memberEmails allowlist
+    if(gymId){
+      const user=allUsers.find(u=>u.uid===uid);
+      const email=(user?.email||'').trim().toLowerCase();
+      if(email){
+        await updateDoc(doc(db,'gyms',gymId,'memberEmails',email),{
+          firstName:data.firstName,lastName:data.lastName,
+          phone:data.phone||null,updatedAt:serverTimestamp(),
+        }).catch(()=>{});
+        await updateDoc(doc(db,'gyms',gymId,'members',uid),{
+          displayName:`${data.firstName} ${data.lastName}`.trim(),
+          updatedAt:serverTimestamp(),
+        }).catch(()=>{});
+      }
+    }
     closeModal('edit-user-modal');
-    showToast('✅ تم تحديث المستخدم','success');
+    showToast('✅ تم تحديث المستخدم في Firebase','success');
     setTimeout(()=>openUserDetail(uid),400);
   }catch(err){
     document.getElementById('eu-error').textContent=err.message;
@@ -1320,64 +1575,450 @@ async function saveUser() {
 }
 
 // ── Add User ──
+// ── Add User helpers ──────────────────────────────────────────────────────────
+
+// Holds the gym's subscription plans loaded from Firestore
+let _auGymPlans = [];
+
+function _auShowHidePlayerFields(role) {
+  const isPlayer = role === 'player';
+  // Coach section only for player
+  document.getElementById('au-coach-wrap').style.display = isPlayer ? '' : 'none';
+  // Physical/goals/sub sections for player and coach
+  const showFull = (role === 'player' || role === 'coach');
+  ['au-physical-section','au-physical-fields',
+   'au-goals-section','au-goals-fields',
+   'au-sub-section','au-sub-fields'].forEach(id=>{
+    document.getElementById(id).style.display = showFull ? '' : 'none';
+  });
+}
+
+function onAddUserRoleChange() {
+  const role = document.getElementById('au-role').value;
+  _auShowHidePlayerFields(role);
+}
+
+async function onAddUserGymChange() {
+  const gymId = document.getElementById('au-gymid').value;
+  // Reset coach dropdown
+  const coachSel = document.getElementById('au-coach');
+  coachSel.innerHTML = '<option value="">— اختر كوتش —</option>';
+  // Reset plan dropdown
+  const planSel = document.getElementById('au-plan');
+  planSel.innerHTML = '<option value="">— بدون خطة —</option><option value="__custom__">✏️ مخصصة...</option>';
+  _auGymPlans = [];
+  document.getElementById('au-custom-plan-wrap').style.display = 'none';
+  if (!gymId) return;
+
+  // Query Firestore directly for coaches in this gym (avoids type mismatch on gymId)
+  try {
+    const coachSnap = await getDocs(query(
+      collection(db,'users'),
+      where('gymId','==',gymId),
+      where('role','==','coach')
+    ));
+    coachSnap.docs
+      .filter(d => !d.data().deleted)
+      .forEach(d => {
+        const c   = d.data();
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = `${c.firstName||''} ${c.lastName||''}`.trim() || c.email || d.id;
+        coachSel.appendChild(opt);
+      });
+  } catch(e) {
+    // Fallback to in-memory with String comparison
+    allUsers
+      .filter(u => String(u.gymId) === String(gymId) && u.role === 'coach')
+      .forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.uid;
+        opt.textContent = `${c.firstName||''} ${c.lastName||''}`.trim() || c.email || c.uid;
+        coachSel.appendChild(opt);
+      });
+  }
+
+  // Load plans from Firestore
+  try {
+    const plansSnap = await getDocs(collection(db, 'gyms', gymId, 'plans'));
+    _auGymPlans = plansSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    planSel.innerHTML = '<option value="">— بدون خطة —</option>';
+    _auGymPlans.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+
+      // Price — check multiple field names
+      const price = Number(p.price || p.amount || p.cost || 0);
+
+      // durationDays is the PRIMARY field used by Flutter admin
+      // Fall back to other naming conventions if needed
+      let durationDays = Number(p.durationDays || 0);
+      if (!durationDays) {
+        // Try month-based fields → convert to days
+        const months = Number(p.durationMonths || p.months || 0);
+        if (months) { durationDays = months * 30; }
+      }
+      if (!durationDays) {
+        // Try generic duration + unit
+        const dur  = Number(p.duration || 0);
+        const unit = (p.durationUnit || 'day').toLowerCase().replace(/s$/,'');
+        if (dur) {
+          const map = {day:1, week:7, month:30, year:365};
+          durationDays = dur * (map[unit] || 1);
+        }
+      }
+
+      const durText = durationDays ? ` — ${durationDays} يوم` : '';
+      opt.textContent = `${p.name||p.id}${durText}${price?' — ₪'+price:''}`;
+
+      opt.dataset.price    = price;
+      opt.dataset.duration = durationDays;  // always in DAYS (matches Flutter's durationDays)
+      opt.dataset.unit     = 'day';          // always days now
+      planSel.appendChild(opt);
+    });
+    planSel.innerHTML += '<option value="__custom__">✏️ مخصصة...</option>';
+  } catch(e) {
+    console.warn('loadPlans:', e.message);
+  }
+}
+
+// Shared: calculate end date from a start date string + dur + unit
+function _auCalcEndDate(startStr, dur, unit) {
+  if (!startStr || !dur) return '';
+  const d = new Date(startStr);
+  if (isNaN(d)) return '';
+  switch (unit) {
+    case 'month': d.setMonth(d.getMonth() + dur); break;
+    case 'year':  d.setFullYear(d.getFullYear() + dur); break;
+    case 'week':  d.setDate(d.getDate() + dur * 7); break;
+    default:      d.setDate(d.getDate() + dur); break; // days
+  }
+  return d.toISOString().split('T')[0];
+}
+
+function _auGetSelectedPlanDuration() {
+  const sel = document.getElementById('au-plan');
+  if (!sel.value || sel.value === '__custom__') return null;
+  const opt = sel.selectedOptions[0];
+  return { dur: Number(opt.dataset.duration)||0, unit: opt.dataset.unit||'month' };
+}
+
+function onAddUserPlanChange() {
+  const sel = document.getElementById('au-plan');
+  const val = sel.value;
+  document.getElementById('au-custom-plan-wrap').style.display = (val === '__custom__') ? '' : 'none';
+
+  if (val && val !== '__custom__') {
+    const opt   = sel.selectedOptions[0];
+    const price = Number(opt.dataset.price) || 0;
+    const dur   = Number(opt.dataset.duration) || 0;
+    const unit  = opt.dataset.unit || 'month';
+
+    if (price) {
+      document.getElementById('au-totalamt').value = price;
+      auCalcRemaining();
+    }
+
+    // Auto-fill end date from start date + plan duration
+    if (dur) {
+      const startVal = document.getElementById('au-startdate').value;
+      const endVal   = _auCalcEndDate(startVal, dur, unit);
+      if (endVal) document.getElementById('au-enddate').value = endVal;
+    }
+  }
+}
+
+// When start date changes, recalculate end date if a plan is already selected
+function onAddUserStartDateChange() {
+  const p = _auGetSelectedPlanDuration();
+  if (!p || !p.dur) return;
+  const startVal = document.getElementById('au-startdate').value;
+  const endVal   = _auCalcEndDate(startVal, p.dur, p.unit);
+  if (endVal) document.getElementById('au-enddate').value = endVal;
+}
+
+function auCalcRemaining() {
+  const total    = Number(document.getElementById('au-totalamt').value)    || 0;
+  const paid     = Number(document.getElementById('au-paidamt').value)     || 0;
+  const discount = Number(document.getElementById('au-discount').value)    || 0;
+  const custom   = Number(document.getElementById('au-custom-planprice').value) || 0;
+  const effectiveTotal = total || custom;
+  const remaining = Math.max(0, effectiveTotal - paid - discount);
+  document.getElementById('au-remaining').value = remaining || '';
+}
+
 function openAddUser(defaultRole='', defaultGymId='') {
-  document.getElementById('au-firstname').value='';
-  document.getElementById('au-lastname').value ='';
-  document.getElementById('au-email').value    ='';
-  document.getElementById('au-phone').value    ='';
-  document.getElementById('au-role').value     =defaultRole||'player';
-  document.getElementById('au-gymid').value    =defaultGymId||'';
-  document.getElementById('au-subplan').value  ='';
-  document.getElementById('au-error').style.display='none';
+  // Clear all fields
+  ['au-firstname','au-lastname','au-email','au-phone','au-notes',
+   'au-height','au-weight','au-bodyfat','au-musclemass',
+   'au-totalamt','au-paidamt','au-discount','au-remaining',
+   'au-custom-planname','au-custom-planprice','au-dob'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('au-gender').value      = '';
+  document.getElementById('au-goal').value        = '';
+  document.getElementById('au-fitnesslevel').value= '';
+  document.getElementById('au-trainingmode').value= '';
+  document.getElementById('au-paymethod').value   = 'cash';
+  document.getElementById('au-paidamt').value     = '0';
+  document.getElementById('au-discount').value    = '0';
+  document.getElementById('au-custom-plan-wrap').style.display = 'none';
+  document.getElementById('au-error').style.display = 'none';
+
+  // Auto-generate password
+  document.getElementById('au-password').value = genPassword();
+
+  // Set today as start date
+  document.getElementById('au-startdate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('au-enddate').value   = '';
+
+  // Populate gym dropdown from allGyms
+  const gymSel = document.getElementById('au-gymid');
+  const lockedGym = !!defaultGymId; // true = opened from inside a specific gym
+
+  if (lockedGym) {
+    // Show only the current gym — locked, not changeable
+    const g = allGyms.find(x => String(x.id) === String(defaultGymId));
+    gymSel.innerHTML = `<option value="${defaultGymId}" selected>${g ? g.name+' ('+defaultGymId+')' : defaultGymId}</option>`;
+    gymSel.disabled  = true;
+    gymSel.style.opacity = '0.7';
+  } else {
+    // Super admin adding from global context — show all gyms
+    gymSel.disabled  = false;
+    gymSel.style.opacity = '';
+    gymSel.innerHTML = '<option value="">— اختر نادي —</option>';
+    allGyms.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = `${g.name||g.id} (${g.id})`;
+      gymSel.appendChild(opt);
+    });
+  }
+
+  // Set role
+  document.getElementById('au-role').value = defaultRole || 'player';
+  _auShowHidePlayerFields(defaultRole || 'player');
+
+  // Reset coaches/plans dropdowns
+  document.getElementById('au-coach').innerHTML = '<option value="">— اختر كوتش —</option>';
+  document.getElementById('au-plan').innerHTML  = '<option value="">— بدون خطة —</option><option value="__custom__">✏️ مخصصة...</option>';
+  _auGymPlans = [];
+
+  // If gym pre-selected, load coaches+plans
+  if (defaultGymId) {
+    gymSel.value = String(defaultGymId);
+    onAddUserGymChange();
+  }
+
   document.getElementById('add-user-modal').classList.add('open');
 }
 
 async function addUser() {
-  const firstName=document.getElementById('au-firstname').value.trim();
-  const lastName =document.getElementById('au-lastname').value.trim();
-  const email    =document.getElementById('au-email').value.trim().toLowerCase();
-  const phone    =document.getElementById('au-phone').value.trim();
-  const role     =document.getElementById('au-role').value;
-  const gymId    =document.getElementById('au-gymid').value.trim();
-  const subPlan  =document.getElementById('au-subplan').value.trim();
-  if(!firstName||!lastName||!email||!gymId){
-    document.getElementById('au-error').textContent='أكمل الحقول المطلوبة (*)';
-    document.getElementById('au-error').style.display='block';return;
+  const firstName = document.getElementById('au-firstname').value.trim();
+  const lastName  = document.getElementById('au-lastname').value.trim();
+  const email     = document.getElementById('au-email').value.trim().toLowerCase();
+  const password  = document.getElementById('au-password').value.trim();
+  const phone     = document.getElementById('au-phone').value.trim();
+  const dob       = document.getElementById('au-dob').value;
+  const role      = document.getElementById('au-role').value;
+  const gymId     = document.getElementById('au-gymid').value;
+  const coachSel   = document.getElementById('au-coach');
+  const coachUid   = coachSel.value;
+  const coachName  = coachUid ? (coachSel.selectedOptions[0]?.textContent?.trim() || '') : '';
+  const gender     = document.getElementById('au-gender').value;
+  const height     = Number(document.getElementById('au-height').value)     || null;
+  const weight     = Number(document.getElementById('au-weight').value)     || null;
+  const bodyFat    = Number(document.getElementById('au-bodyfat').value)    || null;
+  const muscleMass = Number(document.getElementById('au-musclemass').value) || null;
+  const goal       = document.getElementById('au-goal').value;
+  const fitnessLvl = document.getElementById('au-fitnesslevel').value;
+  const trainMode  = document.getElementById('au-trainingmode').value;
+  const notes      = document.getElementById('au-notes').value.trim();
+
+  // Calculate age from date of birth
+  let age = null;
+  if (dob) {
+    const dobD = new Date(dob);
+    const now  = new Date();
+    age = now.getFullYear() - dobD.getFullYear();
+    const m = now.getMonth() - dobD.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < dobD.getDate())) age--;
   }
-  const btn=document.getElementById('add-user-btn');
-  btn.disabled=true;btn.innerHTML='جاري الإنشاء… <span class="spinner"></span>';
-  try{
-    const password=genPassword();
-    const cred=await createUserWithEmailAndPassword(authSec,email,password);
-    const uid=cred.user.uid;
-    try{
-      await updateProfile(cred.user,{displayName:`${firstName} ${lastName}`});
-    }finally{
-      await signOut(authSec).catch(()=>{});
+
+  // Subscription
+  const planSel       = document.getElementById('au-plan');
+  const planVal       = planSel.value;
+  const isCustomPlan  = planVal === '__custom__';
+  const planName      = isCustomPlan
+    ? document.getElementById('au-custom-planname').value.trim()
+    : (planSel.selectedOptions[0]?.textContent?.split(' — ')[0] || planVal);
+  const totalAmt  = Number(document.getElementById('au-totalamt').value)       || (isCustomPlan ? Number(document.getElementById('au-custom-planprice').value)||0 : 0);
+  const paidAmt   = Number(document.getElementById('au-paidamt').value)        || 0;
+  const discount  = Number(document.getElementById('au-discount').value)       || 0;
+  const remaining = Math.max(0, totalAmt - paidAmt - discount);
+  const payMethod = document.getElementById('au-paymethod').value;
+  const startDate = document.getElementById('au-startdate').value;
+  const endDate   = document.getElementById('au-enddate').value;
+
+  // Validation
+  if (!firstName || !lastName || !email || !gymId) {
+    const errEl = document.getElementById('au-error');
+    errEl.textContent = 'أكمل الحقول المطلوبة: الاسم، الإيميل، النادي (*)';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!password) {
+    const errEl = document.getElementById('au-error');
+    errEl.textContent = 'كلمة المرور مطلوبة — اضغط 🔄 لتوليد واحدة';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('add-user-btn');
+  btn.disabled = true;
+  btn.innerHTML = 'جاري الإنشاء… <span class="spinner"></span>';
+  document.getElementById('au-error').style.display = 'none';
+
+  try {
+    // 1. Create Firebase Auth user (secondary app)
+    const cred = await createUserWithEmailAndPassword(authSec, email, password);
+    const uid  = cred.user.uid;
+    try {
+      await updateProfile(cred.user, {displayName: `${firstName} ${lastName}`});
+    } finally {
+      await signOut(authSec).catch(() => {});
     }
-    await setDoc(doc(db,'users',uid),{
-      uid,email,firstName,lastName,phone:phone||null,
-      gymId,gymCode:gymId,role,
-      subscriptionPlan:subPlan||null,
-      isActive:true,emailVerified:true,
-      authProvider:'password',temporaryPasswordSet:true,
-      createdAt:serverTimestamp(),updatedAt:serverTimestamp(),
+
+    // 2. Build user document (field names must match UserModel.fromMap exactly)
+    const userDoc = {
+      uid, email, firstName, lastName,
+      phone:              phone      || null,
+      dateOfBirth:        dob        || null,
+      gymId,
+      gymCode:            gymId,
+      role,
+      assignedCoachUid:   coachUid   || null,   // ← correct field name for UserModel
+      assignedCoachName:  coachName  || null,
+      gender:             gender     || null,
+      height,
+      weight,
+      bodyFat,
+      muscleMass,
+      age,
+      goal:               goal       || null,
+      fitnessLevel:       fitnessLvl || null,
+      trainingMode:       trainMode  || null,
+      notes:              notes      || null,
+      subscriptionPlan:   planName   || null,   // NAME (matches Flutter: 'عرض 3 اشهر')
+      subscriptionPlanId: (planVal && planVal !== '__custom__') ? planVal : null, // Firestore doc ID
+      subscriptionName:   planName   || null,
+      subscriptionStatus: startDate  ? 'active' : null,
+      subscriptionStart:  startDate  || null,
+      subscriptionEnd:    endDate    || null,
+      totalAmount:        totalAmt   || null,
+      amountPaid:         paidAmt    || null,
+      amountRemaining:    remaining  || null,
+      discountAmount:     discount   || null,
+      paymentMethod:      payMethod  || null,
+      isActive:           true,
+      emailVerified:      true,
+      authProvider:       'password',
+      temporaryPasswordSet: true,
+      initialPassword:    password,   // ← stored so admin can see it in Excel export
+      createdAt:          serverTimestamp(),
+      updatedAt:          serverTimestamp(),
+    };
+
+    // 3. Build body_composition metrics doc (read by Flutter's bodyMetricsProvider)
+    const metricsDoc = {
+      userId:             uid,
+      weight:             weight     || 0,
+      previousWeight:     weight     || 0,
+      initialWeight:      weight     || 0,
+      height:             height     || 0,
+      previousHeight:     height     || 0,
+      bodyFat:            bodyFat    || 0,
+      previousBodyFat:    bodyFat    || 0,
+      muscleMass:         muscleMass || 0,
+      previousMuscleMass: muscleMass || 0,
+      waist:              0,
+      previousWaist:      0,
+      age:                age        || 0,
+      dateOfBirth:        dob        || '',
+      goal:               goal       || '',
+      gender:             gender     || '',
+      experienceLevel:    fitnessLvl || 'beginner', // ← field name used by BodyMetrics
+      bmr:                0,
+      visceralFat:        0,
+      fatFreeMass:        0,
+      water:              0,
+      metabolicAge:       0,
+      createdAt:          serverTimestamp(),
+      updatedAt:          serverTimestamp(),
+    };
+
+    // 4. Save everything in one batch
+    const batch = writeBatch(db);
+
+    batch.set(doc(db, 'users', uid), userDoc);
+
+    // metrics subcollection — this is where Flutter's bodyMetricsProvider reads from
+    batch.set(doc(db, 'users', uid, 'metrics', 'body_composition'), metricsDoc);
+
+    batch.set(doc(db, 'gyms', gymId, 'memberEmails', email), {
+      role,
+      status:           'active',
+      firstName,
+      lastName,
+      phone:            phone    || null,
+      assignedCoachUid: coachUid || null,
+      addedBy:          currentUser.uid,
+      addedAt:          serverTimestamp(),
     });
-    await setDoc(doc(db,'gyms',gymId,'memberEmails',email),{
-      role,status:'active',firstName,lastName,phone:phone||null,
-      addedBy:currentUser.uid,addedAt:serverTimestamp(),
+
+    batch.set(doc(db, 'gyms', gymId, 'members', uid), {
+      uid, email, gymId, role,
+      displayName:      `${firstName} ${lastName}`,
+      assignedCoachUid: coachUid  || null,
+      assignedCoachName:coachName || null,
+      status:           'active',
+      joinedAt:         serverTimestamp(),
+      updatedAt:        serverTimestamp(),
     });
-    await setDoc(doc(db,'gyms',gymId,'members',uid),{
-      uid,email,gymId,role,displayName:`${firstName} ${lastName}`,
-      status:'active',joinedAt:serverTimestamp(),updatedAt:serverTimestamp(),
-    });
-    navigator.clipboard.writeText(`إيميل: ${email}\nكلمة المرور: ${password}`).catch(()=>{});
+
+    await batch.commit();
+
+    // 4. Add payment record if amount paid > 0
+    if (paidAmt > 0) {
+      await addDoc(collection(db, 'users', uid, 'payments'), {
+        amount:        paidAmt,
+        planName:      planName || '—',
+        paymentMethod: payMethod,
+        type:          'subscription',
+        discount,
+        totalAmount:   totalAmt,
+        paymentDate:   serverTimestamp(),
+        createdAt:     serverTimestamp(),
+        registeredBy:  currentUser.uid,
+      });
+    }
+
+    // 5. Copy credentials to clipboard
+    navigator.clipboard.writeText(
+      `إيميل: ${email}\nكلمة المرور: ${password}`
+    ).catch(() => {});
+
     closeModal('add-user-modal');
-    showToast(`✅ تم الإنشاء — كلمة المرور نُسخت للـ clipboard`,'success');
-  }catch(err){
-    document.getElementById('au-error').textContent=err.message;
-    document.getElementById('au-error').style.display='block';
-  }finally{btn.disabled=false;btn.innerHTML='إنشاء';}
+    showToast(`✅ تم إنشاء ${firstName} ${lastName} — كلمة المرور نُسخت`, 'success');
+
+  } catch (err) {
+    document.getElementById('au-error').textContent = err.message;
+    document.getElementById('au-error').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '➕ إنشاء المستخدم';
+  }
 }
 
 // ── Add Payment ──
@@ -1435,6 +2076,53 @@ window.deletePaymentRecord = (uid, payId) => {
 
 // ── Confirm + Delete ──
 // confirmDelete defined below (soft-delete version)
+
+// ── Global Broadcast (all users via Cloud Function) ──
+window.openBroadcastAll = function openBroadcastAll() {
+  document.getElementById('bc-title-input').value = '';
+  document.getElementById('bc-body-input').value  = '';
+  document.getElementById('bc-error').style.display = 'none';
+  document.getElementById('bc-result').style.display = 'none';
+  document.getElementById('broadcast-modal').classList.add('open');
+}
+
+window.doBroadcast = async function doBroadcast() {
+  const title = document.getElementById('bc-title-input').value.trim();
+  const body  = document.getElementById('bc-body-input').value.trim();
+  const errEl = document.getElementById('bc-error');
+  const resEl = document.getElementById('bc-result');
+  if(!title||!body){errEl.textContent='العنوان والنص مطلوبان';errEl.style.display='block';return;}
+  errEl.style.display='none';
+  resEl.style.display='none';
+  const btn = document.getElementById('bc-send-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري الإرسال...';
+  try {
+    // Get Firebase ID token for auth
+    const idToken = await auth.currentUser.getIdToken();
+    const resp = await fetch(
+      'https://us-central1-nexus-90e55.cloudfunctions.net/broadcastToAllUsers',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+        body: JSON.stringify({ data: { title, body, type:'broadcast', route:'/dashboard' } }),
+      }
+    );
+    const json = await resp.json();
+    if(json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+    const sentCount = json.result?.sentCount ?? 0;
+    resEl.textContent = `✅ تم الإرسال إلى ${sentCount} مستخدم`;
+    resEl.style.display = 'block';
+    document.getElementById('bc-title-input').value = '';
+    document.getElementById('bc-body-input').value  = '';
+    showToast(`✅ تم إرسال الإشعار إلى ${sentCount} مستخدم`, 'success');
+    setTimeout(() => closeModal('broadcast-modal'), 1800);
+  } catch(e) {
+    errEl.textContent = 'خطأ: ' + (e.message||e);
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled=false; btn.innerHTML='إرسال للجميع 📢';
+  }
+}
 
 // ── Send Message / Broadcast ──
 let _sendMsgGymId = null; // null = broadcast
@@ -1661,6 +2349,8 @@ let _hardDeleteCallback = null;
 let _hardDeleteExpected  = '';
 
 function confirmDelete(type, id, name) {
+  // Highlight the row being deleted
+  document.querySelectorAll(`tr[data-uid="${id}"]`).forEach(r=>r.classList.add('row-deleting'));
   _hardDeleteExpected  = name;
   _hardDeleteCallback  = async () => {
     try {
@@ -1669,30 +2359,39 @@ function confirmDelete(type, id, name) {
         closeModal('gym-members-modal');
         showToast('🗑️ تم حذف النادي','success');
       } else if(type==='user'){
-        // Get user data before deleting to clean up related collections
+        // Get user data before deleting
         const userSnap = await getDoc(doc(db,'users',id));
         const userData = userSnap.data() || {};
         const gymId    = userData.gymId || '';
         const email    = (userData.email || '').trim().toLowerCase();
         const batch    = writeBatch(db);
-        // Remove from memberEmails allowlist
+        // 1. Soft-delete the user doc (keeps history for Excel export)
+        batch.update(doc(db,'users',id),{
+          deleted:true,
+          deletedAt:serverTimestamp(),
+          isActive:false,
+          // snapshot name/email for Excel so it still shows correctly
+          _deletedName: `${userData.firstName||''} ${userData.lastName||''}`.trim(),
+        });
+        // 2. Hard-delete from memberEmails (blocks login/signup)
         if(gymId && email){
           batch.delete(doc(db,'gyms',gymId,'memberEmails',email));
         }
-        // Remove from gym members sub-collection
+        // 3. Hard-delete from members subcollection (removes from admin/coach views)
         if(gymId){
           batch.delete(doc(db,'gyms',gymId,'members',id));
         }
-        // Hard-delete the user document
-        batch.delete(doc(db,'users',id));
         await batch.commit();
         closeModal('user-detail-modal');
-        showToast('🗑️ تم حذف المستخدم نهائياً','success');
+        showToast('🗑️ تم حذف المستخدم — سيختفي فوراً من كل الواجهات','success');
+        // Note: Firebase Auth account deletion requires Cloud Function (see functions/index.js)
       }
     } catch(e){showToast('❌ '+e.message,'error');}
   };
   document.getElementById('hd-message').textContent =
-    `هل تريد حذف ${type==='gym'?'النادي':'المستخدم'}: "${name}"؟\nسيُخفى من النظام ويُوسَم بـ deleted:true.`;
+    type==='gym'
+      ? `هل تريد حذف النادي: "${name}"؟\nسيُوسَم بـ deleted:true ويُخفى من النظام.`
+      : `هل تريد حذف المستخدم: "${name}"؟\nسيُحذف نهائياً من الأدمن والكوتش وصاحب النادي.\nسيظهر باللون الأحمر في تصدير Excel فقط للتوثيق.`;
   document.getElementById('hd-expected-name').textContent = name;
   document.getElementById('hd-type-input').value='';
   document.getElementById('hd-confirm-btn').disabled=true;
@@ -1845,89 +2544,252 @@ window.exportGymsCSV = function() {
 };
 
 // ── Excel export: players of a specific gym ──────────────────────────────────
-window.exportGymPlayersExcel = function(gymId) {
+window.exportGymPlayersExcel = async function(gymId) {
   if(!gymId){ showToast('لم يتم تحديد النادي','error'); return; }
   if(typeof XLSX === 'undefined'){ showToast('مكتبة Excel لم تُحمَّل بعد، انتظر وأعد المحاولة','error'); return; }
 
-  const gym   = allGyms.find(g => g.id === gymId);
+  const gym     = allGyms.find(g => g.id === gymId);
   const gymName = gym?.name || gymId;
-  const players = allUsers.filter(u => u.gymId === gymId && (u.role||'').toLowerCase() === 'player');
+  const now     = new Date();
+  const week    = 7*24*3600*1000;
 
+  // Active players (from allUsers — already filtered to exclude deleted)
+  const activePlayers = allUsers.filter(u => u.gymId === gymId && (u.role||'').toLowerCase() === 'player');
+
+  // Deleted players: fetch from Firestore directly (they're soft-deleted, not in allUsers)
+  let deletedPlayers = [];
+  try {
+    const delSnap = await getDocs(
+      query(collection(db,'users'),
+        where('gymId','==',gymId),
+        where('role','==','player'),
+        where('deleted','==',true)
+      )
+    );
+    deletedPlayers = delSnap.docs.map(d=>({...d.data(), uid:d.id}));
+  } catch(e) { console.warn('exportExcel: could not load deleted players', e.message); }
+
+  const players = [...activePlayers, ...deletedPlayers];
   if(!players.length){ showToast('لا يوجد لاعبون في هذا النادي','error'); return; }
 
-  // ── Header row ──
+  // ── Color palette (ARGB) ──
+  const COLOR = {
+    headerBg:   'FF1A5C38', headerFont: 'FFFFFFFF',
+    active:     'FFD6F5D6', // light green  — نشط
+    expiring:   'FFFFF3CC', // light yellow — ينتهي قريباً
+    expired:    'FFFFD6D6', // light red    — منتهي
+    noSub:      'FFF0F0F0', // light gray   — لا يوجد اشتراك
+    deleted:    'FFFF3B30', // full red     — محذوف
+    deletedFont:'FFFFFFFF', // white text on red
+    rowAlt:     'FFFAFAFA',
+    statusActive:   'FF1E7E34',
+    statusExpiring: 'FFB8860B',
+    statusExpired:  'FFCC0000',
+    statusNone:     'FF888888',
+    statusDeleted:  'FFFFFFFF',
+  };
+
+  function cellStatus(u) {
+    if(u.deleted) return 'deleted';
+    const subEnd = u.subscriptionEnd?.toDate?.() ||
+      (u.subscriptionEnd?.seconds ? new Date(u.subscriptionEnd.seconds*1000) : null);
+    if(!subEnd) return 'noSub';
+    if(subEnd < now) return 'expired';
+    if(subEnd - now < week) return 'expiring';
+    return 'active';
+  }
+
+  const statusLabel = {
+    active:  '✅ نشط',
+    expiring:'⚠️ ينتهي قريباً',
+    expired: '❌ منتهي',
+    noSub:   '— لا اشتراك',
+    deleted: '🗑️ محذوف',
+  };
+
+  // ── Header ──
   const headers = [
-    'الاسم الكامل','البريد الإلكتروني','رقم الهاتف',
-    'الجنس','تاريخ الميلاد',
+    'الحالة','الاسم الكامل','البريد الإلكتروني','كلمة المرور','رقم الهاتف',
+    'الجنس','تاريخ الميلاد','العمر',
     'الوزن (كغ)','الطول (سم)','نسبة الدهون (%)','الكتلة العضلية (كغ)',
     'الهدف','المستوى','نمط التدريب',
-    'خطة الاشتراك','مبلغ الاشتراك الكلي (₪)','المدفوع (₪)','المتبقي (₪)','طريقة الدفع',
-    'تاريخ التسجيل','بداية الاشتراك','انتهاء الاشتراك','الحالة',
-    'الكوتش المخصص'
+    'خطة الاشتراك','المبلغ الكلي (JD)','المدفوع (JD)','المتبقي (JD)','طريقة الدفع',
+    'تاريخ التسجيل','بداية الاشتراك','انتهاء الاشتراك',
+    'الكوتش المخصص','ملاحظات'
   ];
 
+  const colWidths = [14,24,30,18,14,8,14,6,10,10,12,14,16,14,14,20,14,12,12,14,14,14,14,20,22];
+
   // ── Data rows ──
-  const rows = players.map(u => {
-    const rem    = Number(u.amountRemaining || 0);
-    const paid   = Number(u.amountPaid      || 0);
-    const total  = Number(u.totalAmount     || 0);
-    const subEnd = u.subscriptionEnd?.toDate?.() || (u.subscriptionEnd?.seconds ? new Date(u.subscriptionEnd.seconds*1000) : null);
-    const isActive = subEnd ? subEnd > new Date() : false;
-    return [
-      fullName(u),
-      u.email        || '—',
-      u.phone        || '—',
-      u.gender       || '—',
-      u.dateOfBirth  ? fmtDate(u.dateOfBirth) : '—',
-      u.weight       || '—',
-      u.height       || '—',
-      u.bodyFat      || '—',
-      u.muscleMass   || '—',
-      u.goal         || '—',
-      u.fitnessLevel || '—',
-      u.trainingMode || '—',
-      u.subscriptionPlan || '—',
-      total, paid, rem,
-      u.paymentMethod || '—',
-      fmtDate(u.createdAt),
-      fmtDate(u.subscriptionStart),
-      subEnd ? subEnd.toLocaleDateString('ar-EG') : '—',
-      isActive ? 'نشط' : 'منتهي',
-      u.assignedCoachName || '—',
-    ];
+  const dataRows = players.map(u => {
+    const status = cellStatus(u);
+    const rem    = Number(u.amountRemaining||0);
+    const paid   = Number(u.amountPaid||0);
+    const total  = Number(u.totalAmount||0);
+    const subEnd = u.subscriptionEnd?.toDate?.() ||
+      (u.subscriptionEnd?.seconds ? new Date(u.subscriptionEnd.seconds*1000) : null);
+    return {
+      status,
+      row: [
+        statusLabel[status],
+        fullName(u),
+        u.email             || '—',
+        u.initialPassword   || '—',   // ← كلمة المرور المؤقتة
+        u.phone             || '—',
+        u.gender            || '—',
+        u.dateOfBirth       ? fmtDate(u.dateOfBirth) : '—',
+        u.age               || '—',
+        u.weight            || '—',
+        u.height            || '—',
+        u.bodyFat           || '—',
+        u.muscleMass        || '—',
+        u.goal              || '—',
+        u.fitnessLevel      || '—',
+        u.trainingMode      || '—',
+        u.subscriptionPlan  || '—',
+        total, paid, rem,
+        u.paymentMethod     || '—',
+        fmtDate(u.createdAt),
+        fmtDate(u.subscriptionStart),
+        subEnd ? subEnd.toLocaleDateString('en-GB') : '—',
+        u.assignedCoachName || '—',
+        u.notes             || '—',
+      ]
+    };
   });
 
-  // ── Build workbook ──
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  // ── Build sheet ──
+  const aoa = [headers, ...dataRows.map(d=>d.row)];
+  const ws  = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = colWidths.map(w=>({wch:w}));
+  ws['!rtl']  = true; // right-to-left
 
-  // Column widths
-  ws['!cols'] = headers.map((h,i) => ({ wch: [22,28,16,8,14,10,10,12,14,18,14,16,18,16,14,12,16,16,16,16,8,20][i] || 14 }));
-
-  // Style header row (bold + background) — SheetJS CE supports basic cell props
+  // Style header
   headers.forEach((_,c) => {
-    const cell = ws[XLSX.utils.encode_cell({r:0, c})];
-    if(cell){ cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'1E6B3C'}}, alignment:{horizontal:'center'} }; }
+    const cell = ws[XLSX.utils.encode_cell({r:0,c})];
+    if(cell) cell.s = {
+      font:      {bold:true, color:{rgb:COLOR.headerFont}, sz:11},
+      fill:      {patternType:'solid', fgColor:{rgb:COLOR.headerBg}},
+      alignment: {horizontal:'center', vertical:'center', wrapText:true},
+      border:    {bottom:{style:'thin',color:{rgb:'FF000000'}}},
+    };
+  });
+
+  // Style data rows
+  dataRows.forEach((d,ri) => {
+    const isDeleted = d.status === 'deleted';
+    const rowBg = {
+      active:   COLOR.active,
+      expiring: COLOR.expiring,
+      expired:  COLOR.expired,
+      noSub:    COLOR.noSub,
+      deleted:  COLOR.deleted,
+    }[d.status];
+    const statusFontColor = {
+      active:   COLOR.statusActive,
+      expiring: COLOR.statusExpiring,
+      expired:  COLOR.statusExpired,
+      noSub:    COLOR.statusNone,
+      deleted:  COLOR.statusDeleted,
+    }[d.status];
+
+    d.row.forEach((_,c) => {
+      const cell = ws[XLSX.utils.encode_cell({r:ri+1, c})];
+      if(!cell) return;
+      const isStatusCol = c === 0;
+      cell.s = {
+        fill:      {patternType:'solid', fgColor:{rgb:rowBg}},
+        font:      (isStatusCol || isDeleted)
+          ? {bold:true, color:{rgb:isDeleted ? COLOR.deletedFont : statusFontColor}, sz:10}
+          : {sz:10},
+        alignment: {horizontal:'center', vertical:'center'},
+      };
+    });
   });
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'اللاعبون');
 
-  // Summary sheet
+  // ── Legend sheet ──
+  const legendData = [
+    ['دليل الألوان',''],
+    ['',''],
+    ['✅ نشط — اشتراك فعال','خلفية خضراء فاتحة'],
+    ['⚠️ ينتهي قريباً — أقل من 7 أيام','خلفية صفراء فاتحة'],
+    ['❌ منتهي — انتهى الاشتراك','خلفية حمراء فاتحة'],
+    ['— لا اشتراك — لم يُسجَّل اشتراك','خلفية رمادية فاتحة'],
+    ['🗑️ محذوف — تم حذفه من النظام','خلفية حمراء كاملة (نص أبيض)'],
+    ['',''],
+    ['ملاحظة:','اللاعبون المحذوفون يظهرون للتوثيق فقط — لا يمكنهم الدخول'],
+  ];
+  const wsLegend = XLSX.utils.aoa_to_sheet(legendData);
+  wsLegend['!cols'] = [{wch:40},{wch:32}];
+  // Color legend cells
+  const legendColors = [
+    null, null,
+    COLOR.active, COLOR.expiring, COLOR.expired, COLOR.noSub, COLOR.deleted,
+    null, null,
+  ];
+  legendColors.forEach((bg,r) => {
+    if(!bg) return;
+    const isDeletedRow = r === 6;
+    ['A','B'].forEach(col => {
+      const cell = wsLegend[`${col}${r+1}`];
+      if(cell) cell.s = {
+        fill: {patternType:'solid', fgColor:{rgb:bg}},
+        font: {bold: col==='A', color:{rgb: isDeletedRow ? 'FFFFFFFF' : '00000000'}},
+        alignment: {horizontal:'right'},
+      };
+    });
+  });
+  // Style legend header
+  const h = wsLegend['A1'];
+  if(h) h.s = {font:{bold:true,sz:13,color:{rgb:COLOR.headerBg}}, alignment:{horizontal:'right'}};
+  XLSX.utils.book_append_sheet(wb, wsLegend, 'دليل الألوان');
+
+  // ── Summary sheet ──
+  const activeCount   = dataRows.filter(d=>d.status==='active').length;
+  const expiringCount = dataRows.filter(d=>d.status==='expiring').length;
+  const expiredCount  = dataRows.filter(d=>d.status==='expired').length;
+  const noSubCount    = dataRows.filter(d=>d.status==='noSub').length;
+  const deletedCount  = dataRows.filter(d=>d.status==='deleted').length;
+  const activePlrs    = players.filter(u=>!u.deleted);
   const summary = [
     ['النادي', gymName],
-    ['تاريخ التصدير', new Date().toLocaleDateString('ar-EG')],
-    ['إجمالي اللاعبين', players.length],
-    ['إجمالي الاشتراكات (₪)', players.reduce((s,u)=>s+Number(u.totalAmount||0),0)],
-    ['إجمالي المدفوع (₪)',    players.reduce((s,u)=>s+Number(u.amountPaid||0),0)],
-    ['إجمالي المتبقي (₪)',   players.reduce((s,u)=>s+Number(u.amountRemaining||0),0)],
-    ['لاعبون نشطون',          players.filter(u=>{ const e=u.subscriptionEnd?.toDate?.() || (u.subscriptionEnd?.seconds?new Date(u.subscriptionEnd.seconds*1000):null); return e&&e>new Date(); }).length],
+    ['تاريخ التصدير', now.toLocaleDateString('ar-EG')],
+    ['',''],
+    ['إجمالي اللاعبين (نشطون)', activePlrs.length],
+    ['✅ نشط', activeCount],
+    ['⚠️ ينتهي قريباً', expiringCount],
+    ['❌ منتهي', expiredCount],
+    ['— لا اشتراك', noSubCount],
+    ['🗑️ محذوف', deletedCount],
+    ['',''],
+    ['إجمالي الاشتراكات (₪)', activePlrs.reduce((s,u)=>s+Number(u.totalAmount||0),0)],
+    ['إجمالي المدفوع (₪)',    activePlrs.reduce((s,u)=>s+Number(u.amountPaid||0),0)],
+    ['إجمالي المتبقي (₪)',   activePlrs.reduce((s,u)=>s+Number(u.amountRemaining||0),0)],
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(summary);
-  ws2['!cols'] = [{wch:22},{wch:20}];
+  ws2['!cols'] = [{wch:26},{wch:18}];
+  // Color summary status rows (1-indexed row numbers in sheet)
+  [[5,COLOR.active],[6,COLOR.expiring],[7,COLOR.expired],[8,COLOR.noSub]].forEach(([r,bg])=>{
+    ['A','B'].forEach(col=>{
+      const cell=ws2[`${col}${r}`];
+      if(cell) cell.s={fill:{patternType:'solid',fgColor:{rgb:bg}},font:{bold:true}};
+    });
+  });
+  // Row 9 = deleted (red + white text)
+  ['A','B'].forEach(col=>{
+    const cell=ws2[`${col}9`];
+    if(cell) cell.s={fill:{patternType:'solid',fgColor:{rgb:COLOR.deleted}},font:{bold:true,color:{rgb:'FFFFFFFF'}}};
+  });
   XLSX.utils.book_append_sheet(wb, ws2, 'ملخص');
 
-  XLSX.writeFile(wb, `${gymName}_لاعبون_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast(`✅ تم تصدير ${players.length} لاعب كملف Excel`, 'success');
+  XLSX.writeFile(wb, `${gymName}_لاعبون_${now.toISOString().slice(0,10)}.xlsx`, {cellStyles:true});
+  showToast(
+    `✅ تم التصدير — ${activePlrs.length} نشط: ${activeCount} فعال، ${expiringCount} ينتهي قريباً، ${expiredCount} منتهي${deletedCount?' — '+deletedCount+' محذوف':''}`,
+    'success'
+  );
 };
 
 function confirmAction(msg,onConfirm) {
@@ -2031,8 +2893,12 @@ function updateGymFilters() {
 }
 
 function fullName(u) {
+  // Prefer explicit firstName/lastName fields
   if(u.firstName||u.lastName) return `${u.firstName||''} ${u.lastName||''}`.trim();
-  return u.displayName||u.email||'—';
+  // Fall back to displayName — but avoid showing encoded email-style names
+  if(u.displayName && !u.displayName.includes('@')) return u.displayName;
+  // Last resort: email prefix
+  return u.email ? u.email.split('@')[0] : '—';
 }
 function roleBadge(role) {
   const m={player:['badge-blue','لاعب'],coach:['badge-orange','كوتش'],
@@ -2084,4 +2950,23 @@ function mapAuthError(c){
 }
 
 document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+genId();
+document.getElementById('auth-screen').dataset.ready='1';
+</script>
+
+<script>
+// Fallback: if module failed to load, show error
+setTimeout(()=>{
+  if(!document.getElementById('auth-screen').dataset.ready){
+    document.getElementById('auth-error').textContent='خطأ في تحميل التطبيق — تأكد من الاتصال بالإنترنت وأعد تحميل الصفحة';
+    document.getElementById('auth-error').style.display='block';
+  }
+},3000);
+</script>
+</body>
+</html>

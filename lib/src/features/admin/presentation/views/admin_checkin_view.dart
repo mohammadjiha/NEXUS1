@@ -94,7 +94,28 @@ class _AdminCheckinViewState extends ConsumerState<AdminCheckinView> {
           // Today's summary
           checkinsAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (e, _) => Padding(
+              padding: EdgeInsets.fromLTRB(4.w, 2.h, 4.w, 0),
+              child: Container(
+                padding: EdgeInsets.all(3.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF3B30).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(3.w),
+                  border: Border.all(color: const Color(0xFFFF3B30).withOpacity(0.3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Color(0xFFFF9500), size: 18),
+                  SizedBox(width: 2.w),
+                  Expanded(
+                    child: Text(
+                      'Check-in data error: $e',
+                      style: TextStyle(color: Colors.white54, fontSize: 9.sp),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
             data: (checkins) => Container(
               margin: EdgeInsets.fromLTRB(4.w, 2.h, 4.w, 0),
               padding: EdgeInsets.all(4.w),
@@ -225,74 +246,6 @@ class _AdminCheckinViewState extends ConsumerState<AdminCheckinView> {
             ),
           ),
 
-          // Today's check-in log
-          checkinsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (checkins) {
-              if (checkins.isEmpty) return const SizedBox.shrink();
-              return Container(
-                height: 28.h,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF111118),
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(4.w, 2.h, 4.w, 1.h),
-                      child: Text("Today's Log",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 4.w),
-                        itemCount: checkins.length,
-                        itemBuilder: (_, i) {
-                          final c = checkins[i];
-                          final name =
-                              c['playerName'] as String? ?? 'Unknown';
-                          final time =
-                              c['checkedInAt'] as String? ?? '';
-                          return Padding(
-                            padding:
-                                EdgeInsets.only(bottom: 1.h),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: Color(0xFF34C759),
-                                    size: 18),
-                                SizedBox(width: 2.w),
-                                Expanded(
-                                  child: Text(name,
-                                      style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 11.sp)),
-                                ),
-                                Text(
-                                  _formatTime(time),
-                                  style: TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 10.sp),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -392,20 +345,20 @@ class _PlayerCheckinTile extends StatelessWidget {
           isCheckedIn
               ? Container(
                   padding: EdgeInsets.symmetric(
-                      horizontal: 3.w, vertical: 0.8.h),
+                      horizontal: 5.w, vertical: 1.5.h),
                   decoration: BoxDecoration(
                     color: const Color(0xFF34C759).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_rounded,
-                          color: Color(0xFF34C759), size: 14),
+                      Icon(Icons.check_rounded,
+                          color: const Color(0xFF34C759), size: 18.sp),
                       SizedBox(width: 1.w),
                       Text('In',
                           style: TextStyle(
                               color: const Color(0xFF34C759),
-                              fontSize: 10.sp,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w700)),
                     ],
                   ),
@@ -414,7 +367,7 @@ class _PlayerCheckinTile extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF34C759),
                     padding: EdgeInsets.symmetric(
-                        horizontal: 3.w, vertical: 1.h),
+                        horizontal: 5.w, vertical: 1.5.h),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20)),
                     minimumSize: Size.zero,
@@ -424,7 +377,7 @@ class _PlayerCheckinTile extends StatelessWidget {
                   child: Text('Check In',
                       style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w700)),
                 ),
         ],

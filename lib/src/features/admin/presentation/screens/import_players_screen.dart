@@ -703,104 +703,117 @@ class _ImportPlayersScreenState extends ConsumerState<ImportPlayersScreen> {
   Widget _buildTopbar() {
     return Padding(
       padding: EdgeInsets.fromLTRB(4.w, 1.5.h, 4.w, 0.5.h),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 9.w, height: 9.w,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08), shape: BoxShape.circle),
-              child: Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white, size: 12.sp),
-            ),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 9.w, height: 9.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08), shape: BoxShape.circle),
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white, size: 12.sp),
+                ),
+              ),
+              SizedBox(width: 3.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('استيراد / تحديث لاعبين',
+                      style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w800, color: Colors.white)),
+                    if (_fileName != null)
+                      Text(_fileName!, style: TextStyle(fontSize: 11.sp, color: Colors.white38)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: 3.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(height: 2.h),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                Text('استيراد / تحديث لاعبين',
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: Colors.white)),
-                if (_fileName != null)
-                  Text(_fileName!, style: TextStyle(fontSize: 9.sp, color: Colors.white38)),
+                // Backfill payments button
+                GestureDetector(
+                  onTap: _isMigrating ? null : _backfillPayments,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF34C759).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(2.w),
+                    ),
+                    child: _isMigrating
+                        ? SizedBox(width: 6.w, height: 6.w,
+                            child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF34C759)))
+                        : Row(children: [
+                            Icon(Icons.attach_money_rounded, color: const Color(0xFF34C759), size: 18.sp),
+                            SizedBox(width: 1.5.w),
+                            Text('إصلاح', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: const Color(0xFF34C759))),
+                          ]),
+                  ),
+                ),
+                SizedBox(width: 2.w),
+                // Migrate emails button
+                GestureDetector(
+                  onTap: _isMigrating ? null : _migrateEmails,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5BA8FF).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(2.w),
+                    ),
+                    child: _isMigrating
+                        ? SizedBox(width: 6.w, height: 6.w,
+                            child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF5BA8FF)))
+                        : Row(children: [
+                            Icon(Icons.alternate_email_rounded, color: const Color(0xFF5BA8FF), size: 18.sp),
+                            SizedBox(width: 1.5.w),
+                            Text('إيميلات', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: const Color(0xFF5BA8FF))),
+                          ]),
+                  ),
+                ),
+                SizedBox(width: 2.w),
+                // Merge duplicates button
+                GestureDetector(
+                  onTap: _isMerging ? null : _showMergePreview,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9500).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(2.w),
+                    ),
+                    child: _isMerging
+                        ? SizedBox(width: 6.w, height: 6.w,
+                            child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF9500)))
+                        : Row(children: [
+                            Icon(Icons.merge_rounded, color: const Color(0xFFFF9500), size: 18.sp),
+                            SizedBox(width: 1.5.w),
+                            Text('دمج نسخ', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: const Color(0xFFFF9500))),
+                          ]),
+                  ),
+                ),
+                SizedBox(width: 2.w),
+                // Upload button
+                GestureDetector(
+                  onTap: _pickFile,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF3B30).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(2.w),
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.upload_file_rounded, color: const Color(0xFFFF3B30), size: 18.sp),
+                      SizedBox(width: 1.5.w),
+                      Text('رفع ملف', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: const Color(0xFFFF3B30))),
+                    ]),
+                  ),
+                ),
               ],
-            ),
-          ),
-          // Backfill payments button
-          GestureDetector(
-            onTap: _isMigrating ? null : _backfillPayments,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.2.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFF34C759).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(2.w),
-              ),
-              child: _isMigrating
-                  ? SizedBox(width: 5.w, height: 5.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF34C759)))
-                  : Row(children: [
-                      Icon(Icons.attach_money_rounded, color: const Color(0xFF34C759), size: 14.sp),
-                      SizedBox(width: 1.5.w),
-                      Text('إصلاح', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700, color: const Color(0xFF34C759))),
-                    ]),
-            ),
-          ),
-          SizedBox(width: 2.w),
-          // Migrate emails button
-          GestureDetector(
-            onTap: _isMigrating ? null : _migrateEmails,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.2.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFF5BA8FF).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(2.w),
-              ),
-              child: _isMigrating
-                  ? SizedBox(width: 5.w, height: 5.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF5BA8FF)))
-                  : Row(children: [
-                      Icon(Icons.alternate_email_rounded, color: const Color(0xFF5BA8FF), size: 14.sp),
-                      SizedBox(width: 1.5.w),
-                      Text('إيميلات', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700, color: const Color(0xFF5BA8FF))),
-                    ]),
-            ),
-          ),
-          SizedBox(width: 2.w),
-          // Merge duplicates button
-          GestureDetector(
-            onTap: _isMerging ? null : _showMergePreview,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.2.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF9500).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(2.w),
-              ),
-              child: _isMerging
-                  ? SizedBox(width: 5.w, height: 5.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF9500)))
-                  : Row(children: [
-                      Icon(Icons.merge_rounded, color: const Color(0xFFFF9500), size: 14.sp),
-                      SizedBox(width: 1.5.w),
-                      Text('دمج نسخ', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700, color: const Color(0xFFFF9500))),
-                    ]),
-            ),
-          ),
-          SizedBox(width: 2.w),
-          // Upload button
-          GestureDetector(
-            onTap: _pickFile,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.2.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(2.w),
-              ),
-              child: Row(children: [
-                Icon(Icons.upload_file_rounded, color: const Color(0xFFFF3B30), size: 14.sp),
-                SizedBox(width: 1.5.w),
-                Text('رفع ملف', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700, color: const Color(0xFFFF3B30))),
-              ]),
             ),
           ),
         ],

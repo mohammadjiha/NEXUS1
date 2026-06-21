@@ -325,3 +325,6 @@ final gymPlayersStreamProvider =
       .snapshots()
       .map((snap) => snap.docs
           .where((d) => d.data()['deleted'] != true) // filter soft-deleted
+          .map((d) => {'uid': d.id, ...d.data()})
+          .toList());
+});

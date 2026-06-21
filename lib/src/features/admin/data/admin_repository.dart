@@ -173,6 +173,31 @@ class AdminRepository {
     required String phone,
   }) async {
     final displayName = '${firstName.trim()} ${lastName.trim()}'.trim();
+
+    // 3. Fan-out: find all players assigned to this coach and update their
+    //    denormalized assignedCoachName field so every screen stays in sync.
+    final playersSnap = await _firestore
+        .collection('users')
+        .where('gymId', isEqualTo: gymId)
+        .where('assignedCoachUid', isEqualTo: coachUid)
+        .get();
+
+    // Firestore batches are limited to 500 ops — chunk if needed.
+    const chunkSize = 490;
+    final allDocs = playersSnap.docs;
+
+    Future<void> commitChunk(List<QueryDocumentSnapshot> docs) async {
+      final b = _firestore.batch();
+      for (final doc in docs) {
+        b.update(doc.reference, {
+          'assignedCoachName': displayName,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await b.commit();
+    }
+
+    // Main batch: coach doc + gym member doc
     final batch = _firestore.batch();
 
     // 1. Top-level user doc
@@ -194,6 +219,13 @@ class AdminRepository {
     );
 
     await batch.commit();
+
+    // 3. Fan-out player docs in chunks
+    for (var i = 0; i < allDocs.length; i += chunkSize) {
+      final chunk = allDocs.sublist(
+          i, (i + chunkSize).clamp(0, allDocs.length));
+      await commitChunk(chunk);
+    }
   }
 
   // ── Players / Coaches ─────────────────────────────────────────────────────
@@ -348,6 +380,14 @@ class AdminRepository {
   }) async {
     final remaining = (totalAmount - amountPaid).clamp(0.0, double.infinity);
 
+    // Fetch existing amountPaid to compute the delta.
+    // Only record a payment when NEW money was actually paid.
+    final existingDoc =
+        await _firestore.collection('users').doc(playerUid).get();
+    final previousPaid =
+        (existingDoc.data()?['amountPaid'] as num?)?.toDouble() ?? 0.0;
+    final paidDelta = amountPaid - previousPaid;
+
     final batch = _firestore.batch();
 
     // 1. Update the user's subscription fields
@@ -363,9 +403,10 @@ class AdminRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    // 2. Write a payment history record if we have enough context and there's
-    //    an amount to record.
-    if (amountPaid > 0 && gymId.isNotEmpty && registeredByUid.isNotEmpty) {
+    // 2. Write a payment record ONLY if new money was paid (delta > 0).
+    //    Updating the plan / dates / total without a new payment must NOT
+    //    create a phantom payment entry.
+    if (paidDelta > 0 && gymId.isNotEmpty && registeredByUid.isNotEmpty) {
       final paymentRef = _firestore
           .collection('users')
           .doc(playerUid)
@@ -374,11 +415,10 @@ class AdminRepository {
       batch.set(paymentRef, {
         'type': 'subscription',
         'planName': plan,
-        'amount': amountPaid,
+        'amount': paidDelta, // delta only — not the total cumulative paid
         'paymentMethod': paymentMethod,
         'paymentDate': FieldValue.serverTimestamp(),
         'registeredBy': registeredByUid,
-        // Fields required for collectionGroup filtering & display
         'gymId': gymId,
         'playerUid': playerUid,
         'playerName': playerName,
@@ -407,6 +447,29 @@ class AdminRepository {
         .snapshots()
         .map((snap) =>
             snap.docs.map(PaymentRecord.fromFirestoreGroup).toList());
+  }
+
+  /// Delete a single payment record for a player.
+  Future<void> deletePaymentRecord(String uid, String paymentId) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('payments')
+        .doc(paymentId)
+        .delete();
+  }
+
+  /// Stream of payment records for a single player (used in admin detail sheet).
+  Stream<List<PaymentRecord>> getPlayerPaymentsStream(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('payments')
+        .orderBy('paymentDate', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => PaymentRecord.fromFirestore(doc, '', uid))
+            .toList());
   }
 
   /// Record a new payment for a player.
@@ -752,6 +815,7 @@ class AdminRepository {
       'playerUid': playerUid,
       'playerName': playerName,
       'timestamp': FieldValue.serverTimestamp(),
+      'checkedInAt': DateTime.now().toIso8601String(), // ISO string for log display
       'dateKey': dateKey,
       'addedBy': addedByUid,
     });
@@ -766,11 +830,21 @@ class AdminRepository {
         .doc(gymId)
         .collection('checkins')
         .where('dateKey', isEqualTo: dateKey)
-        .orderBy('timestamp', descending: false)
+        // No .orderBy() — sort in memory to avoid requiring a composite index.
+        // A single-field `where` query needs no index in Firestore.
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => {...d.data(), 'id': d.id})
-            .toList());
+        .map((snap) {
+          final docs = snap.docs
+              .map((d) => {...d.data(), 'id': d.id})
+              .toList();
+          // Sort chronologically using the ISO checkedInAt string (or dateKey as fallback)
+          docs.sort((a, b) {
+            final ta = a['checkedInAt'] as String? ?? '';
+            final tb = b['checkedInAt'] as String? ?? '';
+            return ta.compareTo(tb);
+          });
+          return docs;
+        });
   }
 
   // ── Subscription Freeze ────────────────────────────────────────────────────
@@ -1885,4 +1959,50 @@ final adminRepositoryProvider = Provider((ref) => AdminRepository());
 
 final adminPlayersProvider =
     StreamProvider.family<List<UserModel>, String>((ref, gymId) {
-  return ref.watc
+  return ref.watch(adminRepositoryProvider).getPlayersStream(gymId);
+});
+
+final adminCoachesProvider =
+    StreamProvider.family<List<UserModel>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getCoachesStream(gymId);
+});
+
+final adminPaymentsProvider =
+    StreamProvider.family<List<PaymentRecord>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getPaymentsStream(gymId);
+});
+
+/// Streams the gym document — provides gymName, city, etc.
+final gymInfoProvider =
+    StreamProvider.family<Map<String, dynamic>, String>((ref, gymId) {
+  return FirebaseFirestore.instance
+      .collection('gyms')
+      .doc(gymId)
+      .snapshots()
+      .map((doc) => doc.data() ?? {});
+});
+
+final adminExpensesProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getExpensesStream(gymId);
+});
+
+final subscriptionPlansProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getSubscriptionPlansStream(gymId);
+});
+
+final importHistoryProvider =
+    StreamProvider.family<List<ImportHistoryEntry>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getImportHistoryStream(gymId);
+});
+
+final todayCheckInsProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getTodayCheckInsStream(gymId);
+});
+
+final superAdminMessagesProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, gymId) {
+  return ref.watch(adminRepositoryProvider).getSuperAdminMessagesStream(gymId);
+});

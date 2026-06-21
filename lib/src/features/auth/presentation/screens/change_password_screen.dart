@@ -179,6 +179,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 TextFormField(
                   controller: _newPassCtrl,
                   obscureText: _obscureNew,
+                  style: TextStyle(color: Colors.black, fontSize: 15.sp),
                   decoration: InputDecoration(
                     hintText: 'password_min_8'.tr(context),
                     filled: true,
@@ -224,6 +225,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 TextFormField(
                   controller: _confirmPassCtrl,
                   obscureText: _obscureConfirm,
+                  style: TextStyle(color: Colors.black, fontSize: 15.sp),
                   decoration: InputDecoration(
                     hintText: 'confirm_password'.tr(context),
                     filled: true,

@@ -152,7 +152,7 @@ class AdminOverviewView extends ConsumerWidget {
                   SizedBox(height: 1.5.h),
                   _buildLiveActivityCard(ref, livePlayers, players),
                   SizedBox(height: 1.5.h),
-                  _buildAlerts(expiringSoon, suspended, unassigned),
+                  _buildAlerts(expiringSoon, suspended, unassigned, ref),
                 ],
               ),
             ),
@@ -563,7 +563,7 @@ class AdminOverviewView extends ConsumerWidget {
                   child: Text(
                     trend,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                       color: trendColor,
                     ),
@@ -581,7 +581,7 @@ class AdminOverviewView extends ConsumerWidget {
                   child: Text(
                     val,
                     style: TextStyle(
-                      fontSize: 22.sp,
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.w900,
                       color: valColor ?? Colors.white,
                       letterSpacing: -0.5,
@@ -589,11 +589,11 @@ class AdminOverviewView extends ConsumerWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: 0.5.h),
+                SizedBox(height: 0.2.h),
                 Text(
                   lbl,
                   style: TextStyle(
-                    fontSize: 9.sp,
+                    fontSize: 11.5.sp,
                     fontWeight: FontWeight.w600,
                     color: Colors.white30,
                     letterSpacing: 0.3,
@@ -1144,7 +1144,7 @@ class AdminOverviewView extends ConsumerWidget {
 
   // ── Alerts — real conditions ──────────────────────────────────────────────
 
-  Widget _buildAlerts(int expiringSoon, int suspended, int unassigned) {
+  Widget _buildAlerts(int expiringSoon, int suspended, int unassigned, WidgetRef ref) {
     final alerts = <_Alert>[];
 
     if (expiringSoon > 0) {
@@ -1153,6 +1153,7 @@ class AdminOverviewView extends ConsumerWidget {
         title: '$expiringSoon subscription${expiringSoon > 1 ? 's' : ''} expiring this week',
         sub: 'Go to Players → renew before they lapse',
         color: const Color(0xFFFF3B30),
+        navIndex: 1, // Players tab
       ));
     }
     if (suspended > 0) {
@@ -1161,6 +1162,7 @@ class AdminOverviewView extends ConsumerWidget {
         title: '$suspended player${suspended > 1 ? 's' : ''} suspended',
         sub: 'Check Players tab to review or reactivate',
         color: const Color(0xFFFF9500),
+        navIndex: 1, // Players tab
       ));
     }
     if (unassigned > 0) {
@@ -1169,6 +1171,7 @@ class AdminOverviewView extends ConsumerWidget {
         title: '$unassigned player${unassigned > 1 ? 's' : ''} without a coach',
         sub: 'Go to Coaches → assign a coach',
         color: const Color(0xFFFFCC00),
+        navIndex: 4, // More tab (Coaches & Settings)
       ));
     }
     if (alerts.isEmpty) {
@@ -1195,50 +1198,60 @@ class AdminOverviewView extends ConsumerWidget {
             ),
           ),
         ),
-        for (var a in alerts) _buildAlertCard(a),
+        for (var a in alerts) _buildAlertCard(a, ref),
       ],
     );
   }
 
-  Widget _buildAlertCard(_Alert a) {
-    return Container(
-      margin: EdgeInsets.only(left: 4.w, right: 4.w, bottom: 1.5.h),
-      padding: EdgeInsets.all(3.w),
-      decoration: BoxDecoration(
-        color: a.color.withOpacity(0.1),
-        border:
-            Border.all(color: a.color.withOpacity(0.2), width: 0.5),
-        borderRadius: BorderRadius.circular(3.5.w),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(a.icon, style: TextStyle(fontSize: 18.sp)),
-          SizedBox(width: 2.5.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  a.title,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: a.color,
+  Widget _buildAlertCard(_Alert a, WidgetRef ref) {
+    final tappable = a.navIndex != null;
+    return GestureDetector(
+      onTap: tappable
+          ? () => ref.read(adminBottomNavProvider.notifier).setIndex(a.navIndex!)
+          : null,
+      child: Container(
+        margin: EdgeInsets.only(left: 4.w, right: 4.w, bottom: 1.5.h),
+        padding: EdgeInsets.all(3.w),
+        decoration: BoxDecoration(
+          color: a.color.withOpacity(0.1),
+          border: Border.all(color: a.color.withOpacity(tappable ? 0.4 : 0.2), width: 0.5),
+          borderRadius: BorderRadius.circular(3.5.w),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(a.icon, style: TextStyle(fontSize: 18.sp)),
+            SizedBox(width: 2.5.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    a.title,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: a.color,
+                    ),
                   ),
-                ),
-                SizedBox(height: 0.5.h),
-                Text(
-                  a.sub,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.white.withOpacity(0.4),
+                  SizedBox(height: 0.5.h),
+                  Text(
+                    a.sub,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: Colors.white.withOpacity(0.4),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            if (tappable) ...[
+              SizedBox(width: 2.w),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  color: a.color.withOpacity(0.6), size: 12.sp),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1257,10 +1270,12 @@ class _Alert {
   final String title;
   final String sub;
   final Color color;
+  final int? navIndex; // null = no navigation (e.g. "all clear")
   const _Alert({
     required this.icon,
     required this.title,
     required this.sub,
     required this.color,
+    this.navIndex,
   });
 }

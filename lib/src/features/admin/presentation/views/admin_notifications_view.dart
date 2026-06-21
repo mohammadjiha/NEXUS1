@@ -691,7 +691,7 @@ class _AdminNotificationsViewState
           child: Text(
             'SENT HISTORY',
             style: TextStyle(
-              fontSize: 9.sp,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w700,
               color: Colors.white.withOpacity(0.4),
               letterSpacing: 0.5,
@@ -714,8 +714,20 @@ class _AdminNotificationsViewState
                 final dateStr = ts != null
                     ? DateFormat('MMM d · HH:mm').format(ts.toDate())
                     : 'Just now';
-                final targets =
-                    (doc['targetGroups'] as List?)?.join(', ') ?? '';
+                // Map raw keys → human-readable Arabic labels
+                const _groupLabels = <String, String>{
+                  'all_players':          'كل اللاعبين',
+                  'active_players':       'اللاعبون النشطون',
+                  'expiring_soon':        'الاشتراكات المنتهية قريباً',
+                  'unpaid':               'غير المدفوعين',
+                  'no_coach':             'بدون كوتش',
+                  'coaches':              'الكوتشات',
+                  'specific_players':     'لاعبون محددون',
+                };
+                final rawGroups = (doc['targetGroups'] as List?) ?? [];
+                final targets = rawGroups
+                    .map((g) => _groupLabels[g.toString()] ?? g.toString())
+                    .join('، ');
                 return Container(
                   margin: EdgeInsets.only(
                       left: 4.w, right: 4.w, bottom: 0.8.h),
@@ -749,7 +761,7 @@ class _AdminNotificationsViewState
                             Text(
                               doc['title'] ?? '',
                               style: TextStyle(
-                                  fontSize: 15.sp,
+                                  fontSize: 18.sp,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white),
                             ),
@@ -757,7 +769,7 @@ class _AdminNotificationsViewState
                             Text(
                               doc['body'] ?? '',
                               style: TextStyle(
-                                  fontSize: 12.sp,
+                                  fontSize: 15.sp,
                                   color: Colors.white.withOpacity(0.35)),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -770,7 +782,7 @@ class _AdminNotificationsViewState
                         children: [
                           Text(dateStr,
                               style: TextStyle(
-                                  fontSize: 11.sp,
+                                  fontSize: 13.sp,
                                   color: Colors.white.withOpacity(0.2))),
                           SizedBox(height: 1.h),
                           Container(
@@ -784,7 +796,7 @@ class _AdminNotificationsViewState
                             child: Text(
                               targets,
                               style: TextStyle(
-                                  fontSize: 10.sp,
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF34C759)),
                             ),

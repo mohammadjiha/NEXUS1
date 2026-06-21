@@ -424,7 +424,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                   Text(
                     'إيرادات · $periodTitle',
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white38,
                       letterSpacing: 0.4,
@@ -434,7 +434,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                   Text(
                     '${filteredRevenue.toStringAsFixed(0)} JD',
                     style: TextStyle(
-                      fontSize: 26.sp,
+                      fontSize: 30.sp,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                       height: 1,
@@ -445,7 +445,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
               Text(
                 trendLabel,
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w800,
                   color: trendColor,
                 ),
@@ -490,7 +490,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
           Text(
             val,
             style: TextStyle(
-              fontSize: 16.sp,
+              fontSize: 18.sp,
               fontWeight: FontWeight.w800,
               color: color,
             ),
@@ -499,7 +499,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
           Text(
             lbl,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w700,
               color: Colors.white60,
               letterSpacing: 0.3,
@@ -1418,13 +1418,13 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                     children: [
                       Text(name.isEmpty ? p.email : name,
                           style: TextStyle(
-                              fontSize: 14.sp,
+                              fontSize: 17.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.white)),
                       SizedBox(height: 0.2.h),
                       Text(p.subscriptionPlan ?? 'No plan',
                           style: TextStyle(
-                              fontSize: 11.sp, color: Colors.white60)),
+                              fontSize: 13.sp, color: Colors.white60)),
                       SizedBox(height: 0.3.h),
                       // Email row
                       GestureDetector(
@@ -1442,13 +1442,13 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                         child: Row(
                           children: [
                             Icon(Icons.email_outlined,
-                                size: 11.sp, color: Colors.blueAccent.withOpacity(0.7)),
+                                size: 13.sp, color: Colors.blueAccent.withOpacity(0.7)),
                             SizedBox(width: 1.w),
                             Flexible(
                               child: Text(p.email,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                      fontSize: 10.sp,
+                                      fontSize: 12.sp,
                                       color: Colors.blueAccent.withOpacity(0.8))),
                             ),
                           ],
@@ -1471,11 +1471,11 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                           child: Row(
                             children: [
                               Icon(Icons.lock_outline,
-                                  size: 11.sp, color: Colors.amber.withOpacity(0.7)),
+                                  size: 13.sp, color: Colors.amber.withOpacity(0.7)),
                               SizedBox(width: 1.w),
                               Text(p.temporaryPassword!,
                                   style: TextStyle(
-                                      fontSize: 10.sp,
+                                      fontSize: 12.sp,
                                       color: Colors.amber.withOpacity(0.8),
                                       fontFamily: 'monospace')),
                             ],
@@ -1490,7 +1490,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                     Text(
                       statusLabel,
                       style: TextStyle(
-                        fontSize: 13.sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w800,
                         color: barColor,
                       ),
@@ -1499,7 +1499,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                     Text(
                       'دفع ${paid.toStringAsFixed(0)} JD · إجمالي ${total.toStringAsFixed(0)} JD',
                       style: TextStyle(
-                          fontSize: 10.sp,
+                          fontSize: 12.sp,
                           color: Colors.white.withOpacity(0.4)),
                     ),
                   ],
@@ -1513,7 +1513,7 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                 value: pct,
                 backgroundColor: Colors.white.withOpacity(0.08),
                 valueColor: AlwaysStoppedAnimation(barColor),
-                minHeight: 5,
+                minHeight: 6,
               ),
             ),
             if (!noData && !isFullyPaid)
@@ -1523,11 +1523,11 @@ class _AdminFinanceViewState extends ConsumerState<AdminFinanceView>
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Icon(Icons.add_circle_outline,
-                        size: 12.sp, color: Colors.white38),
+                        size: 14.sp, color: Colors.white38),
                     SizedBox(width: 1.w),
                     Text('اضغط لتسجيل دفعة',
                         style: TextStyle(
-                            fontSize: 10.sp, color: Colors.white38)),
+                            fontSize: 12.sp, color: Colors.white38)),
                   ],
                 ),
               ),
@@ -2354,12 +2354,12 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
             Text('Add Expense',
                 style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16.sp,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.w800)),
             SizedBox(height: 3.h),
             Text('CATEGORY',
                 style: TextStyle(
-                    fontSize: 9.sp,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w700,
                     color: Colors.white38,
                     letterSpacing: 0.4)),
@@ -2373,7 +2373,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                   onTap: () => setState(() => _category = c),
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                        horizontal: 3.5.w, vertical: 1.h),
+                        horizontal: 4.5.w, vertical: 1.5.h),
                     decoration: BoxDecoration(
                       color: sel
                           ? const Color(0xFFFF3B30)
@@ -2386,7 +2386,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                     ),
                     child: Text(c,
                         style: TextStyle(
-                            fontSize: 10.sp,
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w700,
                             color: sel ? Colors.white : Colors.white60)),
                   ),
@@ -2405,7 +2405,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(
-                    horizontal: 3.w, vertical: 1.8.h),
+                    horizontal: 4.w, vertical: 2.h),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.07),
                   borderRadius: BorderRadius.circular(2.5.w),
@@ -2413,12 +2413,12 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 child: Row(
                   children: [
                     Icon(Icons.calendar_today_rounded,
-                        color: Colors.white54, size: 14.sp),
+                        color: Colors.white54, size: 18.sp),
                     SizedBox(width: 2.w),
                     Text(
                       DateFormat('MMM d, yyyy').format(_date),
                       style: TextStyle(
-                          color: Colors.white, fontSize: 13.sp),
+                          color: Colors.white, fontSize: 16.sp),
                     ),
                   ],
                 ),
@@ -2427,7 +2427,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
             SizedBox(height: 4.h),
             SizedBox(
               width: double.infinity,
-              height: 6.h,
+              height: 7.h,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF3B30),
@@ -2440,7 +2440,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                     : Text('Add Expense',
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13.sp,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w700)),
               ),
             ),
@@ -2455,14 +2455,14 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     return TextField(
       controller: ctrl,
       keyboardType: keyboardType,
-      style: TextStyle(color: Colors.white, fontSize: 13.sp),
+      style: TextStyle(color: Colors.white, fontSize: 16.sp),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.white54, fontSize: 10.sp),
+        labelStyle: TextStyle(color: Colors.white54, fontSize: 13.sp),
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
         contentPadding:
-            EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.5.h),
+            EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(2.5.w),
           borderSide: BorderSide.none,

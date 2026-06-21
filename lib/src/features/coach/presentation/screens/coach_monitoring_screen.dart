@@ -11,6 +11,7 @@ import '../../../../../core/localization/app_localizations.dart';
 import '../../../../core/utils/intl_formatter.dart';
 import '../../../profile/providers/body_metrics_provider.dart';
 import '../../../smart_workout/models/routine_model.dart';
+import '../../../smart_workout/providers/split_setup_provider.dart';
 import '../../../smart_workout/providers/workout_history_provider.dart';
 import '../../../user/models/user_model.dart';
 import '../../providers/coach_monitoring_provider.dart';
@@ -30,6 +31,7 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
   String _fbTypeSelected = '💬 General';
   String _wfTypeSelected = '✅ Good form';
   String _nfTypeSelected = '🍗 Add protein';
+  DateTime _selectedWorkoutDate = DateTime.now();
 
   final TextEditingController _feedbackController = TextEditingController();
   final TextEditingController _workoutFeedbackController =
@@ -60,6 +62,8 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
     final nutritionAsync = ref.watch(
       playerNutritionHistoryProvider(player.uid),
     );
+    final planAsync = ref.watch(playerGeneratedPlanProvider(player.uid));
+    final splitAsync = ref.watch(playerSplitSetupProvider(player.uid));
 
     return Scaffold(
       backgroundColor: const Color(0xFFE5E5EA),
@@ -77,6 +81,8 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
                   metricsAsync,
                   routinesAsync,
                   nutritionAsync,
+                  planAsync,
+                  splitAsync,
                 ),
               ),
             ),
@@ -207,6 +213,8 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
     AsyncValue<BodyMetrics> metricsAsync,
     AsyncValue<List<RoutineModel>> routinesAsync,
     AsyncValue<Map<String, dynamic>?> nutritionAsync,
+    AsyncValue<List<WorkoutDay>> planAsync,
+    AsyncValue<SplitSetupData> splitAsync,
   ) {
     switch (_currentTab) {
       case 0:
@@ -217,7 +225,7 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
           nutritionAsync,
         );
       case 1:
-        return _buildWorkoutTab(player, routinesAsync, historyAsync);
+        return _buildWorkoutTab(player, routinesAsync, historyAsync, planAsync, splitAsync);
       case 2:
         return _buildNutritionTab(player, nutritionAsync);
       case 3:
@@ -619,88 +627,404 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
     UserModel player,
     AsyncValue<List<RoutineModel>> routinesAsync,
     AsyncValue<List<CompletedSession>> historyAsync,
+    AsyncValue<List<WorkoutDay>> planAsync,
+    AsyncValue<SplitSetupData> splitAsync,
   ) {
-    return routinesAsync.when(
-      data: (routines) {
-        if (routines.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: EdgeInsets.all(10.w),
-              child: Text(
-                'no_routines_assigned_track_workout'.tr(context),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: const Color(0xFF8E8E93),
+    final history = historyAsync.value ?? [];
+    final plan = planAsync.value ?? [];
+    final splitData = splitAsync.value;
+
+    // Find the session for the selected date
+    final selectedDateStr = DateFormat('MMM d').format(_selectedWorkoutDate);
+    CompletedSession? selectedSession;
+    for (final s in history) {
+      if (s.date == selectedDateStr) {
+        selectedSession = s;
+        break;
+      }
+    }
+
+    // Check if the selected date is a rest day (from plan or trainingDays)
+    final selectedFullDate = DateFormat('yyyy-MM-dd').format(_selectedWorkoutDate);
+    WorkoutDay? planDay;
+    for (final day in plan) {
+      if (day.fullDate == selectedFullDate) {
+        planDay = day;
+        break;
+      }
+    }
+
+    // Determine rest vs workout day
+    bool isRestDay;
+    if (planDay != null) {
+      isRestDay = planDay.isRest;
+    } else if (splitData != null && splitData.trainingDays.isNotEmpty) {
+      // Fall back to weekday check
+      final weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+      final dayName = weekdays[_selectedWorkoutDate.weekday - 1];
+      isRestDay = !splitData.trainingDays.contains(dayName);
+    } else {
+      // If no plan and no setup, show based on whether session exists
+      isRestDay = selectedSession == null;
+    }
+
+    return Column(
+      children: [
+        // 7-day date scroller
+        _buildWorkoutDayScroller(),
+        // Day content
+        if (isRestDay && selectedSession == null)
+          _buildRestDayCard()
+        else if (selectedSession != null)
+          _buildCompletedWorkoutContent(selectedSession, player)
+        else
+          _buildPendingWorkoutContent(routinesAsync, planDay, player),
+        _buildFeedbackForm(
+          player,
+          'wf-types',
+          '💬 Workout Feedback',
+          _workoutFeedbackController,
+          _wfTypeSelected,
+          (val) => setState(() => _wfTypeSelected = val),
+          opts: [
+            '✅ Good form',
+            '📈 Increase weight',
+            '⚠️ Check form',
+            '🔄 Rest more',
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWorkoutDayScroller() {
+    final today = DateTime.now();
+    return SizedBox(
+      height: 11.h,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+        itemCount: 7,
+        itemBuilder: (_, i) {
+          final date = today.subtract(Duration(days: 6 - i));
+          final isSelected = DateFormat('yyyy-MM-dd').format(date) ==
+              DateFormat('yyyy-MM-dd').format(_selectedWorkoutDate);
+          final isToday = DateFormat('yyyy-MM-dd').format(date) ==
+              DateFormat('yyyy-MM-dd').format(today);
+          final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          final dayName = dayNames[date.weekday - 1];
+
+          return GestureDetector(
+            onTap: () => setState(() => _selectedWorkoutDate = date),
+            child: Container(
+              width: 11.w,
+              margin: EdgeInsets.only(right: 2.w),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF007AFF)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(3.w),
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFF007AFF)
+                      : isToday
+                          ? const Color(0xFF007AFF).withOpacity(0.4)
+                          : const Color(0xFFE5E5EA),
                 ),
+              ),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    dayName,
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : const Color(0xFF8E8E93),
+                    ),
+                  ),
+                  SizedBox(height: 0.4.h),
+                  Text(
+                    '${date.day}',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? Colors.white : const Color(0xFF1C1C1E),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
-        }
+        },
+      ),
+    );
+  }
 
-        final routine = routines.first; // Pick most recent active routine
-        final history = historyAsync.value ?? [];
-        final hasSessionToday =
-            history.isNotEmpty &&
-            DateFormat('MMM d').format(DateTime.now()) == history.first.date;
-        final sessionToday = hasSessionToday ? history.first : null;
+  Widget _buildRestDayCard() {
+    return Container(
+      margin: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 2.h),
+      padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 4.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4.w),
+      ),
+      child: Column(
+        children: [
+          Text('😴', style: TextStyle(fontSize: 40.sp)),
+          SizedBox(height: 1.h),
+          Text(
+            'Rest Day',
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1C1C1E),
+            ),
+          ),
+          SizedBox(height: 0.5.h),
+          Text(
+            'Recovery is part of training 💪',
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: const Color(0xFF8E8E93),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-        return Column(
-          children: [
-            _buildLiveSessionCard(routine, sessionToday),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  '${'assigned_routine'.tr(context).toUpperCase()}: ${routine.routineName.toUpperCase()}',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF8E8E93),
-                    letterSpacing: 0.5,
+  Widget _buildCompletedWorkoutContent(CompletedSession session, UserModel player) {
+    final exercisesLog = session.exercisesLog;
+    return Column(
+      children: [
+        // Completed session header card
+        Container(
+          margin: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 2.h),
+          padding: EdgeInsets.all(4.w),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(4.5.w),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 2.w,
+                    height: 2.w,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF34C759),
+                      shape: BoxShape.circle,
+                    ),
                   ),
+                  SizedBox(width: 2.w),
+                  Text(
+                    'COMPLETED ✅',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withOpacity(0.5),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                session.routineName,
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 0.5.h),
+              Text(
+                '${session.durationMinutes} min · ${session.completedSets}/${session.totalSets} sets',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.white.withOpacity(0.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Exercises with actual weights
+        if (exercisesLog != null && exercisesLog.isNotEmpty) ...[
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 0.5.h),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'EXERCISES PERFORMED',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF8E8E93),
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
-            ...routine.exercises.asMap().entries.map((e) {
-              final index = e.key + 1;
-              final exercise = e.value;
-              return _buildExerciseTrack(
-                index.toString(),
-                exercise.name,
-                'Target: ${exercise.sets} sets',
-                hasSessionToday ? 'Completed' : 'Pending',
-                hasSessionToday ? _EtState.active : _EtState.wait,
-                List.generate(
-                  exercise.sets,
-                  (i) => _EtSet(
-                    '${exercise.weight}',
-                    '×${exercise.reps}',
-                    hasSessionToday ? _EtState.active : _EtState.wait,
+          ),
+          ...exercisesLog.asMap().entries.map((entry) {
+            final index = entry.key + 1;
+            final ex = entry.value as Map<dynamic, dynamic>;
+            final name = ex['name'] as String? ?? 'Exercise $index';
+            final sets = (ex['sets'] as List<dynamic>?) ?? [];
+            return _buildExerciseTrack(
+              index.toString(),
+              name,
+              '${sets.length} sets completed',
+              'Done ✅',
+              _EtState.active,
+              sets.map((s) {
+                final setMap = s as Map<dynamic, dynamic>;
+                final kg = setMap['kg']?.toString() ?? '0';
+                final reps = setMap['reps']?.toString() ?? '0';
+                return _EtSet(
+                  kg.isEmpty ? '-- kg' : '${kg}kg',
+                  '×$reps',
+                  _EtState.active,
+                );
+              }).toList(),
+            );
+          }),
+        ] else ...[
+          Container(
+            margin: EdgeInsets.fromLTRB(4.w, 0, 4.w, 2.h),
+            padding: EdgeInsets.all(4.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4.w),
+            ),
+            child: Text(
+              'Session logged but exercise details not recorded.',
+              style: TextStyle(fontSize: 12.sp, color: const Color(0xFF8E8E93)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPendingWorkoutContent(
+    AsyncValue<List<RoutineModel>> routinesAsync,
+    WorkoutDay? planDay,
+    UserModel player,
+  ) {
+    final routines = routinesAsync.value ?? [];
+    final routine = routines.isNotEmpty ? routines.first : null;
+    final routineName = planDay?.assignedRoutineName ?? routine?.routineName ?? 'Workout';
+
+    return Column(
+      children: [
+        Container(
+          margin: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 2.h),
+          padding: EdgeInsets.all(4.w),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(4.5.w),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 2.w,
+                    height: 2.w,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF8E8E93),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: 2.w),
+                  Text(
+                    'PENDING / NOT LOGGED',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withOpacity(0.5),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                routineName,
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+              if (routine != null) ...[
+                SizedBox(height: 0.5.h),
+                Text(
+                  '${routine.exercises.length} exercises planned',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white.withOpacity(0.4),
                   ),
                 ),
-              );
-            }),
-            _buildFeedbackForm(
-              player,
-              'wf-types',
-              '💬 Workout Feedback',
-              _workoutFeedbackController,
-              _wfTypeSelected,
-              (val) => setState(() => _wfTypeSelected = val),
-              opts: [
-                '✅ Good form',
-                '📈 Increase weight',
-                '⚠️ Check form',
-                '🔄 Rest more',
               ],
+            ],
+          ),
+        ),
+        if (routine != null) ...[
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 0.5.h),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'PLANNED EXERCISES',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF8E8E93),
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('${'error_prefix'.tr(context)}$e')),
+          ),
+          ...routine.exercises.asMap().entries.map((e) {
+            final index = e.key + 1;
+            final exercise = e.value;
+            return _buildExerciseTrack(
+              index.toString(),
+              exercise.name,
+              'Target: ${exercise.sets} sets × ${exercise.reps} reps',
+              'Pending',
+              _EtState.wait,
+              List.generate(
+                exercise.sets,
+                (i) => _EtSet(
+                  '${exercise.weight > 0 ? "${exercise.weight}kg" : "--"}',
+                  '×${exercise.reps}',
+                  _EtState.wait,
+                ),
+              ),
+            );
+          }),
+        ] else ...[
+          Container(
+            margin: EdgeInsets.fromLTRB(4.w, 0, 4.w, 2.h),
+            padding: EdgeInsets.all(4.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4.w),
+            ),
+            child: Text(
+              'Workout scheduled but no routine assigned yet.',
+              style: TextStyle(fontSize: 12.sp, color: const Color(0xFF8E8E93)),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -863,7 +1187,9 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F7),
+                  color: state == _EtState.active
+                      ? const Color(0xFF34C759).withOpacity(0.12)
+                      : const Color(0xFFF5F5F7),
                   borderRadius: BorderRadius.circular(2.w),
                 ),
                 child: Text(
@@ -871,7 +1197,9 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
                   style: TextStyle(
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF8E8E93),
+                    color: state == _EtState.active
+                        ? const Color(0xFF34C759)
+                        : const Color(0xFF8E8E93),
                   ),
                 ),
               ),
@@ -891,13 +1219,16 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
   }
 
   Widget _buildSetChip(_EtSet s) {
+    final isActive = s.state == _EtState.active;
+    final chipColor = isActive ? const Color(0xFF34C759) : const Color(0xFFC7C7CC);
+    final chipBg = isActive ? const Color(0xFFE8FFF0) : const Color(0xFFF5F5F7);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.5.h),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F7),
+        color: chipBg,
         borderRadius: BorderRadius.circular(2.5.w),
         border: Border.all(
-          color: const Color(0xFFC7C7CC),
+          color: isActive ? const Color(0xFF34C759).withOpacity(0.4) : const Color(0xFFC7C7CC),
         ),
       ),
       child: Column(
@@ -907,12 +1238,12 @@ class _CoachMonitoringScreenState extends ConsumerState<CoachMonitoringScreen> {
             style: TextStyle(
               fontSize: 12.sp,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFFC7C7CC),
+              color: chipColor,
             ),
           ),
           Text(
             s.r,
-            style: TextStyle(fontSize: 10.sp, color: const Color(0xFFC7C7CC)),
+            style: TextStyle(fontSize: 10.sp, color: chipColor),
           ),
         ],
       ),

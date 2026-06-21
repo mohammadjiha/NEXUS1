@@ -4,10 +4,9 @@ import 'package:sizer/sizer.dart';
 
 import '../../../../../core/localization/app_localizations.dart';
 import '../../../smart_workout/models/routine_model.dart';
-import '../../../smart_workout/providers/routines_provider.dart';
 import '../../../smart_workout/providers/split_setup_provider.dart';
 import '../../../user/models/user_model.dart';
-import '../../providers/coach_player_plan_provider.dart';
+import '../../providers/coach_monitoring_provider.dart';
 
 class CoachPlayerTrainingTab extends ConsumerWidget {
   final UserModel player;
@@ -135,16 +134,15 @@ class CoachPlayerTrainingTab extends ConsumerWidget {
     String routineId,
     String dayTitle,
   ) {
-    // We need to fetch the routine details
-    final catalogAsync = ref.watch(routineCatalogProvider);
-    return catalogAsync.when(
-      data: (catalog) {
+    // Use player-specific routines (includes their modified weights) — real-time stream
+    final routinesAsync = ref.watch(playerRoutinesProvider(player.uid));
+    return routinesAsync.when(
+      data: (routines) {
         RoutineModel? routine;
-        for (var list in catalog.values) {
-          try {
-            routine = list.firstWhere((r) => r.id == routineId);
-            break;
-          } catch (_) {}
+        try {
+          routine = routines.firstWhere((r) => r.id == routineId);
+        } catch (_) {
+          routine = routines.isNotEmpty ? routines.first : null;
         }
 
         if (routine == null) return const SizedBox();

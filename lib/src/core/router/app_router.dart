@@ -38,6 +38,7 @@ import '../../features/user/models/user_model.dart';
 import '../../features/user/presentation/screens/account_frozen_screen.dart';
 import '../../features/user/presentation/screens/account_suspended_screen.dart';
 import '../../features/user/presentation/screens/gym_inactive_screen.dart';
+import '../../features/user/presentation/screens/subscription_expired_screen.dart';
 
 /// يستمع لتغييرات حالة المصادقة ويُخطر GoRouter بإعادة التقييم
 class _AuthChangeNotifier extends ChangeNotifier {
@@ -69,6 +70,11 @@ class _AuthChangeNotifier extends ChangeNotifier {
               final newGymId      = (data?['gymId'] as String?)?.trim();
               final newSuspended  = data?['isActive'] == false;
               final newFrozen     = data?['isFrozen'] as bool? ?? false;
+              // Subscription expiry — only relevant for player role
+              final subEndTs = data?['subscriptionEnd'];
+              final newSubExpired = subEndTs is Timestamp
+                  ? subEndTs.toDate().isBefore(DateTime.now())
+                  : false;
 
               // ── Start watching gym doc when gymId is known/changed ─────────
               if (newGymId != null &&
@@ -113,7 +119,7 @@ class _AuthChangeNotifier extends ChangeNotifier {
                 // OTP verification removed — skip 2FA for players and coaches
               }
 
-              // ── Suspend / Freeze — only apply to player role ──────────────
+              // ── Suspend / Freeze / Expiry — only apply to player role ─────
               final isPlayerRole = newRole?.toLowerCase() == 'player';
               if (isPlayerRole) {
                 if (newSuspended != _userSuspended) {
@@ -122,6 +128,10 @@ class _AuthChangeNotifier extends ChangeNotifier {
                 }
                 if (newFrozen != _userFrozen) {
                   _userFrozen = newFrozen;
+                  changed = true;
+                }
+                if (newSubExpired != _subscriptionExpired) {
+                  _subscriptionExpired = newSubExpired;
                   changed = true;
                 }
               }
@@ -139,14 +149,16 @@ class _AuthChangeNotifier extends ChangeNotifier {
             _temporaryPasswordSet ||
             _needsPhone2FA ||
             _freshLoginPending ||
-            _gymInactive) {
+            _gymInactive ||
+            _subscriptionExpired) {
           _role = null;
           _temporaryPasswordSet = false;
           _needsPhone2FA = false;
           _freshLoginPending = false;
-          _gymInactive   = false;
-          _userSuspended = false;
-          _userFrozen    = false;
+          _gymInactive          = false;
+          _userSuspended        = false;
+          _userFrozen           = false;
+          _subscriptionExpired  = false;
           try {
             app_main.globalSharedPrefs.remove('user_role');
           } catch (_) {}
@@ -162,9 +174,10 @@ class _AuthChangeNotifier extends ChangeNotifier {
   String? _role;
   String? _currentGymId;
   bool _temporaryPasswordSet = false;
-  bool _gymInactive    = false;
-  bool _userSuspended  = false;
-  bool _userFrozen     = false;
+  bool _gymInactive         = false;
+  bool _userSuspended       = false;
+  bool _userFrozen          = false;
+  bool _subscriptionExpired = false;
 
   /// Tracks whether we have already stamped lastLogin for this app session.
   /// Prevents repeated writes when the Firestore snapshot stream re-fires.
@@ -182,9 +195,10 @@ class _AuthChangeNotifier extends ChangeNotifier {
   bool get isAuthenticated => FirebaseAuth.instance.currentUser != null;
   String? get role => _role;
   bool get needsPhone2FA => _needsPhone2FA;
-  bool get gymInactive   => _gymInactive;
-  bool get userSuspended => _userSuspended;
-  bool get userFrozen    => _userFrozen;
+  bool get gymInactive          => _gymInactive;
+  bool get userSuspended        => _userSuspended;
+  bool get userFrozen           => _userFrozen;
+  bool get subscriptionExpired  => _subscriptionExpired;
 
   /// Call this immediately before signIn() to arm the 2FA trigger.
   void prepareFreshLogin() {
@@ -283,11 +297,21 @@ final appRouter = GoRouter(
       return '/account_frozen';
     }
 
-    // ── 0c. Player was unfrozen/unsuspended — leave the block screen ───────────
+    // ── 0b2. Subscription expired ──────────────────────────────────────────────
+    if (isAuthenticated && _authNotifier.subscriptionExpired &&
+        !_authNotifier.userSuspended &&
+        !_authNotifier.userFrozen &&
+        loc != '/subscription_expired') {
+      return '/subscription_expired';
+    }
+
+    // ── 0c. Player was unfrozen/unsuspended/renewed — leave the block screen ───
     if (isAuthenticated &&
         !_authNotifier.userFrozen &&
         !_authNotifier.userSuspended &&
-        (loc == '/account_frozen' || loc == '/account_suspended')) {
+        !_authNotifier.subscriptionExpired &&
+        (loc == '/account_frozen' || loc == '/account_suspended' ||
+            loc == '/subscription_expired')) {
       final role = _authNotifier.role?.toLowerCase();
       if (role == null) return null;
       if (AppRole.isSuperAdmin(role)) return '/super_admin';
@@ -355,6 +379,11 @@ final appRouter = GoRouter(
       path: '/gym_inactive',
       pageBuilder: (context, state) =>
           _buildPageWithFastFade(state, const GymInactiveScreen()),
+    ),
+    GoRoute(
+      path: '/subscription_expired',
+      pageBuilder: (context, state) =>
+          _buildPageWithFastFade(state, const SubscriptionExpiredScreen()),
     ),
     GoRoute(
       path: '/change_password',

@@ -15,6 +15,7 @@ import 'package:sizer/sizer.dart';
 
 import '../../../auth/data/auth_repository.dart';
 import '../../../coach/data/coach_repository.dart';
+import '../../../coach/presentation/screens/members_management_screen.dart';
 import '../../../user/models/user_model.dart';
 import '../../data/admin_repository.dart';
 import '../screens/admin_dashboard_screen.dart';
@@ -88,9 +89,15 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
 
   List<UserModel> _applyFilter(List<UserModel> players, String filter) {
     final now = DateTime.now();
+    // Plan filter: prefix "plan:"
+    if (filter.startsWith('plan:')) {
+      final planName = filter.substring(5);
+      return players
+          .where((p) => (p.subscriptionPlan ?? '').trim() == planName)
+          .toList();
+    }
     switch (filter) {
       case 'active':
-        // Active = فعال ومش قارب ينتهي (أكثر من 7 أيام متبقية)
         return players.where((p) {
           if (p.isActive != true) return false;
           if (p.subscriptionEnd == null) return true;
@@ -98,16 +105,6 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
         }).toList();
       case 'suspended':
         return players.where((p) => p.isActive != true).toList();
-      case 'elite':
-        return players
-            .where((p) =>
-                p.subscriptionPlan?.toLowerCase().contains('elite') == true)
-            .toList();
-      case 'pro':
-        return players
-            .where((p) =>
-                p.subscriptionPlan?.toLowerCase().contains('pro') == true)
-            .toList();
       case 'expiring':
         return players.where((p) {
           if (p.subscriptionEnd == null) return false;
@@ -271,26 +268,35 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
   Widget _buildFilterRow(
       WidgetRef ref, String currentFilter, List<UserModel> allPlayers) {
     final now = DateTime.now();
-    // Active = فعال ومش قارب ينتهي
     final cActive = allPlayers.where((p) {
       if (p.isActive != true) return false;
       if (p.subscriptionEnd == null) return true;
       return p.subscriptionEnd!.difference(now).inDays > 7;
     }).length;
     final cSuspended = allPlayers.where((p) => p.isActive != true).length;
-    final cElite = allPlayers
-        .where((p) =>
-            p.subscriptionPlan?.toLowerCase().contains('elite') == true)
-        .length;
-    final cPro = allPlayers
-        .where(
-            (p) => p.subscriptionPlan?.toLowerCase().contains('pro') == true)
-        .length;
     final cExpiring = allPlayers.where((p) {
       if (p.subscriptionEnd == null) return false;
       final days = p.subscriptionEnd!.difference(now).inDays;
       return days >= 0 && days <= 7;
     }).length;
+
+    // Unique plan names from players (as set by gym owner)
+    final planNames = allPlayers
+        .map((p) => (p.subscriptionPlan ?? '').trim())
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+
+    // Plan chip colors — cycle through a fixed palette
+    const planColors = [
+      Color(0xFF5BA8FF),
+      Color(0xFF34C759),
+      Color(0xFFAF52DE),
+      Color(0xFFFF9F0A),
+      Color(0xFF30D158),
+      Color(0xFF64D2FF),
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -305,10 +311,21 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
               'Expiring ($cExpiring)', const Color(0xFFFF9500)),
           _buildFilterChip(ref, 'suspended', currentFilter,
               'Suspended ($cSuspended)', const Color(0xFFFF3B30)),
-          _buildFilterChip(
-              ref, 'elite', currentFilter, 'Elite ($cElite)', Colors.white),
-          _buildFilterChip(
-              ref, 'pro', currentFilter, 'Pro ($cPro)', Colors.white),
+          // Dynamic plan chips
+          ...planNames.asMap().entries.map((entry) {
+            final planName = entry.value;
+            final color = planColors[entry.key % planColors.length];
+            final count = allPlayers
+                .where((p) => (p.subscriptionPlan ?? '').trim() == planName)
+                .length;
+            return _buildFilterChip(
+              ref,
+              'plan:$planName',
+              currentFilter,
+              '$planName ($count)',
+              color,
+            );
+          }),
         ],
       ),
     );
@@ -321,20 +338,20 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
       onTap: () =>
           ref.read(adminPlayerFilterProvider.notifier).state = filterVal,
       child: Container(
-        margin: EdgeInsets.only(right: 2.w),
-        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+        margin: EdgeInsets.only(right: 2.5.w),
+        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.5.h),
         decoration: BoxDecoration(
           color: isSel
               ? baseColor
               : (baseColor == Colors.white
                   ? Colors.white.withOpacity(0.07)
                   : baseColor.withOpacity(0.15)),
-          borderRadius: BorderRadius.circular(5.w),
+          borderRadius: BorderRadius.circular(6.w),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 11.sp,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w700,
             color: isSel
                 ? (baseColor == Colors.white
@@ -388,7 +405,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w700,
               color:
                   isSel ? Colors.white : Colors.white.withOpacity(0.3),
@@ -420,7 +437,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
     } else if (tabIndex == 1) {
       return _buildPerformanceTab(players);
     } else {
-      return _buildIssuesTab(players);
+      return _buildIssuesTab(players, gymId);
     }
   }
 
@@ -540,7 +557,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
         padding: EdgeInsets.only(bottom: 1.h, top: 0.5.h),
         child: Text(title,
             style: TextStyle(
-                fontSize: 9.sp,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w700,
                 color: Colors.white38,
                 letterSpacing: 0.5)),
@@ -549,26 +566,26 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
   Widget _statBar(String label, int count, int total, Color color) {
     final pct = total == 0 ? 0.0 : count / total;
     return Padding(
-      padding: EdgeInsets.only(bottom: 1.2.h),
+      padding: EdgeInsets.only(bottom: 1.5.h),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
                 style: TextStyle(
-                    color: Colors.white, fontSize: 10.sp,
+                    color: Colors.white, fontSize: 14.sp,
                     fontWeight: FontWeight.w600)),
             Text('$count / $total',
-                style: TextStyle(color: color, fontSize: 10.sp,
+                style: TextStyle(color: color, fontSize: 14.sp,
                     fontWeight: FontWeight.w700)),
           ],
         ),
-        SizedBox(height: 0.4.h),
+        SizedBox(height: 0.8.h),
         ClipRRect(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(3),
           child: LinearProgressIndicator(
             value: pct,
-            minHeight: 5,
+            minHeight: 8,
             backgroundColor: Colors.white.withOpacity(0.08),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
@@ -579,7 +596,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
 
   Widget _kpiCard(String label, String value, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.5.h),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(3.w),
@@ -588,11 +605,11 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(value,
             style: TextStyle(
-                color: color, fontSize: 16.sp, fontWeight: FontWeight.w800)),
-        SizedBox(height: 0.3.h),
+                color: color, fontSize: 22.sp, fontWeight: FontWeight.w800)),
+        SizedBox(height: 0.6.h),
         Text(label,
             style: TextStyle(
-                color: Colors.white54, fontSize: 9.sp,
+                color: Colors.white54, fontSize: 13.sp,
                 fontWeight: FontWeight.w600)),
       ]),
     );
@@ -600,7 +617,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
 
   // ── Issues tab ────────────────────────────────────────────────────────────────
 
-  Widget _buildIssuesTab(List<UserModel> players) {
+  Widget _buildIssuesTab(List<UserModel> players, String gymId) {
     final now = DateTime.now();
 
     final expired = players.where((p) =>
@@ -700,7 +717,8 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
         if (noCoach.isNotEmpty) ...[
           _issueSection('👤 NO COACH ASSIGNED', noCoach.length),
           ...noCoach.map((p) =>
-              _issuePlayerRow(p, 'Unassigned', const Color(0xFF5BA8FF))),
+              _issuePlayerRow(p, 'Assign +', const Color(0xFF5BA8FF),
+                  onTap: () => _showAssignCoachDialog(context, p, gymId))),
           SizedBox(height: 1.5.h),
         ],
 
@@ -716,7 +734,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
 
   Widget _issueChip(String label, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.7.h),
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(5.w),
@@ -725,7 +743,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
       child: Text(label,
           style: TextStyle(
               color: color,
-              fontSize: 9.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w700)),
     );
   }
@@ -735,28 +753,34 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
       padding: EdgeInsets.only(bottom: 1.h),
       child: Text('$title ($count)',
           style: TextStyle(
-              fontSize: 9.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w700,
               color: Colors.white38,
               letterSpacing: 0.4)),
     );
   }
 
-  Widget _issuePlayerRow(UserModel p, String tag, Color tagColor) {
+  Widget _issuePlayerRow(UserModel p, String tag, Color tagColor,
+      {VoidCallback? onTap}) {
     final name =
         '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
-    return Container(
-      margin: EdgeInsets.only(bottom: 0.8.h),
-      padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+      margin: EdgeInsets.only(bottom: 1.2.h),
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(2.5.w),
         border: Border.all(
-            color: Colors.white.withOpacity(0.07), width: 0.5),
+            color: onTap != null
+                ? tagColor.withOpacity(0.25)
+                : Colors.white.withOpacity(0.07),
+            width: 0.5),
       ),
       child: Row(children: [
         Container(
-          width: 8.w, height: 8.w,
+          width: 12.w, height: 12.w,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.08),
             shape: BoxShape.circle,
@@ -765,7 +789,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
           child: Text(
             name.isNotEmpty ? name[0].toUpperCase() : '?',
             style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w700,
                 color: Colors.white),
           ),
@@ -776,25 +800,125 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
             name.isEmpty ? p.email : name,
             style: TextStyle(
                 color: Colors.white,
-                fontSize: 10.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600),
             overflow: TextOverflow.ellipsis,
           ),
         ),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.3.h),
+          padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.8.h),
           decoration: BoxDecoration(
             color: tagColor.withOpacity(0.15),
             borderRadius: BorderRadius.circular(1.5.w),
           ),
           child: Text(tag,
               style: TextStyle(
-                  fontSize: 8.sp,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w700,
                   color: tagColor)),
         ),
       ]),
+    ),
     );
+  }
+
+  // ── Assign coach dialog ────────────────────────────────────────────────────────
+
+  Future<void> _showAssignCoachDialog(
+      BuildContext context, UserModel player, String gymId) async {
+    final coaches = ref.read(adminCoachesProvider(gymId)).asData?.value ?? [];
+
+    if (coaches.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No coaches available')),
+      );
+      return;
+    }
+
+    final selected = await showDialog<UserModel>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4.w)),
+        title: Text(
+          'Assign Coach',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w700),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: coaches.length,
+            itemBuilder: (_, i) {
+              final c = coaches[i];
+              final cName =
+                  '${c.firstName ?? ''} ${c.lastName ?? ''}'.trim();
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: const Color(0xFF5BA8FF).withOpacity(0.15),
+                  child: Text(
+                    cName.isNotEmpty ? cName[0].toUpperCase() : '?',
+                    style: const TextStyle(
+                        color: Color(0xFF5BA8FF),
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+                title: Text(cName.isEmpty ? c.email : cName,
+                    style: const TextStyle(color: Colors.white)),
+                subtitle: Text(c.email,
+                    style: TextStyle(
+                        color: Colors.white38, fontSize: 9.sp)),
+                onTap: () => Navigator.pop(ctx, c),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel',
+                style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+
+    if (selected == null || !context.mounted) return;
+
+    final coachName =
+        '${selected.firstName ?? ''} ${selected.lastName ?? ''}'.trim();
+    final adminRepo = ref.read(adminRepositoryProvider);
+
+    try {
+      await adminRepo.assignCoachToPlayer(
+        playerUid: player.uid,
+        coachUid: selected.uid,
+        coachName: coachName.isEmpty ? selected.email : coachName,
+        gymId: gymId,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Coach assigned successfully'),
+            backgroundColor: const Color(0xFF34C759),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFFF3B30),
+          ),
+        );
+      }
+    }
   }
 
   // ── Player row ────────────────────────────────────────────────────────────────
@@ -842,8 +966,8 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                       children: [
                         // Avatar
                         Container(
-                          width: 11.w,
-                          height: 11.w,
+                          width: 13.w,
+                          height: 13.w,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.1),
                             shape: BoxShape.circle,
@@ -852,7 +976,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                           child: Text(
                             '${player.firstName?.isNotEmpty == true ? player.firstName![0] : '?'}'.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 16.sp,
+                              fontSize: 19.sp,
                               fontWeight: FontWeight.w800,
                               color: borderColor,
                             ),
@@ -871,7 +995,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                                     ? player.email
                                     : '${player.firstName ?? ''} ${player.lastName ?? ''}'.trim(),
                                 style: TextStyle(
-                                  fontSize: 15.sp,
+                                  fontSize: 16.5.sp,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
                                 ),
@@ -883,7 +1007,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                                     ? 'Expires in $daysLeft days ⚠️'
                                     : (player.isActive ? 'Active' : 'Suspended'),
                                 style: TextStyle(
-                                  fontSize: 12.sp,
+                                  fontSize: 14.sp,
                                   color: isExpiring
                                       ? const Color(0xFFFF9500)
                                       : (player.isActive
@@ -895,7 +1019,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                               Row(
                                 children: [
                                   Icon(Icons.fitness_center_rounded,
-                                      size: 10.sp, color: Colors.white24),
+                                      size: 12.sp, color: Colors.white24),
                                   SizedBox(width: 1.w),
                                   Flexible(
                                     child: Text(
@@ -903,7 +1027,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                                           ? player.assignedCoachName!
                                           : 'No coach',
                                       style: TextStyle(
-                                        fontSize: 11.sp,
+                                        fontSize: 13.sp,
                                         color: player.assignedCoachName?.trim().isNotEmpty == true
                                             ? const Color(0xFF5BA8FF)
                                             : Colors.white38,
@@ -925,7 +1049,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                           children: [
                             Container(
                               padding: EdgeInsets.symmetric(
-                                  horizontal: 2.w, vertical: 0.5.h),
+                                  horizontal: 3.w, vertical: 0.8.h),
                               decoration: BoxDecoration(
                                 color: badgeColor.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(2.w),
@@ -933,7 +1057,7 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                               child: Text(
                                 player.subscriptionPlan ?? 'Basic',
                                 style: TextStyle(
-                                  fontSize: 11.sp,
+                                  fontSize: 13.sp,
                                   fontWeight: FontWeight.w800,
                                   color: badgeColor,
                                 ),
@@ -945,13 +1069,13 @@ class _AdminPlayersViewState extends ConsumerState<AdminPlayersView> {
                                   ? DateFormat('MMM d').format(player.subscriptionEnd!)
                                   : '-',
                               style: TextStyle(
-                                fontSize: 11.sp,
+                                fontSize: 13.sp,
                                 color: Colors.white.withOpacity(0.4),
                               ),
                             ),
                             SizedBox(height: 0.5.h),
                             Icon(Icons.chevron_right_rounded,
-                                color: Colors.white30, size: 14.sp),
+                                color: Colors.white30, size: 16.sp),
                           ],
                         ),
                       ],
@@ -1259,19 +1383,21 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
               final name =
                   '${c.firstName ?? ''} ${c.lastName ?? ''}'.trim();
               return ListTile(
+                contentPadding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
                 leading: CircleAvatar(
+                  radius: 5.w,
                   backgroundColor: Colors.white12,
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
                   ),
                 ),
-                title: Text(name,
+                title: Text(name.isEmpty ? c.email : name,
                     style:
-                        const TextStyle(color: Colors.white)),
+                        TextStyle(color: Colors.white, fontSize: 14.sp)),
                 subtitle: Text(c.email,
                     style: TextStyle(
-                        color: Colors.white54, fontSize: 12.sp)),
+                        color: Colors.white54, fontSize: 11.sp)),
                 onTap: () => Navigator.pop(ctx, c),
               );
             },
@@ -1320,6 +1446,23 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
     }
   }
 
+  // ── Edit Player (all fields) ──────────────────────────────────────────────────
+
+  void _showEditPlayer(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: AddPlayerForm(player: widget.player),
+      ),
+    );
+  }
+
   // ── Update Subscription ───────────────────────────────────────────────────────
 
   void _showUpdateSubscription() {
@@ -1353,6 +1496,15 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
     final name = '${p.firstName ?? ''} ${p.lastName ?? ''}'.trim();
     final isExpired = p.subscriptionEnd?.isBefore(DateTime.now()) == true;
 
+    // Compute real totals from payment records stream (not stale stored fields)
+    final paymentsAsync = ref.watch(_adminPlayerPaymentsProvider(p.uid));
+    final payments = paymentsAsync.asData?.value ?? [];
+    final realPaid = payments.isEmpty
+        ? (p.amountPaid ?? 0.0)
+        : payments.fold(0.0, (s, r) => s + r.amount);
+    final realTotal = (p.totalAmount ?? 0.0) > 0 ? p.totalAmount! : realPaid;
+    final realRemaining = (realTotal - realPaid).clamp(0.0, double.infinity);
+
     return Container(
       constraints:
           BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
@@ -1364,7 +1516,7 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
             BorderRadius.vertical(top: Radius.circular(5.w)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           // Drag handle
           Container(
@@ -1375,6 +1527,8 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(10)),
           ),
+
+          Expanded(child: SingleChildScrollView(child: Column(children: [
 
           // Header
           Row(
@@ -1404,10 +1558,36 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
                   ],
                 ),
               ),
+              // Edit button
+              GestureDetector(
+                onTap: () => _showEditPlayer(context),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5BA8FF).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(2.w),
+                    border: Border.all(color: const Color(0xFF5BA8FF).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_rounded,
+                          color: const Color(0xFF5BA8FF), size: 15.sp),
+                      SizedBox(width: 1.w),
+                      Text('Edit',
+                          style: TextStyle(
+                              color: const Color(0xFF5BA8FF),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: 2.w),
               // Status badge
               Container(
                 padding: EdgeInsets.symmetric(
-                    horizontal: 3.w, vertical: 0.6.h),
+                    horizontal: 4.w, vertical: 1.h),
                 decoration: BoxDecoration(
                   color: (p.isActive && !isExpired)
                       ? Colors.green.withOpacity(0.15)
@@ -1419,7 +1599,7 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
                       ? 'Expired'
                       : (p.isActive ? 'Active' : 'Suspended'),
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
                     color: (p.isActive && !isExpired)
                         ? Colors.greenAccent
@@ -1435,13 +1615,13 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
           SizedBox(height: 2.h),
 
           // Info grid
-          _buildInfoGrid(p, isExpired),
+          _buildInfoGrid(p, isExpired, realPaid, realRemaining),
 
           SizedBox(height: 1.5.h),
           Builder(builder: (_) {
-            final total = p.totalAmount ?? 0.0;
-            final paid = p.amountPaid ?? 0.0;
-            final remaining = p.amountRemaining ?? 0.0;
+            final total = realTotal;
+            final paid = realPaid;
+            final remaining = realRemaining;
             final bool noData = total <= 0;
             final double pct =
                 noData ? 0.0 : (paid / total).clamp(0.0, 1.0);
@@ -1506,7 +1686,7 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
                     onPressed: _showUpdateSubscription,
                     icon: const Icon(Icons.credit_card_rounded,
                         color: Color(0xFFFF9500)),
-                    label: Text('Update Subscription',
+                    label: Text('تعديل الاشتراك',
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 14.sp,
@@ -1576,8 +1756,21 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
                 ),
               ],
             ),
-        ],
+
+          // ── Payment History ──────────────────────────────────────────
+          SizedBox(height: 2.h),
+          _buildAdminPaymentHistory(p),
+          SizedBox(height: 1.h),
+
+          ])))],  // close inner Column, SingleChildScrollView, Expanded, outer Column children
       ),
+    );
+  }
+
+  Widget _buildAdminPaymentHistory(UserModel player) {
+    return _AdminPaymentHistorySection(
+      player: player,
+      adminRepo: widget.adminRepo,
     );
   }
 
@@ -1639,7 +1832,8 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
     }
   }
 
-  Widget _buildInfoGrid(UserModel p, bool isExpired) {
+  Widget _buildInfoGrid(UserModel p, bool isExpired,
+      double realPaid, double realRemaining) {
     final rows = <MapEntry<String, String>>[
       MapEntry(
           'Coach',
@@ -1652,10 +1846,8 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
           p.subscriptionEnd != null
               ? DateFormat('MMM d, yyyy').format(p.subscriptionEnd!)
               : '—'),
-      MapEntry('Paid',
-          '${(p.amountPaid ?? 0).toStringAsFixed(0)} JD'),
-      MapEntry('Remaining',
-          '${(p.amountRemaining ?? 0).toStringAsFixed(0)} JD'),
+      MapEntry('Paid', '${realPaid.toStringAsFixed(0)} JD'),
+      MapEntry('Remaining', '${realRemaining.toStringAsFixed(0)} JD'),
     ];
     return Column(
       children: rows
@@ -1712,9 +1904,217 @@ class _PlayerDetailSheetState extends ConsumerState<_PlayerDetailSheet> {
   }
 }
 
+// ─── Admin Payment History Section ───────────────────────────────────────────
+
+final _adminPlayerPaymentsProvider =
+    StreamProvider.autoDispose.family<List<PaymentRecord>, String>((ref, uid) {
+  final repo = ref.watch(adminRepositoryProvider);
+  return repo.getPlayerPaymentsStream(uid);
+});
+
+class _AdminPaymentHistorySection extends ConsumerWidget {
+  final UserModel player;
+  final AdminRepository adminRepo;
+
+  const _AdminPaymentHistorySection({
+    required this.player,
+    required this.adminRepo,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final paymentsAsync = ref.watch(_adminPlayerPaymentsProvider(player.uid));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Divider(color: Colors.white.withOpacity(0.08)),
+        SizedBox(height: 1.h),
+        Row(
+          children: [
+            const Icon(Icons.receipt_long_rounded,
+                color: Color(0xFFFF9500), size: 20),
+            SizedBox(width: 2.w),
+            Text('سجل المدفوعات',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800)),
+          ],
+        ),
+        SizedBox(height: 1.5.h),
+        paymentsAsync.when(
+          loading: () => const Center(
+              child: CircularProgressIndicator(color: Color(0xFFFF9500))),
+          error: (e, _) => Text('Error: $e',
+              style: TextStyle(color: Colors.red, fontSize: 10.sp)),
+          data: (payments) {
+            if (payments.isEmpty) {
+              return Text('لا يوجد سجل مدفوعات',
+                  style: TextStyle(color: Colors.white38, fontSize: 11.sp));
+            }
+
+            // Compute real total from payment records
+            final totalPaid = payments.fold(0.0, (sum, p) => sum + p.amount);
+            final totalAmount = (player.totalAmount ?? 0.0) > 0
+                ? player.totalAmount!
+                : totalPaid;
+            final remaining = (totalAmount - totalPaid).clamp(0.0, double.infinity);
+
+            return Column(
+              children: [
+                // ── Summary banner ──────────────────────────────────────
+                Container(
+                  margin: EdgeInsets.only(bottom: 2.h),
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(3.w),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _summaryChip(
+                            'الإجمالي', totalAmount, Colors.white70),
+                      ),
+                      _vDivider(),
+                      Expanded(
+                        child: _summaryChip(
+                            'المدفوع', totalPaid, const Color(0xFF34C759)),
+                      ),
+                      _vDivider(),
+                      Expanded(
+                        child: _summaryChip(
+                            'المتبقي',
+                            remaining,
+                            remaining > 0
+                                ? const Color(0xFFFF9500)
+                                : const Color(0xFF34C759)),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Records ─────────────────────────────────────────────
+                ...payments.map((p) {
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 1.5.h),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(3.w),
+                      border:
+                          Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.credit_card_rounded,
+                            color: Color(0xFFFF9500), size: 22),
+                        SizedBox(width: 3.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.planName,
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700)),
+                              SizedBox(height: 0.3.h),
+                              Text(
+                                DateFormat('MMM dd, yyyy').format(p.date) +
+                                    '  •  ' +
+                                    p.paymentMethod,
+                                style: TextStyle(
+                                    color: Colors.white54, fontSize: 12.sp),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text('+${p.amount.toStringAsFixed(0)} JD',
+                            style: TextStyle(
+                                color: const Color(0xFF34C759),
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w800)),
+                        SizedBox(width: 2.w),
+                        GestureDetector(
+                          onTap: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1C1C1E),
+                                title: Text('حذف السجل',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14.sp)),
+                                content: Text('هل تريد حذف هذا السجل؟',
+                                    style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12.sp)),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('إلغاء',
+                                          style: TextStyle(
+                                              color: Colors.white54))),
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, true),
+                                      child: const Text('حذف',
+                                          style: TextStyle(
+                                              color: Color(0xFFFF3B30)))),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              await adminRepo.deletePaymentRecord(
+                                  player.uid, p.id);
+                            }
+                          },
+                          child: Icon(Icons.delete_outline_rounded,
+                              color: Colors.red.shade400, size: 22.sp),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryChip(String label, double value, Color valueColor) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label,
+            style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
+        SizedBox(height: 0.4.h),
+        Text('${value.toStringAsFixed(0)} JD',
+            style: TextStyle(
+                color: valueColor,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w800)),
+      ],
+    );
+  }
+
+  Widget _vDivider() => Container(
+        width: 1,
+        height: 4.h,
+        color: Colors.white.withOpacity(0.12),
+      );
+}
+
 // ─── Update Subscription Sheet ────────────────────────────────────────────────
 
-class _UpdateSubscriptionSheet extends StatefulWidget {
+class _UpdateSubscriptionSheet extends ConsumerStatefulWidget {
   final UserModel player;
   final AdminRepository adminRepo;
   final VoidCallback onUpdated;
@@ -1730,47 +2130,54 @@ class _UpdateSubscriptionSheet extends StatefulWidget {
   });
 
   @override
-  State<_UpdateSubscriptionSheet> createState() =>
+  ConsumerState<_UpdateSubscriptionSheet> createState() =>
       _UpdateSubscriptionSheetState();
 }
 
-class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
+class _UpdateSubscriptionSheetState
+    extends ConsumerState<_UpdateSubscriptionSheet> {
   late DateTime _startDate;
-  late DateTime _endDate;
-  String _plan = 'Basic';
-  String _paymentMethod = 'cash';
-  final _totalCtrl = TextEditingController();
-  final _paidCtrl = TextEditingController();
-  bool _saving = false;
+  DateTime? _endDate;
 
-  // Valid options — must match the DropdownButtonFormField items below
-  static const _planOptions = ['Basic', 'Pro', 'Elite', 'Custom'];
+  // Plan state — chips loaded from Firestore
+  Map<String, dynamic>? _selectedPlan;
+  bool _useCustomPlan = false;
+  String _initialPlanName = ''; // stored plan name from player
+  bool _autoSelectDone = false; // so we only auto-select once
+
+  String _paymentMethod = 'cash';
+  final _totalCtrl      = TextEditingController();
+  final _paidCtrl       = TextEditingController();
+  final _customPlanCtrl = TextEditingController();
+  bool _saving = false;
+  String _errorText = ''; // inline error — shown inside the sheet
+
   static const _methodOptions = [
-    'cash', 'visa', 'bank_transfer', 'cliq', 'wallet'
+    'cash', 'visa', 'bank_transfer', 'cliq', 'wallet',
   ];
 
   @override
   void initState() {
     super.initState();
-    final p = widget.player;
+    final p          = widget.player;
+    // Edit mode: pre-fill CURRENT start/end dates (not next period)
     _startDate = p.subscriptionStart ?? DateTime.now();
-    _endDate = p.subscriptionEnd ??
-        DateTime(DateTime.now().year, DateTime.now().month + 1,
-            DateTime.now().day);
-    // Guard: if the stored plan isn't in our list, fall back to 'Custom'
-    final stored = p.subscriptionPlan ?? '';
-    _plan = _planOptions.contains(stored) ? stored : 'Custom';
+    _endDate   = p.subscriptionEnd;
+    _initialPlanName = p.subscriptionPlan ?? '';
     final storedMethod = p.paymentMethod ?? '';
-    _paymentMethod =
-        _methodOptions.contains(storedMethod) ? storedMethod : 'cash';
-    _totalCtrl.text = (p.totalAmount ?? 0).toStringAsFixed(0);
-    _paidCtrl.text  = (p.amountPaid  ?? 0).toStringAsFixed(0);
+    _paymentMethod   = _methodOptions.contains(storedMethod) ? storedMethod : 'cash';
+    // Only show non-zero values; leave blank so user can type fresh if 0
+    if ((p.totalAmount ?? 0) > 0)
+      _totalCtrl.text = p.totalAmount!.toStringAsFixed(0);
+    if ((p.amountPaid ?? 0) > 0)
+      _paidCtrl.text  = p.amountPaid!.toStringAsFixed(0);
   }
 
   @override
   void dispose() {
     _totalCtrl.dispose();
     _paidCtrl.dispose();
+    _customPlanCtrl.dispose();
     super.dispose();
   }
 
@@ -1779,45 +2186,297 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
               (double.tryParse(_paidCtrl.text) ?? 0))
           .clamp(0.0, double.infinity);
 
+  void _recalcEndDate() {
+    if (_selectedPlan != null && !_useCustomPlan) {
+      final days = _selectedPlan!['durationDays'] as int? ?? 30;
+      setState(() => _endDate = _startDate.add(Duration(days: days)));
+    }
+  }
+
   Future<void> _save() async {
+    // Resolve plan name:
+    // 1. Custom chip → text field value
+    // 2. Chip selected → chip's name
+    // 3. Neither → fall back to whatever was stored on the player (_initialPlanName)
+    // 4. Still empty → default to "مخصص" so save is never blocked by plan
+    final planName = _useCustomPlan
+        ? (_customPlanCtrl.text.trim().isNotEmpty
+            ? _customPlanCtrl.text.trim()
+            : _initialPlanName)
+        : (_selectedPlan?['name'] as String? ??
+            (_initialPlanName.isNotEmpty ? _initialPlanName : 'مخصص'));
+
+    final effectiveEnd = _endDate ??
+        DateTime(DateTime.now().year, DateTime.now().month + 1, DateTime.now().day);
     final total = double.tryParse(_totalCtrl.text) ?? 0;
-    final paid = double.tryParse(_paidCtrl.text) ?? 0;
-    if (total <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+    final paid  = double.tryParse(_paidCtrl.text)  ?? 0;
+    if (total < 0 || paid < 0) {
+      setState(() => _errorText = 'المبلغ لا يمكن أن يكون سالباً');
       return;
     }
-    setState(() => _saving = true);
+    setState(() { _saving = true; _errorText = ''; });
     try {
       final playerName =
-          '${widget.player.firstName ?? ''} ${widget.player.lastName ?? ''}'
-              .trim();
+          '${widget.player.firstName ?? ''} ${widget.player.lastName ?? ''}'.trim();
       await widget.adminRepo.updatePlayerSubscription(
-        playerUid: widget.player.uid,
-        plan: _plan,
-        startDate: _startDate,
-        endDate: _endDate,
-        totalAmount: total,
-        amountPaid: paid,
-        paymentMethod: _paymentMethod,
-        gymId: widget.gymId,
-        playerName: playerName.isEmpty ? widget.player.email : playerName,
+        playerUid:       widget.player.uid,
+        plan:            planName,
+        startDate:       _startDate,
+        endDate:         effectiveEnd,
+        totalAmount:     total,
+        amountPaid:      paid,
+        paymentMethod:   _paymentMethod,
+        gymId:           widget.gymId,
+        playerName:      playerName.isEmpty ? widget.player.email : playerName,
         registeredByUid: widget.adminUid,
       );
       widget.onUpdated();
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        setState(() =>
+            _errorText = '$e'.replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
+  // ── Plan chip picker ───────────────────────────────────────────────────────
+  Widget _buildPlanPicker() {
+    final plansAsync = ref.watch(subscriptionPlansProvider(widget.gymId));
+    final plans      = plansAsync.asData?.value ?? [];
+
+    // Once plans load, auto-select the chip matching the player's existing plan
+    if (!_autoSelectDone && plans.isNotEmpty) {
+      _autoSelectDone = true;
+      if (_initialPlanName.isNotEmpty) {
+        Map<String, dynamic>? match;
+        for (final p in plans) {
+          if ((p['name'] as String?) == _initialPlanName) { match = p; break; }
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (match != null) {
+            final days  = match!['durationDays'] as int? ?? 30;
+            final price = (match!['price'] as num?)?.toDouble() ?? 0.0;
+            setState(() {
+              _selectedPlan  = match;
+              _useCustomPlan = false;
+              _endDate       = _startDate.add(Duration(days: days));
+              if (price > 0 && _totalCtrl.text.isEmpty) {
+                _totalCtrl.text = price.toStringAsFixed(0);
+              }
+            });
+          } else {
+            // Stored plan name not found in gym's plans → fall to custom
+            setState(() {
+              _useCustomPlan       = true;
+              _customPlanCtrl.text = _initialPlanName;
+            });
+          }
+        });
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Plan chips
+        Wrap(
+          spacing: 2.w,
+          runSpacing: 1.h,
+          children: [
+            ...plans.map((plan) {
+              final isSelected = !_useCustomPlan &&
+                  _selectedPlan != null &&
+                  _selectedPlan!['id'] == plan['id'];
+              final name  = plan['name']  as String? ?? '';
+              final days  = plan['durationDays'] as int? ?? 30;
+              final price = (plan['price'] as num?)?.toDouble() ?? 0.0;
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedPlan  = plan;
+                  _useCustomPlan = false;
+                  _totalCtrl.text = price.toStringAsFixed(0);
+                  _endDate = _startDate.add(Duration(days: days));
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFFF3B30)
+                        : Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFF3B30)
+                          : Colors.white.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(name,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700)),
+                      Text('$days يوم · ${price.toStringAsFixed(0)} JD',
+                          style: TextStyle(
+                              color: isSelected ? Colors.white70 : Colors.white38,
+                              fontSize: 9.sp)),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            // Custom chip
+            GestureDetector(
+              onTap: () => setState(() {
+                _useCustomPlan = true;
+                _selectedPlan  = null;
+                if (_customPlanCtrl.text.isEmpty) {
+                  _customPlanCtrl.text = _initialPlanName;
+                }
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                decoration: BoxDecoration(
+                  color: _useCustomPlan
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _useCustomPlan
+                        ? Colors.white54
+                        : Colors.white.withOpacity(0.1),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_rounded,
+                        color: _useCustomPlan ? Colors.white : Colors.white38,
+                        size: 12.sp),
+                    SizedBox(width: 1.w),
+                    Text('مخصص',
+                        style: TextStyle(
+                            color: _useCustomPlan ? Colors.white : Colors.white38,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        if (plansAsync.isLoading) ...[
+          SizedBox(height: 1.h),
+          const Center(
+            child: SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(
+                  color: Color(0xFFFF3B30), strokeWidth: 2),
+            ),
+          ),
+        ],
+
+        // Custom plan name text field
+        if (_useCustomPlan) ...[
+          SizedBox(height: 1.5.h),
+          TextField(
+            controller: _customPlanCtrl,
+            style: TextStyle(color: Colors.white, fontSize: 14.sp),
+            decoration: _inputDeco(label: 'اسم الخطة'),
+          ),
+        ],
+
+        // Auto-fill summary row
+        if (_selectedPlan != null && !_useCustomPlan) ...[
+          SizedBox(height: 1.5.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF5BA8FF).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: const Color(0xFF5BA8FF).withOpacity(0.3)),
+            ),
+            child: Row(children: [
+              Icon(Icons.auto_awesome_rounded,
+                  color: const Color(0xFF5BA8FF), size: 14.sp),
+              SizedBox(width: 2.w),
+              Text(
+                '✓ تعبئة تلقائية · ${((_selectedPlan!['price'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} JD · ${_selectedPlan!['durationDays'] ?? 0} يوم',
+                style: TextStyle(
+                    color: const Color(0xFF5BA8FF),
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600),
+              ),
+            ]),
+          ),
+        ],
+
+        // Auto-calculated end date pill
+        if (_selectedPlan != null && !_useCustomPlan && _endDate != null) ...[
+          SizedBox(height: 1.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF34C759).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(2.5.w),
+              border: Border.all(color: const Color(0xFF34C759).withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.event_available_rounded,
+                    color: const Color(0xFF34C759), size: 18.sp),
+                SizedBox(width: 3.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('تاريخ انتهاء الاشتراك',
+                          style: TextStyle(fontSize: 9.sp, color: Colors.white38)),
+                      Text(
+                        DateFormat('dd MMM yyyy').format(_endDate!),
+                        style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF34C759)),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.4.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF34C759).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(1.5.w),
+                  ),
+                  child: Text('تلقائي',
+                      style: TextStyle(
+                          color: const Color(0xFF34C759),
+                          fontSize: 9.sp,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final effectiveEnd = _endDate ??
+        DateTime(DateTime.now().year, DateTime.now().month + 1, DateTime.now().day);
+
     return Container(
       constraints:
           BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
@@ -1842,7 +2501,7 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
                     borderRadius: BorderRadius.circular(10)),
               ),
             ),
-            Text('Update Subscription',
+            Text('تعديل الاشتراك',
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 18.sp,
@@ -1851,39 +2510,28 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
             Text(
                 '${widget.player.firstName ?? ''} ${widget.player.lastName ?? ''}'
                     .trim(),
-                style:
-                    TextStyle(color: Colors.white54, fontSize: 13.sp)),
+                style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
             SizedBox(height: 3.h),
 
-            // Plan
+            // Plan chips (from Firestore, pre-selects existing plan)
             _label('Plan'),
             SizedBox(height: 1.h),
-            DropdownButtonFormField<String>(
-              value: _plan,
-              dropdownColor: const Color(0xFF2C2C2E),
-              style: TextStyle(color: Colors.white, fontSize: 14.sp),
-              decoration: _inputDeco(),
-              items: _planOptions
-                  .map((v) => DropdownMenuItem(
-                      value: v,
-                      child: Text(v,
-                          style: const TextStyle(color: Colors.white))))
-                  .toList(),
-              onChanged: (v) => setState(() => _plan = v ?? _plan),
-            ),
+            _buildPlanPicker(),
 
             SizedBox(height: 2.h),
 
-            // Dates
+            // Dates — end date is manual only when using custom plan / no auto date
             Row(
               children: [
                 Expanded(child: _datePicker('Start', _startDate, (d) {
-                  setState(() => _startDate = d);
+                  setState(() { _startDate = d; _recalcEndDate(); });
                 })),
-                SizedBox(width: 3.w),
-                Expanded(child: _datePicker('End', _endDate, (d) {
-                  setState(() => _endDate = d);
-                })),
+                if (_useCustomPlan || _selectedPlan == null) ...[
+                  SizedBox(width: 3.w),
+                  Expanded(child: _datePicker('End', effectiveEnd, (d) {
+                    setState(() => _endDate = d);
+                  })),
+                ],
               ],
             ),
 
@@ -1917,8 +2565,7 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
                     controller: _totalCtrl,
                     keyboardType: TextInputType.number,
                     style: TextStyle(color: Colors.white, fontSize: 14.sp),
-                    decoration:
-                        _inputDeco(label: 'Total Amount (\$)'),
+                    decoration: _inputDeco(label: 'Total Amount (JD)'),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
@@ -1928,7 +2575,7 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
                     controller: _paidCtrl,
                     keyboardType: TextInputType.number,
                     style: TextStyle(color: Colors.white, fontSize: 14.sp),
-                    decoration: _inputDeco(label: 'Amount Paid (\$)'),
+                    decoration: _inputDeco(label: 'Amount Paid (JD)'),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
@@ -1960,7 +2607,40 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
               ),
             ),
 
-            SizedBox(height: 4.h),
+            SizedBox(height: 2.h),
+
+            // ── Inline error box (shown inside the sheet, not behind it) ──
+            if (_errorText.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.2.h),
+                margin: EdgeInsets.only(bottom: 1.5.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF3B30).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(3.w),
+                  border: Border.all(
+                      color: const Color(0xFFFF3B30).withOpacity(0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded,
+                        color: Color(0xFFFF3B30), size: 18),
+                    SizedBox(width: 2.w),
+                    Expanded(
+                      child: Text(
+                        _errorText,
+                        style: TextStyle(
+                            color: const Color(0xFFFF3B30),
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            SizedBox(height: 2.h),
             SizedBox(
               width: double.infinity,
               height: 6.h,
@@ -1994,8 +2674,7 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
 
   InputDecoration _inputDeco({String? label}) => InputDecoration(
         labelText: label,
-        labelStyle:
-            TextStyle(color: Colors.white54, fontSize: 12.sp),
+        labelStyle: TextStyle(color: Colors.white54, fontSize: 12.sp),
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
         contentPadding:
@@ -2032,8 +2711,7 @@ class _UpdateSubscriptionSheetState extends State<_UpdateSubscriptionSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: TextStyle(
-                    color: Colors.white54, fontSize: 11.sp)),
+                style: TextStyle(color: Colors.white54, fontSize: 11.sp)),
             SizedBox(height: 0.4.h),
             Text(DateFormat('MMM d, yyyy').format(date),
                 style: TextStyle(
@@ -3120,7 +3798,7 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
             title: Text('Assign Coach',
                 style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14.sp,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w700)),
             content: SizedBox(
               width: double.maxFinite,
@@ -3129,14 +3807,16 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                 children: [
                   // "No coach" option
                   ListTile(
-                    leading: const CircleAvatar(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
+                    leading: CircleAvatar(
+                      radius: 5.w,
                       backgroundColor: Colors.white12,
                       child: Icon(Icons.person_off_rounded,
-                          color: Colors.white54),
+                          color: Colors.white54, size: 20.sp),
                     ),
                     title: Text('No coach',
                         style: TextStyle(
-                            color: Colors.white54, fontSize: 12.sp)),
+                            color: Colors.white54, fontSize: 14.sp)),
                     onTap: () => Navigator.pop(ctx, null),
                   ),
                   if (coaches.isEmpty)
@@ -3144,26 +3824,28 @@ class _AddPlayerSheetState extends ConsumerState<_AddPlayerSheet> {
                       padding: EdgeInsets.all(4.w),
                       child: Text('No coaches available',
                           style: TextStyle(
-                              color: Colors.white38, fontSize: 11.sp)),
+                              color: Colors.white38, fontSize: 13.sp)),
                     ),
                   ...coaches.map((c) {
                     final name =
                         '${c.firstName ?? ''} ${c.lastName ?? ''}'.trim();
                     return ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
                       leading: CircleAvatar(
+                        radius: 5.w,
                         backgroundColor:
                             const Color(0xFF5BA8FF).withOpacity(0.2),
                         child: Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: const TextStyle(color: Color(0xFF5BA8FF)),
+                          style: TextStyle(color: const Color(0xFF5BA8FF), fontSize: 14.sp, fontWeight: FontWeight.bold),
                         ),
                       ),
                       title: Text(name.isEmpty ? c.email : name,
                           style: TextStyle(
-                              color: Colors.white, fontSize: 12.sp)),
+                              color: Colors.white, fontSize: 14.sp)),
                       subtitle: Text(c.email,
                           style: TextStyle(
-                              color: Colors.white38, fontSize: 9.sp)),
+                              color: Colors.white38, fontSize: 11.sp)),
                       onTap: () => Navigator.pop(ctx, c),
                     );
                   }),
@@ -3380,4 +4062,99 @@ class _CredentialsDialog extends StatelessWidget {
         ],
       ),
       content: Column(
-        mainAxi
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Share these credentials with $name:',
+            style: TextStyle(color: Colors.white60, fontSize: 10.sp),
+          ),
+          const SizedBox(height: 12),
+          _credRow(context, 'Email', email),
+          const SizedBox(height: 8),
+          _credRow(context, 'Password', password),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9500).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                  color: const Color(0xFFFF9500).withOpacity(0.30)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: Color(0xFFFF9500), size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Player must change this password on first login.',
+                    style:
+                        TextStyle(color: const Color(0xFFFF9500), fontSize: 9.sp),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Done',
+            style: TextStyle(
+                color: const Color(0xFFFF3B30),
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _credRow(BuildContext context, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 11)),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label copied'),
+                  backgroundColor: const Color(0xFF1C1C1E),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Icon(Icons.copy_rounded,
+                color: Colors.white38, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}

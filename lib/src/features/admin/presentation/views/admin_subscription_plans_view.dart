@@ -146,6 +146,9 @@ class _AdminSubscriptionPlansViewState
               final days = plan['durationDays'] as int? ?? 30;
               final price = (plan['price'] as num?)?.toDouble() ?? 0.0;
               final planId = plan['id'] as String? ?? '';
+              // Smart label: "3 أشهر · 90 يوم"
+              final durationLabel =
+                  '${_PlanFormSheetState._dayLabel(days)} · $days يوم';
 
               return Container(
                 margin: EdgeInsets.only(bottom: 2.h),
@@ -182,7 +185,7 @@ class _AdminSubscriptionPlansViewState
                           Row(
                             children: [
                               _chip(Icons.calendar_today_rounded,
-                                  '$days days', const Color(0xFF5BA8FF)),
+                                  durationLabel, const Color(0xFF5BA8FF)),
                               SizedBox(width: 2.w),
                               _chip(Icons.attach_money_rounded,
                                   '${price.toStringAsFixed(0)} JD',
@@ -322,7 +325,24 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
     }
   }
 
-  static const _quickDays = [7, 14, 30, 60, 90, 180, 365];
+  // ── Quick-pick durations ─────────────────────────────────────────────────
+  static const _quickDays = [7, 14, 30, 60, 90, 120, 365];
+
+  /// Human-readable Arabic label for a day count.
+  static String _dayLabel(int d) {
+    switch (d) {
+      case 7:   return '7 أيام';
+      case 14:  return 'أسبوعين';
+      case 30:  return 'شهر';
+      case 60:  return 'شهرين';
+      case 90:  return '3 أشهر';
+      case 120: return '4 أشهر';
+      case 365: return 'سنة';
+      default:
+        if (d % 30 == 0) return '${d ~/ 30} أشهر';
+        return '$d يوم';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -356,27 +376,30 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
                     fontSize: 17.sp,
                     fontWeight: FontWeight.w800)),
             SizedBox(height: 2.5.h),
-            _label('Plan Name'),
+            _label('اسم الخطة'),
             SizedBox(height: 1.h),
-            _field(_nameCtrl, 'e.g. Monthly Premium', TextInputType.text),
+            _field(_nameCtrl, 'مثال: خطة شهرية', TextInputType.text),
             SizedBox(height: 2.h),
-            _label('Price (\$)'),
+            _label('السعر (JD)'),
             SizedBox(height: 1.h),
             _field(_priceCtrl, '0.00', TextInputType.number),
             SizedBox(height: 2.h),
-            _label('Duration'),
+            _label('المدة'),
             SizedBox(height: 1.h),
             Wrap(
               spacing: 2.w,
               runSpacing: 1.h,
               children: _quickDays.map((d) {
                 final selected = _days == d;
+                final label = _dayLabel(d);
+                // Show day count as sub-text when the label doesn't include it
+                final showDays = d != 7 && d != 14;
                 return GestureDetector(
                   onTap: () => setState(() => _days = d),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: EdgeInsets.symmetric(
-                        horizontal: 3.w, vertical: 1.h),
+                        horizontal: 4.5.w, vertical: 1.5.h),
                     decoration: BoxDecoration(
                       color: selected
                           ? const Color(0xFFFF3B30)
@@ -387,14 +410,29 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
                               ? const Color(0xFFFF3B30)
                               : Colors.white24),
                     ),
-                    child: Text(
-                      d == 365 ? '1 Year' : '$d days',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.sp,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w400),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500),
+                        ),
+                        if (showDays)
+                          Text(
+                            '$d يوم',
+                            style: TextStyle(
+                                color: selected
+                                    ? Colors.white70
+                                    : Colors.white38,
+                                fontSize: 12.sp),
+                          ),
+                      ],
                     ),
                   ),
                 );
@@ -403,7 +441,7 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
             SizedBox(height: 3.h),
             SizedBox(
               width: double.infinity,
-              height: 6.h,
+              height: 7.h,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF3B30),
@@ -417,10 +455,10 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
                         height: 20,
                         child: CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2))
-                    : Text(isEdit ? 'Save Changes' : 'Create Plan',
+                    : Text(isEdit ? 'حفظ التغييرات' : 'إنشاء الخطة',
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14.sp,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w700)),
               ),
             ),
@@ -433,7 +471,7 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
   Widget _label(String text) => Text(text,
       style: TextStyle(
           color: Colors.white60,
-          fontSize: 11.sp,
+          fontSize: 14.sp,
           fontWeight: FontWeight.w600));
 
   Widget _field(
@@ -441,10 +479,10 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
     return TextField(
       controller: ctrl,
       keyboardType: type,
-      style: TextStyle(color: Colors.white, fontSize: 13.sp),
+      style: TextStyle(color: Colors.white, fontSize: 16.sp),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white38),
+        hintStyle: TextStyle(color: Colors.white38, fontSize: 14.sp),
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
         border: OutlineInputBorder(
@@ -452,7 +490,7 @@ class _PlanFormSheetState extends State<_PlanFormSheet> {
           borderSide: BorderSide.none,
         ),
         contentPadding:
-            EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+            EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
       ),
     );
   }

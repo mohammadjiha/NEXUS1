@@ -244,64 +244,61 @@ class BodyMetricsNotifier extends AsyncNotifier<BodyMetrics> {
   Future<BodyMetrics> build() async {
     final user = ref.watch(authStateProvider).value;
     if (user == null) return BodyMetrics();
-    return _loadData(user.uid);
-  }
 
-  Future<BodyMetrics> _loadData(String uid) async {
-    BodyMetrics metrics = BodyMetrics();
-    // 1. Load from local SharedPreferences for instant UI
+    // 1. Show local cache immediately for instant UI
+    BodyMetrics cached = BodyMetrics();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final localData = prefs.getString('local_body_metrics_$uid');
+      final localData = prefs.getString('local_body_metrics_${user.uid}');
       if (localData != null) {
-        metrics = BodyMetrics.fromJson(jsonDecode(localData));
+        cached = BodyMetrics.fromJson(jsonDecode(localData));
       }
     } catch (_) {}
 
-    // 2. Sync with Firebase in the background
-    _syncFromFirebase(uid);
+    // 2. Real-time stream — auto-updates whenever admin/coach/superAdmin
+    //    edits the player's body metrics in Firestore.
+    final sub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('metrics')
+        .doc('body_composition')
+        .snapshots()
+        .listen((doc) async {
+          if (doc.exists && doc.data() != null) {
+            final fbMetrics  = BodyMetrics.fromJson(doc.data()!);
+            final normalized = fbMetrics.withCalculatedDefaults();
+            state = AsyncValue.data(normalized);
+            // Update local cache so next cold-start is instant
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString(
+                'local_body_metrics_${user.uid}',
+                jsonEncode(normalized.toJson()),
+              );
+            } catch (_) {}
+            // Backfill computed fields if Firestore doc is missing them
+            if (normalized.toJson().toString() != fbMetrics.toJson().toString()) {
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .collection('metrics')
+                  .doc('body_composition')
+                  .set({
+                    ...normalized.toJson(),
+                    'userId': user.uid,
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  }, SetOptions(merge: true))
+                  .ignore();
+            }
+          } else {
+            await _ensureBodyCompositionDocument(user.uid);
+          }
+        });
 
-    return metrics;
-  }
+    // Cancel stream when provider is disposed / user signs out
+    ref.onDispose(sub.cancel);
 
-  Future<void> _syncFromFirebase(String uid) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('metrics')
-          .doc('body_composition')
-          .get();
-      if (doc.exists && doc.data() != null) {
-        final fbMetrics = BodyMetrics.fromJson(doc.data()!);
-        final normalizedMetrics = fbMetrics.withCalculatedDefaults();
-        state = AsyncValue.data(normalizedMetrics);
-
-        // Cache to local storage
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-          'local_body_metrics_$uid',
-          jsonEncode(normalizedMetrics.toJson()),
-        );
-        if (normalizedMetrics.toJson().toString() !=
-            fbMetrics.toJson().toString()) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('metrics')
-              .doc('body_composition')
-              .set({
-                ...normalizedMetrics.toJson(),
-                'userId': uid,
-                'updatedAt': FieldValue.serverTimestamp(),
-              }, SetOptions(merge: true));
-        }
-      } else {
-        await _ensureBodyCompositionDocument(uid);
-      }
-    } catch (e) {
-      // Ignore Firebase errors silently if offline
-    }
+    return cached; // Show cache while first stream event loads
   }
 
   Future<void> _ensureBodyCompositionDocument(String uid) async {
@@ -414,7 +411,7 @@ class BodyMetricsNotifier extends AsyncNotifier<BodyMetrics> {
       await prefs.setString('local_body_metrics_${user.uid}', jsonEncode(json));
     } catch (_) {}
 
-    // 2. Save to Firebase
+    // 2. Save to metrics subcollection — triggers the real-time stream above
     try {
       await FirebaseFirestore.instance
           .collection('users')
@@ -428,6 +425,32 @@ class BodyMetricsNotifier extends AsyncNotifier<BodyMetrics> {
           }, SetOptions(merge: true));
     } catch (e) {
       rethrow;
+    }
+
+    // 3. Mirror body fields to users/{uid} main doc so admin/coach/superAdmin
+    //    see the latest metrics without querying the subcollection.
+    try {
+      final dateOfBirthTs = metrics.dateOfBirth.isNotEmpty
+          ? Timestamp.fromDate(
+              DateTime.tryParse(metrics.dateOfBirth) ?? DateTime.now())
+          : null;
+      final userUpdate = <String, dynamic>{
+        'weight':      metrics.weight,
+        'height':      metrics.height,
+        'bodyFat':     metrics.bodyFat,
+        'muscleMass':  metrics.muscleMass,
+        'goal':        metrics.goal,
+        'fitnessLevel': metrics.experienceLevel,
+        'age':         metrics.age,
+        'updatedAt':   FieldValue.serverTimestamp(),
+      };
+      if (dateOfBirthTs != null) userUpdate['dateOfBirth'] = dateOfBirthTs;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update(userUpdate);
+    } catch (_) {
+      // Non-fatal — metrics subcollection is the source of truth
     }
   }
 }

@@ -428,15 +428,6 @@ class CoachRepository {
       throw Exception('Player is not linked to your gym.');
     }
 
-    final role = (currentUserData?['role'] as String?)?.trim().toLowerCase();
-    final isCoach = role == 'coach';
-    final canEditCoachPlayer =
-        playerData?['registeredBy'] == currentUser.uid ||
-        playerData?['assignedCoachUid'] == currentUser.uid;
-    if (isCoach && !canEditCoachPlayer) {
-      throw Exception('You can only edit players assigned to you.');
-    }
-
     final coachName = input.assignedCoachName.trim().isNotEmpty
         ? input.assignedCoachName.trim()
         : [
@@ -596,16 +587,19 @@ class CoachRepository {
       'role': 'player',
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-    if (financeChanged) {
+    // Only create a payment record when new money was actually paid (delta > 0).
+    // A plan change / total change alone does NOT create a payment entry —
+    // that prevents duplicate / phantom payments on every edit.
+    if (paidDelta > 0) {
       batch.set(
         paymentRef,
         _paymentHistoryData(
           input: input,
           endDate: end,
           amountRemaining: amountRemaining,
-          type: paidDelta > 0 ? 'payment_update' : 'finance_update',
+          type: 'payment_update',
           actorUid: currentUser.uid,
-          amountOverride: paidDelta > 0 ? paidDelta : input.amountPaid,
+          amountOverride: paidDelta, // record only the NEW money, not total
         ),
       );
     }
@@ -850,6 +844,78 @@ class CoachRepository {
               .map((doc) => PaymentRecord.fromMap(doc.data(), doc.id))
               .toList(),
         );
+  }
+
+  Future<void> deletePaymentRecord(String uid, String paymentId) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('payments')
+        .doc(paymentId)
+        .delete();
+  }
+
+  /// Edit an existing subscription in-place (SET, not increment).
+  /// Creates a payment record ONLY if new money was paid (delta > 0).
+  /// Safe to call for date/plan/price changes — no phantom records.
+  Future<void> editSubscription({
+    required String uid,
+    required DateTime startDate,
+    required DateTime endDate,
+    required double totalAmount,
+    required double amountPaid,
+    required String planName,
+    required String paymentMethod,
+    String gymId = '',
+    String coachUid = '',
+  }) async {
+    // Compute delta vs existing paid amount
+    final doc = await _firestore.collection('users').doc(uid).get();
+    final previousPaid =
+        (doc.data()?['amountPaid'] as num?)?.toDouble() ?? 0.0;
+    final paidDelta = amountPaid - previousPaid;
+    final remaining =
+        (totalAmount - amountPaid).clamp(0.0, double.infinity);
+
+    final batch = _firestore.batch();
+    final userRef = _firestore.collection('users').doc(uid);
+
+    // 1. SET subscription fields (replace, not increment)
+    batch.update(userRef, {
+      'subscriptionPlan': planName,
+      'subscriptionStart': Timestamp.fromDate(startDate),
+      'subscriptionEnd': Timestamp.fromDate(endDate),
+      'totalAmount': totalAmount,
+      'amountPaid': amountPaid,
+      'amountRemaining': remaining,
+      'paymentMethod': paymentMethod,
+      'isActive': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // 2. Payment record only if new money paid
+    if (paidDelta > 0) {
+      final paymentRef = userRef.collection('payments').doc();
+      batch.set(paymentRef, {
+        'type': 'payment_update',
+        'planName': planName,
+        'amount': paidDelta,
+        'totalAmount': totalAmount,
+        'discountAmount': 0.0,
+        'amountRemaining': remaining,
+        'paymentMethod': paymentMethod,
+        'paymentDate': FieldValue.serverTimestamp(),
+        'startDate': Timestamp.fromDate(startDate),
+        'endDate': Timestamp.fromDate(endDate),
+        'durationDays': endDate.difference(startDate).inDays,
+        if (gymId.isNotEmpty) 'gymId': gymId,
+        if (coachUid.isNotEmpty) 'registeredBy': coachUid,
+        'playerUid': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
   }
 
   // ── Training Plan ──────────────────────────────────────────────────────────

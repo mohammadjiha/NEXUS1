@@ -195,6 +195,9 @@ service cloud.firestore {
         allow read: if hasVerifiedEmail() && email == authEmailKey();
         // Coaches can read the invite list but cannot add/remove invites.
         allow read: if canManageGym() && gymId == currentUserGymId();
+        // Coaches can update existing member email records (name, phone, etc.)
+        // but cannot create or delete entries (that stays admin-only).
+        allow update: if canManageGym() && gymId == currentUserGymId();
         allow write: if canAdminGym() && gymId == currentUserGymId();
       }
 
@@ -247,6 +250,11 @@ service cloud.firestore {
           request.resource.data.gymId == gymId &&
           request.resource.data.email == authEmailKey() &&
           roleMatchesInvite(gymId, request.resource.data.role);
+        // Coaches can update existing player member records (profile, subscription).
+        // Cannot create or delete member entries — that remains admin-only.
+        allow update: if canManageGym() &&
+          gymId == currentUserGymId() &&
+          resource.data.role == 'player';
         // Only admin/owner can manage member records (suspend, role change, etc.)
         allow write: if canAdminGym() && gymId == currentUserGymId();
       }

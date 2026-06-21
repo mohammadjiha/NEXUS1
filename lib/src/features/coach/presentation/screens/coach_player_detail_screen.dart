@@ -10,9 +10,10 @@ import '../../../auth/data/auth_repository.dart';
 import '../../../coaching/presentation/screens/human_coach_chat_screen.dart';
 import '../../../smart_workout/providers/split_setup_provider.dart';
 import '../../../user/models/user_model.dart';
+import '../../../admin/data/admin_repository.dart' hide PaymentRecord;
 import '../../data/coach_repository.dart';
 import '../../models/payment_record.dart';
-import '../../providers/coach_player_plan_provider.dart';
+import '../../providers/coach_monitoring_provider.dart';
 
 class CoachPlayerDetailScreen extends ConsumerStatefulWidget {
   final UserModel? player;
@@ -329,10 +330,10 @@ class _CoachPlayerDetailScreenState
   }
 
   Widget _buildQuickActions(UserModel player) {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: EdgeInsets.fromLTRB(4.w, 0, 4.w, 3.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildQaItem('💬', 'Message', () {
             final coachUid = ref.read(currentUserModelProvider).value?.uid;
@@ -356,18 +357,16 @@ class _CoachPlayerDetailScreenState
               );
             }
           }),
-          _buildQaItem(
-            '🤖',
-            'AI Track',
-            () => _showAiTrackingSheet(player, context),
-          ),
+          SizedBox(width: 2.w),
+          _buildQaItem('🤖', 'AI Track', () => _showAiTrackingSheet(player, context)),
+          SizedBox(width: 2.w),
           _buildQaItem('💰', 'Payment', () => setState(() => _currentTab = 4)),
+          SizedBox(width: 2.w),
           _buildQaItem('📅', 'Renew', () => _showRenewSheet(player)),
-          _buildQaItem(
-            '📋',
-            'Monitor',
-            () => context.push('/coach_monitoring', extra: player),
-          ),
+          SizedBox(width: 2.w),
+          _buildQaItem('✏️', 'Edit Sub', () => _showEditSubSheet(player)),
+          SizedBox(width: 2.w),
+          _buildQaItem('📋', 'Monitor', () => context.push('/coach_monitoring', extra: player)),
         ],
       ),
     );
@@ -575,6 +574,15 @@ class _CoachPlayerDetailScreenState
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => RenewSubscriptionSheet(player: player),
+    );
+  }
+
+  void _showEditSubSheet(UserModel player) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => RenewSubscriptionSheet(player: player, isEditMode: true),
     );
   }
 
@@ -901,23 +909,66 @@ class _CoachPlayerDetailScreenState
   }
 
   Widget _buildFinancialSummary(UserModel player) {
-    return Row(
+    // Always compute from real payment records — stored field may be stale
+    final paymentsAsync = ref.watch(coachPaymentsProvider(player.uid));
+    final payments = paymentsAsync.asData?.value ?? [];
+
+    final totalPaid = payments.isEmpty
+        ? (player.amountPaid ?? 0.0)
+        : payments.fold(0.0, (sum, p) => sum + p.amount);
+    final totalAmount = (player.totalAmount ?? 0.0) > 0
+        ? player.totalAmount!
+        : totalPaid;
+    final remaining = (totalAmount - totalPaid).clamp(0.0, double.infinity);
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildSummaryBox(
-            'Total Paid',
-            '${(player.amountPaid ?? 0).toStringAsFixed(0)} JD',
-            Colors.green,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryBox(
+                'Total Amount',
+                '${totalAmount.toStringAsFixed(0)} JD',
+                const Color(0xFF1C1C1E),
+              ),
+            ),
+            SizedBox(width: 3.w),
+            Expanded(
+              child: _buildSummaryBox(
+                'Total Paid',
+                '${totalPaid.toStringAsFixed(0)} JD',
+                Colors.green,
+              ),
+            ),
+            SizedBox(width: 3.w),
+            Expanded(
+              child: _buildSummaryBox(
+                'Remaining',
+                '${remaining.toStringAsFixed(0)} JD',
+                remaining > 0 ? Colors.orange : Colors.green,
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: 3.w),
-        Expanded(
-          child: _buildSummaryBox(
-            'Remaining',
-            '${(player.amountRemaining ?? 0).toStringAsFixed(0)} JD',
-            Colors.orange,
+        if (payments.isNotEmpty) ...[
+          SizedBox(height: 1.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F7),
+              borderRadius: BorderRadius.circular(2.w),
+            ),
+            child: Text(
+              '${payments.length} سجل · مجموع المدفوعات: ${totalPaid.toStringAsFixed(0)} JD',
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -978,7 +1029,7 @@ class _CoachPlayerDetailScreenState
           physics: const NeverScrollableScrollPhysics(),
           itemCount: visiblePayments.length,
           itemBuilder: (context, index) {
-            return _buildPaymentRecordCard(visiblePayments[index]);
+            return _buildPaymentRecordCard(visiblePayments[index], player);
           },
         );
       },
@@ -1015,7 +1066,39 @@ class _CoachPlayerDetailScreenState
     ];
   }
 
-  Widget _buildPaymentRecordCard(PaymentRecord p) {
+  Future<void> _deletePaymentRecord(UserModel player, PaymentRecord p) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        title: Text('حذف السجل', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
+        content: Text('هل تريد حذف هذا السجل؟ لا يمكن التراجع.',
+            style: TextStyle(color: Colors.white70, fontSize: 13.sp)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حذف', style: TextStyle(color: Color(0xFFFF3B30))),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(coachRepositoryProvider).deletePaymentRecord(player.uid, p.id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Widget _buildPaymentRecordCard(PaymentRecord p, UserModel player) {
     final isFallback = p.type == 'current_balance';
 
     return Container(
@@ -1051,6 +1134,14 @@ class _CoachPlayerDetailScreenState
                   color: isFallback ? Colors.red : Colors.green,
                 ),
               ),
+              if (!isFallback) ...[
+                SizedBox(width: 2.w),
+                GestureDetector(
+                  onTap: () => _deletePaymentRecord(player, p),
+                  child: Icon(Icons.delete_outline_rounded,
+                      color: Colors.red.shade300, size: 18.sp),
+                ),
+              ],
             ],
           ),
           SizedBox(height: 0.6.h),
@@ -1223,7 +1314,14 @@ class _CoachPlayerDetailScreenState
 
 class RenewSubscriptionSheet extends ConsumerStatefulWidget {
   final UserModel player;
-  const RenewSubscriptionSheet({super.key, required this.player});
+  /// true  → Edit mode: pre-fills current start/end, uses editSubscription()
+  /// false → Renew mode: starts after current end, uses renewSubscription()
+  final bool isEditMode;
+  const RenewSubscriptionSheet({
+    super.key,
+    required this.player,
+    this.isEditMode = false,
+  });
 
   @override
   ConsumerState<RenewSubscriptionSheet> createState() =>
@@ -1233,8 +1331,13 @@ class RenewSubscriptionSheet extends ConsumerStatefulWidget {
 class _RenewSubscriptionSheetState
     extends ConsumerState<RenewSubscriptionSheet> {
   late DateTime _startDate;
-  int _selectedMonths = 1;
   late DateTime _endDate;
+
+  // Plan chips state
+  Map<String, dynamic>? _selectedPlan;
+  bool _useCustomPlan = true; // default to custom so dates stay editable
+  String _planName = '';
+
   String _paymentMethod = 'cash';
   double _totalAmount = 0.0;
   double _amount = 0.0;
@@ -1244,12 +1347,30 @@ class _RenewSubscriptionSheetState
   @override
   void initState() {
     super.initState();
-    _startDate =
-    widget.player.subscriptionEnd != null &&
-        widget.player.subscriptionEnd!.isAfter(DateTime.now())
-        ? widget.player.subscriptionEnd!
-        : DateTime.now();
-    _updateEndDate();
+    final p = widget.player;
+
+    if (widget.isEditMode) {
+      // Edit mode: show the CURRENT subscription period
+      _startDate = p.subscriptionStart ?? DateTime.now();
+      _endDate   = p.subscriptionEnd   ?? DateTime(_startDate.year, _startDate.month + 1, _startDate.day);
+    } else {
+      // Renew mode: start a NEW period from when current one ends
+      _startDate = (p.subscriptionEnd != null && p.subscriptionEnd!.isAfter(DateTime.now()))
+          ? p.subscriptionEnd!
+          : DateTime.now();
+      _endDate = DateTime(_startDate.year, _startDate.month + 1, _startDate.day);
+    }
+
+    // Pre-fill amounts from player data
+    _totalAmount = p.totalAmount ?? 0.0;
+    _amount      = p.amountPaid  ?? 0.0;
+    if (_totalAmount > 0) _totalController.text = _totalAmount.toStringAsFixed(0);
+    if (_amount > 0)      _amountController.text = _amount.toStringAsFixed(0);
+    // Pre-fill plan name
+    _planName = p.subscriptionPlan ?? '';
+    // Pre-fill payment method
+    const validMethods = ['cash', 'visa', 'bank_transfer', 'wallet', 'cliq'];
+    _paymentMethod = validMethods.contains(p.paymentMethod) ? p.paymentMethod! : 'cash';
   }
 
   @override
@@ -1260,16 +1381,13 @@ class _RenewSubscriptionSheetState
   }
 
   double get _remainingAmount =>
-      (_totalAmount - _amount).clamp(0.0, double.infinity).toDouble();
+      (_totalAmount - _amount).clamp(0.0, double.infinity);
 
-  void _updateEndDate() {
-    setState(() {
-      _endDate = DateTime(
-        _startDate.year,
-        _startDate.month + _selectedMonths,
-        _startDate.day,
-      );
-    });
+  void _recalcEnd() {
+    if (_selectedPlan != null && !_useCustomPlan) {
+      final days = _selectedPlan!['durationDays'] as int? ?? 30;
+      setState(() => _endDate = _startDate.add(Duration(days: days)));
+    }
   }
 
   Future<void> _pickStartDate() async {
@@ -1280,10 +1398,7 @@ class _RenewSubscriptionSheetState
       lastDate: DateTime(2030),
     );
     if (picked != null) {
-      setState(() {
-        _startDate = picked;
-        _updateEndDate();
-      });
+      setState(() { _startDate = picked; _recalcEnd(); });
     }
   }
 
@@ -1294,26 +1409,144 @@ class _RenewSubscriptionSheetState
       firstDate: _startDate,
       lastDate: DateTime(2030),
     );
-    if (picked != null) {
-      setState(() {
-        _endDate = picked;
-        _selectedMonths = ((_endDate
-            .difference(_startDate)
-            .inDays) / 30)
-            .round();
-        if (_selectedMonths < 1) _selectedMonths = 1;
-      });
-    }
+    if (picked != null) setState(() => _endDate = picked);
+  }
+
+  Widget _buildPlanChips() {
+    final gymId      = widget.player.gymId ?? '';
+    final plansAsync = ref.watch(subscriptionPlansProvider(gymId));
+    final plans      = plansAsync.asData?.value ?? [];
+
+    if (gymId.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('الخطة',
+            style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1C1C1E))),
+        SizedBox(height: 1.h),
+        Wrap(
+          spacing: 2.w,
+          runSpacing: 1.h,
+          children: [
+            ...plans.map((plan) {
+              final isSelected = !_useCustomPlan &&
+                  _selectedPlan != null &&
+                  _selectedPlan!['id'] == plan['id'];
+              final name  = plan['name']  as String? ?? '';
+              final days  = plan['durationDays'] as int? ?? 30;
+              final price = (plan['price'] as num?)?.toDouble() ?? 0.0;
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedPlan  = plan;
+                  _useCustomPlan = false;
+                  _planName      = name;
+                  _totalAmount   = price;
+                  _totalController.text = price.toStringAsFixed(0);
+                  _endDate = _startDate.add(Duration(days: days));
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF007AFF)
+                        : const Color(0xFFF2F2F7),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF007AFF)
+                          : const Color(0xFFD1D1D6),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name,
+                          style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF1C1C1E),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700)),
+                      Text('$days يوم · ${price.toStringAsFixed(0)} JD',
+                          style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white70
+                                  : Colors.grey,
+                              fontSize: 9.sp)),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            // Custom chip
+            GestureDetector(
+              onTap: () => setState(() {
+                _useCustomPlan = true;
+                _selectedPlan  = null;
+                _planName      = '';
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+                decoration: BoxDecoration(
+                  color: _useCustomPlan
+                      ? const Color(0xFFE5E5EA)
+                      : const Color(0xFFF2F2F7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _useCustomPlan
+                        ? const Color(0xFF8E8E93)
+                        : const Color(0xFFD1D1D6),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_rounded,
+                        color: _useCustomPlan
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.grey,
+                        size: 12.sp),
+                    SizedBox(width: 1.w),
+                    Text('مخصص',
+                        style: TextStyle(
+                            color: _useCustomPlan
+                                ? const Color(0xFF1C1C1E)
+                                : Colors.grey,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (plansAsync.isLoading) ...[
+          SizedBox(height: 1.h),
+          const Center(
+            child: SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(
+                  color: Color(0xFF007AFF), strokeWidth: 2),
+            ),
+          ),
+        ],
+        SizedBox(height: 2.h),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery
-              .of(context)
-              .size
-              .height * 0.85,
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
         ),
         padding: EdgeInsets.fromLTRB(
           6.w,
@@ -1348,7 +1581,9 @@ class _RenewSubscriptionSheetState
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'coach_renew_subscription'.tr(context),
+                            widget.isEditMode
+                                ? 'تعديل الاشتراك'
+                                : 'coach_renew_subscription'.tr(context),
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w800,
@@ -1362,16 +1597,20 @@ class _RenewSubscriptionSheetState
                           ),
                         ],
                       ),
-                      SizedBox(height: 2.h),
+                      SizedBox(height: 0.5.h),
                       Text(
-                        '${'enter_renewal_details_for'.tr(context)} ${widget
-                            .player.firstName ?? ''}:',
+                        '${widget.player.firstName ?? ''}',
                         style: TextStyle(
-                            fontSize: 14.sp, color: Colors.grey[700]),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700]),
                       ),
-                      SizedBox(height: 3.h),
+                      SizedBox(height: 2.h),
 
-                      // Start Date
+                      // ── Plan chips ──────────────────────────────────────
+                      _buildPlanChips(),
+
+                      // ── Start Date ──────────────────────────────────────
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(
@@ -1389,84 +1628,76 @@ class _RenewSubscriptionSheetState
                             color: const Color(0xFF007AFF),
                           ),
                         ),
-                        trailing: const Icon(
-                          Icons.calendar_today,
-                          color: Color(0xFF007AFF),
-                        ),
+                        trailing: const Icon(Icons.calendar_today,
+                            color: Color(0xFF007AFF)),
                         onTap: _pickStartDate,
                       ),
                       Divider(color: Colors.grey[200]),
 
-                      // Duration in Months
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'coach_duration_months'.tr(context),
+                      // ── End Date (auto when plan selected; manual when custom) ──
+                      if (_useCustomPlan || _selectedPlan == null) ...[
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'coach_end_date'.tr(context),
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF1C1C1E),
                             ),
                           ),
-                          DropdownButton<int>(
-                            value: _selectedMonths,
-                            dropdownColor: Colors.white,
-                            items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-                                .map(
-                                  (m) =>
-                                  DropdownMenuItem(
-                                    value: m,
-                                    child: Text(
-                                      '$m Months',
+                          subtitle: Text(
+                            DateFormat('MMM dd, yyyy').format(_endDate),
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: const Color(0xFF007AFF),
+                            ),
+                          ),
+                          trailing: const Icon(Icons.edit_calendar,
+                              color: Color(0xFF007AFF)),
+                          onTap: _pickEndDate,
+                        ),
+                        Divider(color: Colors.grey[200]),
+                      ] else ...[
+                        // Auto-calculated end date pill (read-only)
+                        Container(
+                          margin: EdgeInsets.only(bottom: 1.5.h),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 4.w, vertical: 1.2.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF34C759).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(3.w),
+                            border: Border.all(
+                                color:
+                                    const Color(0xFF34C759).withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.event_available_rounded,
+                                  color: Color(0xFF34C759), size: 20),
+                              SizedBox(width: 3.w),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('تاريخ الانتهاء',
                                       style: TextStyle(
+                                          fontSize: 10.sp,
+                                          color: Colors.grey[500])),
+                                  Text(
+                                    DateFormat('MMM dd, yyyy').format(_endDate),
+                                    style: TextStyle(
                                         fontSize: 14.sp,
-                                        color: const Color(0xFF1C1C1E),
-                                      ),
-                                    ),
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF34C759)),
                                   ),
-                            )
-                                .toList(),
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() {
-                                  _selectedMonths = v;
-                                  _updateEndDate();
-                                });
-                              }
-                            },
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      Divider(color: Colors.grey[200]),
+                        ),
+                      ],
 
-                      // End Date
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          'coach_end_date'.tr(context),
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1C1C1E),
-                          ),
-                        ),
-                        subtitle: Text(
-                          DateFormat('MMM dd, yyyy').format(_endDate),
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: const Color(0xFF007AFF),
-                          ),
-                        ),
-                        trailing: const Icon(
-                          Icons.edit_calendar,
-                          color: Color(0xFF007AFF),
-                        ),
-                        onTap: _pickEndDate,
-                      ),
-                      Divider(color: Colors.grey[200]),
-
-                      // Payment Method
+                      // ── Payment Method ──────────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1482,19 +1713,16 @@ class _RenewSubscriptionSheetState
                             value: _paymentMethod,
                             dropdownColor: Colors.white,
                             items: ['cash', 'visa', 'bank_transfer', 'wallet']
-                                .map(
-                                  (m) =>
-                                  DropdownMenuItem(
-                                    value: m,
-                                    child: Text(
-                                      'coach_$m'.tr(context),
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        color: const Color(0xFF1C1C1E),
+                                .map((m) => DropdownMenuItem(
+                                      value: m,
+                                      child: Text(
+                                        'coach_$m'.tr(context),
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          color: const Color(0xFF1C1C1E),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                            )
+                                    ))
                                 .toList(),
                             onChanged: (v) {
                               if (v != null) setState(() => _paymentMethod = v);
@@ -1506,41 +1734,66 @@ class _RenewSubscriptionSheetState
 
                       SizedBox(height: 2.h),
 
-                      // Total Amount
+                      // ── Total Amount ────────────────────────────────────
                       TextField(
                         controller: _totalController,
                         keyboardType: TextInputType.number,
                         style: TextStyle(
-                            fontSize: 14.sp, color: const Color(0xFF1C1C1E)),
+                            fontSize: 14.sp,
+                            color: const Color(0xFF1C1C1E)),
                         decoration: InputDecoration(
                           labelText: 'coach_total_amount'.tr(context),
-                          labelStyle: TextStyle(color: const Color(0xFF8E8E93)),
+                          labelStyle:
+                              const TextStyle(color: Color(0xFF8E8E93)),
+                          filled: true,
+                          fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(3.w),
+                            borderSide: const BorderSide(color: Color(0xFFD1D1D6)),
                           ),
-                          prefixIcon: const Icon(Icons.attach_money),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(3.w),
+                            borderSide: const BorderSide(color: Color(0xFFD1D1D6)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(3.w),
+                            borderSide: const BorderSide(color: Color(0xFF007AFF), width: 1.5),
+                          ),
+                          prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF8E8E93)),
                         ),
                         onChanged: (v) {
-                          setState(() =>
-                          _totalAmount = double.tryParse(v) ?? 0.0);
+                          setState(() => _totalAmount = double.tryParse(v) ?? 0.0);
                         },
                       ),
 
                       SizedBox(height: 1.5.h),
 
-                      // Amount Paid
+                      // ── Amount Paid ─────────────────────────────────────
                       TextField(
                         controller: _amountController,
                         keyboardType: TextInputType.number,
                         style: TextStyle(
-                            fontSize: 14.sp, color: const Color(0xFF1C1C1E)),
+                            fontSize: 14.sp,
+                            color: const Color(0xFF1C1C1E)),
                         decoration: InputDecoration(
                           labelText: 'coach_amount_paid_usd'.tr(context),
-                          labelStyle: TextStyle(color: const Color(0xFF8E8E93)),
+                          labelStyle:
+                              const TextStyle(color: Color(0xFF8E8E93)),
+                          filled: true,
+                          fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(3.w),
+                            borderSide: const BorderSide(color: Color(0xFFD1D1D6)),
                           ),
-                          prefixIcon: const Icon(Icons.attach_money),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(3.w),
+                            borderSide: const BorderSide(color: Color(0xFFD1D1D6)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(3.w),
+                            borderSide: const BorderSide(color: Color(0xFF007AFF), width: 1.5),
+                          ),
+                          prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF8E8E93)),
                         ),
                         onChanged: (v) {
                           setState(() => _amount = double.tryParse(v) ?? 0.0);
@@ -1599,38 +1852,63 @@ class _RenewSubscriptionSheetState
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                      'coach_please_fill_required'.tr(context)),
+                                      'coach_please_fill_required'
+                                          .tr(context)),
                                 ),
                               );
                               return;
                             }
+                            // Derive plan name
+                            final planName = _useCustomPlan || _selectedPlan == null
+                                ? (_planName.isNotEmpty
+                                    ? _planName
+                                    : '${_endDate.difference(_startDate).inDays} يوم')
+                                : (_selectedPlan!['name'] as String? ?? '');
 
                             final navigator = Navigator.of(context);
                             final messenger = ScaffoldMessenger.of(context);
-                            final successMessage = 'coach_subscription_renewed'
-                                .tr(
-                              context,
-                            );
-                            await ref
-                                .read(coachRepositoryProvider)
-                                .renewSubscription(
-                              uid: widget.player.uid,
-                              startDate: _startDate,
-                              endDate: _endDate,
-                              totalAmount: _totalAmount,
-                              amountPaid: _amount,
-                              amountRemaining: _remainingAmount,
-                              planName: '$_selectedMonths Month(s) Plan',
-                              paymentMethod: _paymentMethod,
-                            );
+                            final coachRepo = ref.read(coachRepositoryProvider);
+                            final gymId = widget.player.gymId ?? '';
+                            final coachUid = ref.read(currentUserModelProvider).asData?.value?.uid ?? '';
+
+                            if (widget.isEditMode) {
+                              // Edit mode: SET-based update, only records payment if new money paid
+                              await coachRepo.editSubscription(
+                                uid: widget.player.uid,
+                                startDate: _startDate,
+                                endDate: _endDate,
+                                totalAmount: _totalAmount,
+                                amountPaid: _amount,
+                                planName: planName,
+                                paymentMethod: _paymentMethod,
+                                gymId: gymId,
+                                coachUid: coachUid,
+                              );
+                            } else {
+                              // Renew mode: increment-based, always records payment
+                              await coachRepo.renewSubscription(
+                                uid: widget.player.uid,
+                                startDate: _startDate,
+                                endDate: _endDate,
+                                totalAmount: _totalAmount,
+                                amountPaid: _amount,
+                                amountRemaining: _remainingAmount,
+                                planName: planName,
+                                paymentMethod: _paymentMethod,
+                              );
+                            }
                             if (!mounted) return;
                             navigator.pop();
                             messenger.showSnackBar(
-                              SnackBar(content: Text(successMessage)),
+                              SnackBar(content: Text(widget.isEditMode
+                                  ? 'تم تعديل الاشتراك ✅'
+                                  : 'coach_subscription_renewed'.tr(context))),
                             );
                           },
                           child: Text(
-                            'coach_confirm_renewal'.tr(context),
+                            widget.isEditMode
+                                ? 'حفظ التعديلات'
+                                : 'coach_confirm_renewal'.tr(context),
                             style: TextStyle(
                               fontSize: 15.sp,
                               fontWeight: FontWeight.bold,
@@ -1942,8 +2220,7 @@ class _CoachPlanTabState extends ConsumerState<_CoachPlanTab> {
         player: widget.player,
         current: current,
         onSaved: () {
-          ref.invalidate(playerSplitSetupProvider(widget.player.uid));
-          ref.invalidate(playerGeneratedPlanProvider(widget.player.uid));
+          // StreamProviders auto-update from Firestore — no manual invalidation needed
         },
       ),
     );

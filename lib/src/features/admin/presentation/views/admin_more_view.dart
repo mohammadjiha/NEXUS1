@@ -252,7 +252,7 @@ class AdminMoreView extends ConsumerWidget {
               Text(
                 'ACTIVE COACHES',
                 style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w800,
                   color: Colors.white.withOpacity(0.4),
                   letterSpacing: 0.5,
@@ -262,7 +262,7 @@ class AdminMoreView extends ConsumerWidget {
                 data: (coaches) => Text(
                   '${coaches.length} total',
                   style: TextStyle(
-                      fontSize: 11.sp, color: Colors.white.withOpacity(0.3)),
+                      fontSize: 13.sp, color: Colors.white.withOpacity(0.3)),
                 ),
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
@@ -356,8 +356,8 @@ class AdminMoreView extends ConsumerWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 12.w,
-                    height: 12.w,
+                    width: 14.w,
+                    height: 14.w,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       shape: BoxShape.circle,
@@ -366,7 +366,7 @@ class AdminMoreView extends ConsumerWidget {
                     child: Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
                       style: TextStyle(
-                          fontSize: 18.sp,
+                          fontSize: 22.sp,
                           fontWeight: FontWeight.w800,
                           color: Colors.white),
                     ),
@@ -379,7 +379,7 @@ class AdminMoreView extends ConsumerWidget {
                         Text(
                           name.isEmpty ? coach.email : name,
                           style: TextStyle(
-                            fontSize: 11.sp,
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -388,7 +388,7 @@ class AdminMoreView extends ConsumerWidget {
                         Text(
                           coach.email,
                           style: TextStyle(
-                            fontSize: 8.sp,
+                            fontSize: 12.sp,
                             color: Colors.white.withOpacity(0.4),
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -408,7 +408,7 @@ class AdminMoreView extends ConsumerWidget {
                     child: Text(
                       coach.isActive ? 'Active' : 'Suspended',
                       style: TextStyle(
-                        fontSize: 8.sp,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                         color: coach.isActive
                             ? const Color(0xFF34C759)
@@ -418,7 +418,7 @@ class AdminMoreView extends ConsumerWidget {
                   ),
                   SizedBox(width: 2.w),
                   Icon(Icons.chevron_right_rounded,
-                      color: Colors.white30, size: 14.sp),
+                      color: Colors.white30, size: 18.sp),
                 ],
               ),
             ),
@@ -470,7 +470,7 @@ class AdminMoreView extends ConsumerWidget {
             Text(
               val,
               style: TextStyle(
-                fontSize: 10.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
                 height: 1,
@@ -481,7 +481,7 @@ class AdminMoreView extends ConsumerWidget {
             Text(
               lbl,
               style: TextStyle(
-                fontSize: 7.sp,
+                fontSize: 10.sp,
                 fontWeight: FontWeight.w600,
                 color: Colors.white.withOpacity(0.3),
                 letterSpacing: 0.3,

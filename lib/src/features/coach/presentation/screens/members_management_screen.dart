@@ -372,22 +372,22 @@ class _MembersManagementScreenState
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: _AddPlayerForm(player: player),
+        child: AddPlayerForm(player: player),
       ),
     );
   }
 }
 
-class _AddPlayerForm extends ConsumerStatefulWidget {
+class AddPlayerForm extends ConsumerStatefulWidget {
   final UserModel? player;
 
-  const _AddPlayerForm({this.player});
+  const AddPlayerForm({super.key, this.player});
 
   @override
-  ConsumerState<_AddPlayerForm> createState() => _AddPlayerFormState();
+  ConsumerState<AddPlayerForm> createState() => _AddPlayerFormState();
 }
 
-class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
+class _AddPlayerFormState extends ConsumerState<AddPlayerForm> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -418,6 +418,7 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
   String _trainingMode = 'gym_only';
   String _paymentMethod = 'cash';
   bool _isLoading = false;
+  String _errorText = '';
   bool _phoneChecking = false;
   bool _phoneVerified = false;
   bool _syncingPhoneText = false;
@@ -762,13 +763,13 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
                       Text(name,
                           style: TextStyle(
                               color: isSelected ? Colors.white : const Color(0xFF1C1C1E),
-                              fontSize: 11.sp,
+                              fontSize: 15.sp,
                               fontWeight: FontWeight.w700)),
                       Text(
                         '$days يوم · ${price.toStringAsFixed(0)} JD',
                         style: TextStyle(
                             color: isSelected ? Colors.white70 : Colors.grey,
-                            fontSize: 9.sp),
+                            fontSize: 12.sp),
                       ),
                     ],
                   ),
@@ -804,12 +805,12 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
                   children: [
                     Icon(Icons.edit_rounded,
                         color: _useCustomPlan ? Colors.white : Colors.grey,
-                        size: 12.sp),
+                        size: 15.sp),
                     SizedBox(width: 1.w),
                     Text('مخصص',
                         style: TextStyle(
                             color: _useCustomPlan ? Colors.white : Colors.grey,
-                            fontSize: 11.sp,
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w700)),
                   ],
                 ),
@@ -846,17 +847,17 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
             child: Row(
               children: [
                 const Icon(Icons.event_available_rounded,
-                    color: Colors.green, size: 18),
+                    color: Colors.green, size: 22),
                 SizedBox(width: 2.w),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('تاريخ انتهاء الاشتراك',
-                        style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey)),
                     Text(
                       DateFormat('dd MMM yyyy').format(_endDate!),
                       style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w800,
                           color: Colors.green.shade700),
                     ),
@@ -864,7 +865,7 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
                 ),
                 const Spacer(),
                 Text('تلقائي',
-                    style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+                    style: TextStyle(fontSize: 13.sp, color: Colors.grey)),
               ],
             ),
           ),
@@ -896,19 +897,19 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
                 children: [
                   Icon(Icons.calendar_month_rounded,
                       color: _endDate != null ? const Color(0xFF007AFF) : Colors.grey,
-                      size: 18),
+                      size: 22),
                   SizedBox(width: 2.w),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('تاريخ انتهاء الاشتراك *',
-                          style: TextStyle(fontSize: 8.sp, color: Colors.grey)),
+                          style: TextStyle(fontSize: 13.sp, color: Colors.grey)),
                       Text(
                         _endDate != null
                             ? DateFormat('dd MMM yyyy').format(_endDate!)
                             : 'اختر تاريخ الانتهاء',
                         style: TextStyle(
-                            fontSize: 12.sp,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w700,
                             color: _endDate != null
                                 ? const Color(0xFF007AFF)
@@ -938,7 +939,7 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
             child: Row(
               children: [
                 const Icon(Icons.card_membership_rounded,
-                    color: Color(0xFF007AFF), size: 16),
+                    color: Color(0xFF007AFF), size: 22),
                 SizedBox(width: 2.w),
                 Expanded(
                   child: Text(
@@ -947,12 +948,12 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
                     '${(_selectedPlan!['price'] as num?)?.toStringAsFixed(0) ?? '0'} JD',
                     style: TextStyle(
                         color: const Color(0xFF007AFF),
-                        fontSize: 10.sp,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w600),
                   ),
                 ),
                 Text('تعبئة تلقائية ✓',
-                    style: TextStyle(color: Colors.green, fontSize: 9.sp)),
+                    style: TextStyle(color: Colors.green, fontSize: 13.sp)),
               ],
             ),
           ),
@@ -1000,16 +1001,13 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
         muscleMass <= 0 ||
         durationMonths == null ||
         durationMonths <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('coach_please_fill_required'.tr(context))),
-      );
+      setState(() => _errorText = 'coach_please_fill_required'.tr(context));
       return;
     }
 
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final errorPrefix = 'error_prefix'.tr(context);
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _errorText = ''; });
     try {
       final successMessage = _isEditing
           ? 'coach_player_updated'.tr(context)
@@ -1060,12 +1058,7 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
       }
     } catch (e) {
       if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('$errorPrefix$e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _errorText = '$e'.replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -1366,6 +1359,37 @@ class _AddPlayerFormState extends ConsumerState<_AddPlayerForm> {
                 (value) => setState(() => _paymentMethod = value),
               ),
               SizedBox(height: 3.h),
+              // Inline error message (shows inside the sheet, not behind it)
+              if (_errorText.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 4.w, vertical: 1.2.h),
+                  margin: EdgeInsets.only(bottom: 1.5.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF3B30).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(3.w),
+                    border: Border.all(
+                        color: const Color(0xFFFF3B30).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          color: Color(0xFFFF3B30), size: 18),
+                      SizedBox(width: 2.w),
+                      Expanded(
+                        child: Text(
+                          _errorText,
+                          style: TextStyle(
+                              color: const Color(0xFFFF3B30),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
